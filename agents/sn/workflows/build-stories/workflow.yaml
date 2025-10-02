@@ -1,0 +1,32 @@
+# ServiceNow Story Building Workflow Configuration
+name: "build-stories"
+description: "Transform detailed requirements into clear, actionable user stories for ServiceNow development. Guided by Pixel, this workflow breaks down requirements into right-sized stories with comprehensive acceptance criteria."
+author: "Pixel the Story Developer"
+
+# Critical variables load from config_source
+config_source: "{project-root}/bmad/sn/config.yaml"
+output_folder: "{config_source}:output_folder"
+sn_projects_folder: "{config_source}:sn_projects_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+project_name: "{config_source}:project_name"
+date: system-generated
+
+# Module path and component files
+installed_path: "{project-root}/bmad/sn/workflows/build-stories"
+template: "{project-root}/bmad/sn/templates/story-template.md"
+instructions: "{installed_path}/instructions.md"
+
+# Input requirements document (user provides path)
+requirements_doc_path: ""
+
+# Project identification (gathered during workflow)
+project_slug: ""
+
+# Story configuration
+epic_name: ""
+story_number: ""
+
+# Output configuration - New structure
+default_output_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/3-stories/story-{{story_number}}.md"
+epic_summary_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/3-stories/epic-{{project_slug}}-{{date}}.md"

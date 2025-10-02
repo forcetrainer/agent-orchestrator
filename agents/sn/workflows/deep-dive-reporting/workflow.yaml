@@ -1,0 +1,31 @@
+# Reporting/Analytics Deep-Dive Configuration
+name: "deep-dive-reporting"
+description: "Detailed requirements gathering for ServiceNow reporting and analytics. BA/Developer-assisted session (30-45 minutes) that produces complete, development-ready requirements."
+author: "Casey the Analyst"
+
+# Critical variables load from config_source
+config_source: "{project-root}/bmad/sn/config.yaml"
+output_folder: "{config_source}:output_folder"
+sn_projects_folder: "{config_source}:sn_projects_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+project_name: "{config_source}:project_name"
+date: system-generated
+
+# Module path and component files
+installed_path: "{project-root}/bmad/sn/workflows/deep-dive-reporting"
+template: "{project-root}/bmad/sn/templates/detailed-requirements.md"
+instructions: "{installed_path}/instructions.md"
+
+# Category specific
+category: "Reporting/Analytics"
+request_type: "reporting"
+
+# Input from Mode 1 (optional - can start fresh if needed)
+initial_requirements_path: ""
+
+# Project identification (gathered during workflow)
+project_slug: ""
+
+# Output configuration - New structure
+default_output_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/2-requirements/detailed-{{project_slug}}-{{date}}.md"
