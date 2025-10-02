@@ -1,0 +1,17 @@
+# BMAD Manifest
+# Generated: 2025-10-02T02:46:36.202Z
+
+## Installation Info
+Property,Value
+Version,6.0.0-alpha.0
+InstallDate,2025-10-02T02:46:36.202Z
+LastUpdated,2025-10-02T02:46:36.202Z
+
+## Modules
+Name,Version,ShortTitle
+core,,
+bmm,,
+
+## IDEs
+IDE
+claude-code

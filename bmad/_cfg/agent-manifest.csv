@@ -1,0 +1,13 @@
+name,displayName,description,module,path
+"bmad-master","BMad Master","","core","bmad/core/agents/bmad-master.md"
+"analyst","MaryXX","","bmm","bmad/bmm/agents/analyst.md"
+"architect","Winston","","bmm","bmad/bmm/agents/architect.md"
+"dev","Amelia","","bmm","bmad/bmm/agents/dev.md"
+"game-architect","Cloud Dragonborn","","bmm","bmad/bmm/agents/game-architect.md"
+"game-designer","Samus Shepard","","bmm","bmad/bmm/agents/game-designer.md"
+"game-dev","Link Freeman","","bmm","bmad/bmm/agents/game-dev.md"
+"pm","John","","bmm","bmad/bmm/agents/pm.md"
+"po","Sarah","","bmm","bmad/bmm/agents/po.md"
+"sm","Bob","","bmm","bmad/bmm/agents/sm.md"
+"tea","Murat","","bmm","bmad/bmm/agents/tea.md"
+"ux-expert","Sally","","bmm","bmad/bmm/agents/ux-expert.md"
