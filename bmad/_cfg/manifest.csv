@@ -1,16 +1,17 @@
 # BMAD Manifest
-# Generated: 2025-10-02T02:46:36.202Z
+# Generated: 2025-10-02T02:54:03.797Z
 
 ## Installation Info
 Property,Value
 Version,6.0.0-alpha.0
-InstallDate,2025-10-02T02:46:36.202Z
-LastUpdated,2025-10-02T02:46:36.202Z
+InstallDate,2025-10-02T02:54:03.797Z
+LastUpdated,2025-10-02T02:54:03.797Z
 
 ## Modules
 Name,Version,ShortTitle
 core,,
 bmm,,
+cis,,
 
 ## IDEs
 IDE
