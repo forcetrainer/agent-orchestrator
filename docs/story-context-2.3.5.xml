@@ -1,0 +1,193 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>3.5</storyId>
+    <title>OpenAI Integration Smoke Test</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.3.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to validate OpenAI integration with a complete end-to-end smoke test</iWant>
+    <soThat>I can confirm Stories 2.1-2.3 work together correctly before proceeding to Story 2.4 (Agent Discovery)</soThat>
+    <tasks>
+- Create Test Data (AC: 3, 4)
+  - Create `agents/smoke-test` directory
+  - Create `agents/smoke-test/test.md` with sample content
+  - Verify file is readable by file operations
+
+- Create Smoke Test Script (AC: 1, 2, 3, 4, 5)
+  - Create `scripts/test-openai-smoke.ts`
+  - Implement OpenAI client initialization test
+  - Implement function tool schema validation test
+  - Implement function call execution test (read_file)
+  - Implement function result return test
+  - Add performance measurement (< 5s target)
+  - Add comprehensive error handling and reporting
+
+- Add Test Script to package.json (AC: 6)
+  - Add `test:smoke` npm script
+  - Verify script runs with `npm run test:smoke`
+
+- Create Test Documentation (AC: 6)
+  - Create `scripts/README.md`
+  - Document test purpose and prerequisites
+  - Document expected output (pass/fail criteria)
+  - Document what the test validates
+  - Document regression testing usage
+
+- Run and Verify Smoke Test (AC: 1, 2, 3, 4, 5)
+  - Execute `npm run test:smoke`
+  - Verify all 4 test steps pass
+  - Verify performance < 5 seconds
+  - Verify final response contains file content
+  - Document test results
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+1. OpenAI API connection succeeds with valid API key (AC-E2-21)
+2. Function tool schemas accepted by OpenAI (no validation errors) (AC-E2-22)
+3. At least one function call executes successfully (read_file) (AC-E2-23)
+4. Function execution result returns to OpenAI correctly (AC-E2-24)
+5. Test completes in < 5 seconds (validates performance) (AC-E2-25)
+6. Test script documented for future regression testing (AC-E2-26)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration</title>
+        <section>Story 2.3.5: OpenAI Integration Smoke Test (lines 606-833)</section>
+        <snippet>Defines complete smoke test implementation: 4-step validation flow (client init, schema validation, function execution, result handling), performance target &lt; 5s, test data setup, test script structure, and documentation requirements</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-2.1.md</path>
+        <title>Story 2.1: OpenAI SDK Integration & Function Tool Definitions</title>
+        <section>Status: Done</section>
+        <snippet>OpenAI client singleton pattern implemented at lib/openai/client.ts with getOpenAIClient(). Function tools defined at lib/openai/function-tools.ts with FUNCTION_TOOLS array.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-2.2.md</path>
+        <title>Story 2.2: File Operation Tools Implementation</title>
+        <section>Status: Ready for Review</section>
+        <snippet>File operations implemented: readFileContent() at lib/files/reader.ts with dual-folder search (agents→output). Async/await with fs/promises. Performance target &lt; 100ms for files under 1MB.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-2.3.md</path>
+        <title>Story 2.3: Path Security & Validation</title>
+        <section>Status: Done</section>
+        <snippet>Path security implemented at lib/files/security.ts. validatePath() prevents directory traversal, absolute paths, null bytes. Security violations logged.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/openai/client.ts</path>
+        <kind>module</kind>
+        <symbol>getOpenAIClient()</symbol>
+        <lines>27-34</lines>
+        <reason>Required for Step 1/4 of smoke test - validates OpenAI client initialization</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/function-tools.ts</path>
+        <kind>module</kind>
+        <symbol>FUNCTION_TOOLS</symbol>
+        <lines>85-89</lines>
+        <reason>Required for Step 2/4 - function tool schemas passed to OpenAI API for validation</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/function-tools.ts</path>
+        <kind>constant</kind>
+        <symbol>READ_FILE_TOOL</symbol>
+        <lines>17-33</lines>
+        <reason>Required for Step 3/4 - read_file function schema that OpenAI will call during smoke test</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>module</kind>
+        <symbol>readFileContent(relativePath: string)</symbol>
+        <lines>26-68</lines>
+        <reason>Required for Step 3/4 - executes the read_file function call requested by OpenAI</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath()</symbol>
+        <lines>-</lines>
+        <reason>Used implicitly by readFileContent() to validate test file path is secure</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0" purpose="OpenAI SDK for API calls and function calling" />
+        <package name="tsx" version="(devDep - needed)" purpose="TypeScript execution for smoke test script" />
+        <package name="next" version="14.2.0" purpose="Framework (provides TypeScript transpilation)" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Smoke test is NON-PRODUCTION code - its purpose is validation, not feature delivery</constraint>
+    <constraint>Test must be idempotent and safe to run repeatedly without side effects (except creating test data)</constraint>
+    <constraint>Test uses gpt-3.5-turbo (cheaper, faster) instead of gpt-4 for cost efficiency during testing</constraint>
+    <constraint>Test file (agents/smoke-test/test.md) must be created before running test</constraint>
+    <constraint>OPENAI_API_KEY must be set in environment for test to run</constraint>
+    <constraint>Test must complete in &lt; 5 seconds to validate performance baseline</constraint>
+    <constraint>Test must provide clear pass/fail output with actionable error messages on failure</constraint>
+    <constraint>DO NOT PROCEED to Story 2.4 if smoke test fails - fix Stories 2.1-2.3 first</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>getOpenAIClient</name>
+      <kind>function</kind>
+      <signature>function getOpenAIClient(): OpenAI</signature>
+      <path>lib/openai/client.ts</path>
+      <usage>Call in smoke test to initialize and validate OpenAI SDK connection</usage>
+    </interface>
+    <interface>
+      <name>FUNCTION_TOOLS</name>
+      <kind>constant</kind>
+      <signature>const FUNCTION_TOOLS: ChatCompletionTool[]</signature>
+      <path>lib/openai/function-tools.ts</path>
+      <usage>Pass to OpenAI chat.completions.create({ tools: FUNCTION_TOOLS }) to validate schemas</usage>
+    </interface>
+    <interface>
+      <name>readFileContent</name>
+      <kind>function</kind>
+      <signature>async function readFileContent(relativePath: string): Promise&lt;string&gt;</signature>
+      <path>lib/files/reader.ts</path>
+      <usage>Execute when OpenAI requests read_file function call in Step 3/4</usage>
+    </interface>
+    <interface>
+      <name>OpenAI.chat.completions.create</name>
+      <kind>method</kind>
+      <signature>async create(params: ChatCompletionCreateParams): Promise&lt;ChatCompletion&gt;</signature>
+      <path>openai SDK</path>
+      <usage>Make API calls to OpenAI with function tools in Steps 2/4 and 4/4</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Test script uses TypeScript with tsx runtime execution. Test is a standalone script, not a Jest test. Test validates integration between Stories 2.1-2.3 components. Performance measurement using performance.now() API. Exit code 1 on failure, 0 on success. Clear console output showing each validation step with checkmarks (✓) or errors (✗).
+    </standards>
+    <locations>
+      <location>scripts/test-openai-smoke.ts</location>
+      <location>scripts/README.md (test documentation)</location>
+      <location>agents/smoke-test/test.md (test data)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-E2-21">Validate OpenAI client initialization - Call getOpenAIClient() and verify it returns without error</idea>
+      <idea ac="AC-E2-22">Validate function schemas accepted - Make API call with tools parameter, verify no schema validation errors from OpenAI</idea>
+      <idea ac="AC-E2-23">Validate function execution - Parse OpenAI response for tool_calls, verify read_file requested, execute readFileContent()</idea>
+      <idea ac="AC-E2-24">Validate result handling - Send function result back as tool message role, verify OpenAI processes it and returns final response</idea>
+      <idea ac="AC-E2-25">Validate performance - Measure total execution time from start to finish, fail if &gt; 5 seconds</idea>
+      <idea ac="AC-E2-26">Document for regression - Create scripts/README.md explaining purpose, usage, and what to do if test fails</idea>
+    </ideas>
+  </tests>
+</story-context>
