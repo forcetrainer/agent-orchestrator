@@ -54,3 +54,21 @@ export interface FileNode {
   type: 'file' | 'directory';
   children?: FileNode[];
 }
+
+/**
+ * Function call structure from OpenAI function calling
+ * Represents a tool call request from the LLM
+ */
+export interface FunctionCall {
+  name: string;
+  arguments: string; // JSON string of arguments
+}
+
+/**
+ * Result of executing a function call
+ */
+export interface FunctionCallResult {
+  success: boolean;
+  result?: any;
+  error?: string;
+}

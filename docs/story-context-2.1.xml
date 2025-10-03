@@ -1,0 +1,205 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>1</storyId>
+    <title>OpenAI SDK Integration & Function Tool Definitions</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer</asA>
+    <iWant>to integrate the OpenAI SDK and define function tool definitions</iWant>
+    <soThat>agents can execute with OpenAI as the LLM provider using function calling patterns</soThat>
+    <tasks>
+      - Install OpenAI SDK (AC: 1)
+      - Create OpenAI Client module (AC: 1, 2, 5, 6)
+      - Create Function Tool Definitions (AC: 3, 4)
+      - Add OpenAI Types (AC: 4)
+      - Update Environment Configuration (AC: 2, 6)
+      - Write Tests (AC: 1-6)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    - AC-E2-01: OpenAI SDK installed and imported
+    - AC: OpenAI client initialized with API key from environment
+    - AC-E2-02: Function tool definitions created for read_file, write_file, list_files
+    - AC: Tool schemas match OpenAI function calling specification
+    - AC: Client can be imported and used in chat service
+    - AC: Error thrown if OPENAI_API_KEY missing
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification - Epic 2</title>
+        <section>Story 2.1: OpenAI SDK Integration & Function Tool Definitions</section>
+        <snippet>
+Implementation Steps:
+1. Install OpenAI SDK: npm install openai@^4.28.0
+2. Create OpenAI Client (lib/openai/client.ts):
+   - Singleton pattern with lazy initialization
+   - Validates OPENAI_API_KEY from environment
+   - Throws error if API key missing
+3. Create Function Tools (lib/openai/function-tools.ts):
+   - READ_FILE_TOOL, WRITE_FILE_TOOL, LIST_FILES_TOOL
+   - Each tool follows ChatCompletionTool format
+   - Descriptive function names and parameters
+4. Add FunctionCall interface to types/index.ts
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Section 1.1: Technology Stack</section>
+        <snippet>
+LLM Integration: openai 4.28.0 - Official OpenAI SDK, supports function calling pattern for file operations
+Design Philosophy: Minimal Dependencies - Use Next.js and Node.js built-ins wherever possible
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-5: OpenAI API with Function Calling</section>
+        <snippet>
+Integration with OpenAI API using function calling pattern. LLM receives user message → generates tool call → backend executes → result returns to LLM → LLM continues. Support for multiple function calls in sequence as agent works through tasks.
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-6: File Operation Tools</section>
+        <snippet>
+read_file(path) - Load instruction/workflow files on-demand as agent requests
+write_file(path, content) - Create output files preserving directory structure
+list_files(directory) - Browse available files and directories
+Restrict file operations to authorized paths (agent folder for reads, output folder for writes)
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/utils/env.ts</path>
+        <kind>utility module</kind>
+        <symbol>env object</symbol>
+        <lines>37-81</lines>
+        <reason>Existing environment configuration pattern to extend with OPENAI_API_KEY, AGENTS_PATH, OUTPUT_PATH</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/env.ts</path>
+        <kind>function</kind>
+        <symbol>validateEnv()</symbol>
+        <lines>15-30</lines>
+        <reason>Environment validation pattern to extend for OPENAI_API_KEY requirement</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/index.ts</path>
+        <kind>module index</kind>
+        <symbol>export pattern</symbol>
+        <lines>1-2</lines>
+        <reason>Clean export pattern to follow when creating lib/openai/index.ts</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="@types/node" version="^20" devDep="true" />
+        <package name="@types/react" version="^18" devDep="true" />
+        <package name="typescript" version="^5" devDep="true" />
+        <package name="jest" version="^30.2.0" devDep="true" />
+        <package name="ts-jest" version="^29.4.4" devDep="true" />
+        <package name="@types/jest" version="^30.0.0" devDep="true" />
+      </node>
+      <toInstall>
+        <package name="openai" version="^4.28.0" reason="OpenAI SDK for function calling integration" />
+      </toInstall>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow modular monolith pattern - all OpenAI integration in /lib/openai module per solution architecture Section 2.1</constraint>
+    <constraint>Use singleton pattern for OpenAI client to avoid multiple instances (from tech spec)</constraint>
+    <constraint>Validate OPENAI_API_KEY at client creation - fail-fast if missing (from tech spec)</constraint>
+    <constraint>Function tool schemas must match OpenAI ChatCompletionTool specification exactly (AC requirement)</constraint>
+    <constraint>API key must never be exposed to frontend - server-side only (security requirement from PRD NFR-4)</constraint>
+    <constraint>All TypeScript with strict type checking enabled (from Epic 1 patterns)</constraint>
+    <constraint>Create comprehensive unit tests for client initialization and tool schemas (from Epic 1 testing patterns)</constraint>
+    <constraint>Use existing env module pattern from lib/utils/env.ts for environment variable access</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>env.OPENAI_API_KEY</name>
+      <kind>environment variable getter</kind>
+      <signature>get OPENAI_API_KEY(): string</signature>
+      <path>lib/utils/env.ts</path>
+      <usage>Access OpenAI API key with automatic validation</usage>
+    </interface>
+    <interface>
+      <name>env.AGENTS_PATH</name>
+      <kind>environment variable getter</kind>
+      <signature>get AGENTS_PATH(): string</signature>
+      <path>lib/utils/env.ts</path>
+      <usage>Get agents folder path with default './agents'</usage>
+    </interface>
+    <interface>
+      <name>env.OUTPUT_PATH</name>
+      <kind>environment variable getter</kind>
+      <signature>get OUTPUT_PATH(): string</signature>
+      <path>lib/utils/env.ts</path>
+      <usage>Get output folder path with default './output'</usage>
+    </interface>
+    <interface>
+      <name>OpenAI class</name>
+      <kind>external SDK</kind>
+      <signature>new OpenAI({ apiKey: string })</signature>
+      <path>openai package</path>
+      <usage>OpenAI SDK client constructor for creating instances</usage>
+    </interface>
+    <interface>
+      <name>ChatCompletionTool</name>
+      <kind>type from OpenAI SDK</kind>
+      <signature>{ type: 'function', function: { name, description, parameters } }</signature>
+      <path>openai/resources/chat/completions</path>
+      <usage>Type for defining function calling tools</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows patterns from Epic 1: Jest 30.2.0 with ts-jest for TypeScript support, tests in __tests__ directories co-located with source, meaningful test names following "should..." pattern, comprehensive coverage of success and error cases, isolated unit tests with no external dependencies.
+    </standards>
+
+    <locations>
+      lib/openai/__tests__/client.test.ts
+      lib/openai/__tests__/function-tools.test.ts
+    </locations>
+
+    <ideas>
+      <test acRef="AC-E2-01, AC">
+        Test suite: OpenAI Client
+        - should create client instance when API key is set
+        - should return same instance on subsequent calls (singleton)
+        - should throw error when OPENAI_API_KEY is missing
+        - should reset client instance when resetOpenAIClient() called
+      </test>
+      <test acRef="AC-E2-02, AC">
+        Test suite: Function Tools
+        - should export READ_FILE_TOOL with correct schema
+        - should export WRITE_FILE_TOOL with correct schema
+        - should export LIST_FILES_TOOL with correct schema
+        - should export FUNCTION_TOOLS array with all three tools
+        - should have 'function' type for all tools
+        - should have required parameters defined for each tool
+      </test>
+    </ideas>
+  </tests>
+</story-context>
