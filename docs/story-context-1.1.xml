@@ -1,0 +1,225 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1</storyId>
+    <title>Initialize Next.js Project with TypeScript</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-1.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer</asA>
+    <iWant>a Next.js project with TypeScript configured</iWant>
+    <soThat>I have a foundation for building the backend and frontend</soThat>
+    <tasks>
+      - Initialize Next.js project (AC: 1, 2, 5, 6, 7)
+        - Run `npx create-next-app@latest agent-orchestrator` with TypeScript, ESLint, Tailwind CSS, App Router, and import alias options
+        - Verify package.json contains required dependencies (react ^18, react-dom ^18, next 14.2.0, typescript ^5, @types/node ^20, @types/react ^18, @types/react-dom ^18, eslint ^8, eslint-config-next 14.2.0, tailwindcss ^3.4.0)
+        - Verify .gitignore includes node_modules, .next, .env*.local, and other standard Next.js ignores
+      - Verify development server (AC: 3, 4)
+        - Run `npm run dev` and confirm server starts on port 3000
+        - Visit http://localhost:3000 in browser and confirm default Next.js welcome page displays
+      - Initialize git repository (AC: 6)
+        - Run `git init` in project root
+        - Create initial commit: `git add . &amp;&amp; git commit -m "Initial Next.js setup with TypeScript"`
+      - Validate TypeScript and build (AC: 2, 5)
+        - Introduce intentional TypeScript error and verify ESLint catches it
+        - Remove error and run `npm run build` to confirm production build succeeds
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Next.js 14+ project initialized with App Router</criterion>
+    <criterion id="2">TypeScript configured and working</criterion>
+    <criterion id="3">Project runs locally with `npm run dev`</criterion>
+    <criterion id="4">Default Next.js page displays at localhost:3000</criterion>
+    <criterion id="5">ESLint configured for code quality</criterion>
+    <criterion id="6">.gitignore properly configured</criterion>
+    <criterion id="7">package.json has correct dependencies</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Tech Spec: Epic 1 - Backend Foundation &amp; Infrastructure</title>
+        <section>Story 1.1: Initialize Next.js Project with TypeScript</section>
+        <snippet>
+          **Acceptance Criteria:**
+          1. Next.js 14+ project initialized with App Router
+          2. TypeScript configured and working
+          3. Project runs locally with `npm run dev`
+          4. Default Next.js page displays at localhost:3000
+          5. ESLint configured for code quality
+          6. .gitignore properly configured
+          7. package.json has correct dependencies
+
+          **Implementation Steps:**
+          1. Initialize Project: npx create-next-app@latest agent-orchestrator
+             - TypeScript: Yes, ESLint: Yes, Tailwind CSS: Yes
+             - src/ directory: No, App Router: Yes, Import alias: Yes (@/*)
+          2. Verify Installation: npm run dev, visit http://localhost:3000
+          3. Initialize Git: git init, git add ., git commit -m "Initial Next.js setup with TypeScript"
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>1.1 Technology and Library Decision Table</section>
+        <snippet>
+          | Category | Technology | Version | Justification |
+          | Framework | Next.js | 14.2.0 | Modern React framework with built-in SSR, API routes, and file-based routing. App Router simplifies development. |
+          | Language | TypeScript | 5.3.0 | Type safety catches errors early, excellent IDE support, modern Next.js default. |
+          | Runtime | Node.js | 20 LTS | Stable long-term support, required for Next.js, excellent ecosystem. |
+          | Package Manager | npm | 10.x | Ships with Node.js, simple, no additional setup required. |
+          | Styling | Tailwind CSS | 3.4.0 | Utility-first CSS matches UX spec, rapid development, small bundle size. |
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>13.1 Development Workflow - Setup Steps</section>
+        <snippet>
+          # 1. Initialize Next.js project
+          npx create-next-app@latest agent-orchestrator --typescript --tailwind --app
+
+          # 2. Install dependencies
+          cd agent-orchestrator
+          npm install openai@4.28.0 react-markdown@9.0.1 remark-gfm@4.0.0 @headlessui/react@1.7.18
+
+          # 3. Create environment variables
+          cat > .env.local &lt;&lt; EOF
+          OPENAI_API_KEY=sk-your-key-here
+          AGENTS_PATH=/agents
+          OUTPUT_PATH=/output
+          EOF
+
+          # 4. Create folder structure
+          mkdir -p agents output lib/{openai,agents,files,utils} components/{chat,file-viewer,navigation,ui,providers}
+
+          # 5. Run development server
+          npm run dev
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 1.1: Initialize Next.js Project with TypeScript</section>
+        <snippet>
+          **As a** developer
+          **I want** a Next.js project with TypeScript configured
+          **So that** I have a foundation for building the backend and frontend
+
+          **Prerequisites:** None
+
+          **Technical Notes:**
+          - Use `npx create-next-app@latest` with TypeScript option
+          - Choose App Router (not Pages Router)
+          - Add Tailwind CSS during setup for UI styling later
+          - Initialize git repository
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Agent Orchestrator Product Requirements Document (PRD)</title>
+        <section>Epic 1: Backend Foundation &amp; Infrastructure</section>
+        <snippet>
+          **Goal:** Establish Next.js backend infrastructure to support OpenAI integration and frontend communication
+
+          **Scope:**
+          - Next.js project initialization with TypeScript
+          - API route structure for chat, agents, and files
+          - Environment configuration and validation
+          - Error handling middleware
+          - Health check endpoint
+          - Project structure and organization
+
+          **Value:** Provides the foundational server architecture that all other epics depend on - without this, we cannot build chat interface or integrate with OpenAI
+
+          **Estimated Stories:** 6 stories
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <!-- No existing code artifacts - this is the initial story creating the project foundation -->
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" source="tech-spec-epic-1.md">Modern React framework with App Router</package>
+        <package name="react" version="^18" source="tech-spec-epic-1.md">React library</package>
+        <package name="react-dom" version="^18" source="tech-spec-epic-1.md">React DOM rendering</package>
+        <package name="typescript" version="^5" source="tech-spec-epic-1.md">TypeScript language support</package>
+        <package name="@types/node" version="^20" source="tech-spec-epic-1.md">Node.js type definitions</package>
+        <package name="@types/react" version="^18" source="tech-spec-epic-1.md">React type definitions</package>
+        <package name="@types/react-dom" version="^18" source="tech-spec-epic-1.md">React DOM type definitions</package>
+        <package name="eslint" version="^8" source="tech-spec-epic-1.md">Linting for code quality</package>
+        <package name="eslint-config-next" version="14.2.0" source="tech-spec-epic-1.md">Next.js ESLint configuration</package>
+        <package name="tailwindcss" version="^3.4.0" source="tech-spec-epic-1.md">Utility-first CSS framework</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint source="solution-architecture.md#ADR-001">
+      Use Next.js 14 with App Router (not Pages Router) - Modern pattern with server/client components
+    </constraint>
+    <constraint source="solution-architecture.md#ADR-003">
+      Use TypeScript for all application code - Type safety and IDE support are critical
+    </constraint>
+    <constraint source="solution-architecture.md#Technology Stack">
+      Use npm as package manager (ships with Node.js, no additional setup)
+    </constraint>
+    <constraint source="solution-architecture.md#Technology Stack">
+      Node.js version 20 LTS required as runtime
+    </constraint>
+    <constraint source="solution-architecture.md#Naming Conventions">
+      Use PascalCase for components, camelCase for utilities, kebab-case for folders
+    </constraint>
+    <constraint source="tech-spec-epic-1.md#Implementation Steps">
+      Import alias must be configured as @/* during initialization
+    </constraint>
+    <constraint source="tech-spec-epic-1.md#Implementation Steps">
+      Do NOT use src/ directory - use app/ directory at project root
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <!-- No existing interfaces to call - this is greenfield project initialization -->
+  </interfaces>
+
+  <tests>
+    <standards>
+      **Testing Framework:** Jest + TypeScript (to be configured in later stories)
+
+      **Manual Testing Checklist for Story 1.1:**
+      - Verify `npm run dev` starts server successfully on port 3000
+      - Confirm localhost:3000 loads default Next.js welcome page
+      - Introduce intentional TypeScript error and verify ESLint catches it
+      - Remove error and run `npm run build` to confirm production build succeeds
+      - Verify Git repository initialized with clean initial commit
+
+      **Validation:**
+      - TypeScript compilation succeeds without errors
+      - ESLint passes without errors
+      - All required dependencies present in package.json
+      - .gitignore includes standard Next.js patterns (node_modules, .next, .env*.local)
+    </standards>
+
+    <locations>
+      <!-- No test locations yet - testing infrastructure will be added in later epics -->
+      <!-- Future test structure: /app/api/__tests__/, /lib/__tests__/, /components/__tests__/ -->
+    </locations>
+
+    <ideas>
+      <testIdea ac="1,2,7">Verify package.json contains all required dependencies with correct versions (next 14.2.0, typescript ^5, react ^18, eslint ^8, tailwindcss ^3.4.0)</testIdea>
+      <testIdea ac="2,5">Introduce a TypeScript type error in page.tsx and confirm ESLint reports the error</testIdea>
+      <testIdea ac="3,4">Run `npm run dev` and verify server starts on port 3000, then curl localhost:3000 to confirm response</testIdea>
+      <testIdea ac="6">Verify .gitignore contains node_modules, .next, .env*.local, and other standard Next.js ignore patterns</testIdea>
+      <testIdea ac="2">Run `npm run build` and verify Next.js production build completes successfully</testIdea>
+    </ideas>
+  </tests>
+</story-context>
