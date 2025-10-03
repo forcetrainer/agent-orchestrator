@@ -1,6 +1,6 @@
 # Story 1.1: Initialize Next.js Project with TypeScript
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 
