@@ -1,0 +1,485 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>3</storyId>
+    <title>Path Security &amp; Validation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a platform operator</asA>
+    <iWant>file operations to be secure against path traversal and unauthorized access</iWant>
+    <soThat>agents cannot access or modify files outside their designated directories</soThat>
+    <tasks>
+      - Create Path Security Module (AC: 1, 4, 5, 6)
+        - Create `lib/files/security.ts`
+        - Implement validatePath() function with null byte checking
+        - Add absolute path rejection logic
+        - Implement directory traversal prevention (resolve and check prefix)
+        - Add path normalization for cross-platform support
+        - Add detailed security violation logging
+
+      - Create Write-Specific Validation (AC: 2, 3, 6)
+        - Implement validateWritePath() function
+        - Add agents folder write rejection logic
+        - Validate output folder writes are permitted
+        - Add security logging for write validation failures
+
+      - Update File Writer to Use Write Validation (AC: 2, 3)
+        - Replace validatePath with validateWritePath in writer.ts
+        - Verify write rejection for agents folder
+        - Verify write acceptance for output folder
+
+      - Create Security Tests (AC: 1, 2, 3, 4, 5)
+        - Create `lib/files/__tests__/security.test.ts`
+        - Test directory traversal rejection (../)
+        - Test absolute path rejection
+        - Test null byte rejection
+        - Test valid relative paths acceptance
+        - Test path normalization (. and ./ handling)
+        - Test write validation (agents folder rejection, output folder acceptance)
+
+      - Security Attack Simulation Testing (AC: 1, 2, 3, 4, 5, 6)
+        - Test directory traversal attempts (../../etc/passwd)
+        - Test absolute path attempts (/etc/passwd)
+        - Test write to agents folder attempts
+        - Test write to output folder (should succeed)
+        - Verify all attacks are blocked and logged
+        - Document security test results
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-E2-07" number="1">
+      <description>Directory traversal attacks prevented (../, absolute paths)</description>
+      <status>✅</status>
+      <implementation>
+        - Use path.normalize() to collapse path segments
+        - Reject absolute paths with path.isAbsolute()
+        - Use path.resolve() to get absolute paths and verify they start with base directory
+        - Null byte check: reject paths containing \0 characters
+      </implementation>
+    </criterion>
+
+    <criterion id="AC-E2-08" number="2">
+      <description>Writes to agents folder rejected with 403</description>
+      <status>✅</status>
+      <implementation>
+        - validateWritePath() checks if path resolves to agents folder
+        - Rejects with "read-only" error if in agents folder
+        - Error message: "Cannot write to agents folder (read-only)"
+      </implementation>
+    </criterion>
+
+    <criterion id="AC-E2-09" number="3">
+      <description>Writes to output folder allowed</description>
+      <status>✅</status>
+      <implementation>
+        - validateWritePath() validates path is within OUTPUT_PATH
+        - Uses standard path validation after agents folder check
+        - Ensures all writes go to output folder only
+      </implementation>
+    </criterion>
+
+    <criterion id="4" number="4">
+      <description>Symbolic links resolved and validated</description>
+      <status>✅</status>
+      <implementation>
+        - path.resolve() automatically resolves symbolic links
+        - Resolved paths validated to ensure they remain within base directory
+        - Prevents symlink-based directory traversal attacks
+      </implementation>
+    </criterion>
+
+    <criterion id="5" number="5">
+      <description>Path normalization handles Windows and Unix paths</description>
+      <status>✅</status>
+      <implementation>
+        - path.normalize() handles both / and \ separators
+        - Windows absolute paths (C:\, D:\) rejected alongside Unix (/)
+        - Cross-platform path.sep used for prefix checking
+      </implementation>
+    </criterion>
+
+    <criterion id="6" number="6">
+      <description>Security violations logged with details</description>
+      <status>✅</status>
+      <implementation>
+        - All security validation failures logged with console.error
+        - Log includes: relativePath, reason, resolved paths, base directory
+        - Enables security audit trail and attack detection
+      </implementation>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.3: Path Security &amp; Validation</section>
+        <snippet>
+          Lines 426-603: Complete implementation specification for path security module
+          - validatePath() function design with path.resolve() + prefix checking
+          - Absolute path rejection for security
+          - Null byte rejection (security violation)
+          - Agents folder is read-only (writes rejected with error)
+          - Output folder writes allowed
+          - Security violations logged with context details
+          - Implementation files: lib/files/security.ts, lib/files/__tests__/security.test.ts
+          - Update lib/files/writer.ts to use validateWritePath
+          - Comprehensive attack simulation examples (lines 558-602)
+        </snippet>
+      </doc>
+
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - Testing Strategy</title>
+        <section>Testing Strategy</section>
+        <snippet>
+          Lines 1185-1296: Testing standards and requirements
+          - Unit Tests: 70%+ coverage target for /lib modules
+          - Focus on path validation edge cases and security boundary conditions
+          - Framework: Jest with ts-jest (already configured)
+          - Security Tests: Attack vector testing with known exploit patterns
+          - Comprehensive logging verification
+          - Cross-platform path handling verification (Windows and Unix)
+          - Test execution: npm test, npm test -- lib/files/security
+        </snippet>
+      </doc>
+
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/PRD.md</path>
+        <title>Product Requirements Document - Agent Orchestrator</title>
+        <section>Security Requirements</section>
+        <snippet>
+          Security is paramount for file operations:
+          - Path validation to prevent directory traversal attacks
+          - Sandboxed file access (agents folder read-only, output folder writable)
+          - All file operations must validate paths before execution
+          - Security violations must be logged for audit trail
+        </snippet>
+      </doc>
+
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Security Architecture</section>
+        <snippet>
+          File System Security:
+          - Path validation layer prevents unauthorized access
+          - Two-tier folder access: read-only agents, writable output
+          - All paths normalized and validated before OS-level operations
+          - Symbolic link resolution with validation
+          - Cross-platform path handling (Windows/Unix)
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath, validateWritePath</symbol>
+        <lines>1-98</lines>
+        <reason>EXISTING IMPLEMENTATION - Core security module that Story 2.3 is based on. Contains validatePath() and validateWritePath() functions that implement all security requirements. This module was already created in Story 2.2 as part of the file operations implementation.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/reader.ts</path>
+        <kind>module</kind>
+        <symbol>readFileContent</symbol>
+        <lines>1-69</lines>
+        <reason>Uses validatePath() for secure file reading. Example of how security module integrates with file operations. Implements dual-folder search pattern (agents first, then output).</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/writer.ts</path>
+        <kind>module</kind>
+        <symbol>writeFileContent</symbol>
+        <lines>1-65</lines>
+        <reason>Uses validateWritePath() to enforce write-only access to output folder. Key integration point for write security validation. Auto-creates parent directories.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/lister.ts</path>
+        <kind>module</kind>
+        <symbol>listFiles</symbol>
+        <lines>1-120</lines>
+        <reason>Uses validatePath() for secure directory listing. Demonstrates security validation for read-only operations with dual-folder fallback pattern.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/env.ts</path>
+        <kind>module</kind>
+        <symbol>env.AGENTS_PATH, env.OUTPUT_PATH</symbol>
+        <lines>N/A</lines>
+        <reason>Provides AGENTS_PATH and OUTPUT_PATH configuration used by security module. Critical for base directory validation.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/__tests__/security.test.ts</path>
+        <kind>test</kind>
+        <symbol>validatePath, validateWritePath tests</symbol>
+        <lines>1-N/A</lines>
+        <reason>EXISTING TEST SUITE - Comprehensive security tests covering directory traversal, null bytes, absolute paths, write validation. Tests all acceptance criteria for Story 2.3.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/__tests__/reader.test.ts</path>
+        <kind>test</kind>
+        <symbol>readFileContent tests</symbol>
+        <lines>N/A</lines>
+        <reason>Integration tests for reader module that depend on security validation working correctly.</reason>
+      </artifact>
+
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/__tests__/writer.test.ts</path>
+        <kind>test</kind>
+        <symbol>writeFileContent tests</symbol>
+        <lines>N/A</lines>
+        <reason>Integration tests for writer module that depend on validateWritePath() security checks.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <nodejs>
+        <package name="path" version="built-in">Path manipulation and validation utilities (resolve, normalize, isAbsolute, sep)</package>
+        <package name="fs/promises" version="built-in">Async file system operations used by modules that depend on security validation</package>
+        <package name="jest" version="^30.2.0">Testing framework for security test suite</package>
+        <package name="ts-jest" version="^29.4.4">TypeScript support for Jest tests</package>
+      </nodejs>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security">
+      All file operations MUST validate paths through security module before accessing filesystem. No direct fs operations without validation.
+    </constraint>
+
+    <constraint type="security">
+      Agents folder is strictly read-only. Any write attempt must be rejected with clear error message.
+    </constraint>
+
+    <constraint type="security">
+      All security validation failures must be logged with detailed context for audit trail and security monitoring.
+    </constraint>
+
+    <constraint type="architecture">
+      Security module must be separate concern imported by other file operation modules. Follows established /lib/files/ pattern.
+    </constraint>
+
+    <constraint type="cross-platform">
+      Path handling must work correctly on both Windows (backslash, drive letters) and Unix (forward slash) systems.
+    </constraint>
+
+    <constraint type="testing">
+      Security tests must include attack vector testing with known exploit patterns (directory traversal, null bytes, absolute paths).
+    </constraint>
+
+    <constraint type="performance">
+      Path validation must be fast (< 1ms) to avoid impacting file operation performance targets (< 100ms for files under 1MB).
+    </constraint>
+
+    <constraint type="error-handling">
+      Security errors must throw exceptions with clear, actionable error messages. Do not silently fail or allow bypass.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>validatePath</name>
+      <kind>function</kind>
+      <signature>validatePath(relativePath: string, baseDir: string): string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/security.ts</path>
+      <description>
+        Core security validation function. Validates that a relative path is safe and within the specified base directory.
+        Returns absolute path if valid, throws Error if invalid or contains security violations.
+        Used by: reader.ts, lister.ts
+      </description>
+    </interface>
+
+    <interface>
+      <name>validateWritePath</name>
+      <kind>function</kind>
+      <signature>validateWritePath(relativePath: string): string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/security.ts</path>
+      <description>
+        Write-specific validation function. Validates that a write path is safe and within OUTPUT_PATH only.
+        Rejects any attempts to write to AGENTS_PATH. Returns absolute path if valid for writing.
+        Used by: writer.ts
+      </description>
+    </interface>
+
+    <interface>
+      <name>env.AGENTS_PATH</name>
+      <kind>config</kind>
+      <signature>get AGENTS_PATH(): string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/env.ts</path>
+      <description>
+        Read-only base directory for agent files. Default: './agents'
+        Can be overridden with AGENTS_PATH environment variable.
+      </description>
+    </interface>
+
+    <interface>
+      <name>env.OUTPUT_PATH</name>
+      <kind>config</kind>
+      <signature>get OUTPUT_PATH(): string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/env.ts</path>
+      <description>
+        Writable base directory for output files. Default: './output'
+        Can be overridden with OUTPUT_PATH environment variable.
+      </description>
+    </interface>
+
+    <interface>
+      <name>path.resolve</name>
+      <kind>Node.js built-in</kind>
+      <signature>path.resolve(...paths: string[]): string</signature>
+      <path>node:path</path>
+      <description>
+        Resolves a sequence of paths to an absolute path. Resolves symbolic links.
+        Critical for security validation - converts relative paths to absolute for prefix checking.
+      </description>
+    </interface>
+
+    <interface>
+      <name>path.normalize</name>
+      <kind>Node.js built-in</kind>
+      <signature>path.normalize(path: string): string</signature>
+      <path>node:path</path>
+      <description>
+        Normalizes a path, resolving '..' and '.' segments. Handles cross-platform separators.
+        Used to prevent path traversal bypass attempts.
+      </description>
+    </interface>
+
+    <interface>
+      <name>path.isAbsolute</name>
+      <kind>Node.js built-in</kind>
+      <signature>path.isAbsolute(path: string): boolean</signature>
+      <path>node:path</path>
+      <description>
+        Determines if path is absolute (Unix: starts with /, Windows: starts with drive letter).
+        Used to detect and validate/reject absolute paths.
+      </description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with ts-jest (configured in project)
+      Coverage target: 70%+ for /lib modules
+      Focus areas: Path validation edge cases, security boundary conditions, cross-platform compatibility
+
+      Test organization:
+      - Unit tests in __tests__/ subdirectories
+      - Security tests must cover attack vectors with known exploit patterns
+      - Integration tests verify security validation integrates correctly with file operations
+      - All tests must verify proper error messages and logging
+
+      Execution:
+      - Run all tests: npm test
+      - Run security tests only: npm test -- lib/files/security
+      - Watch mode: npm test:watch
+    </standards>
+
+    <locations>
+      - lib/files/__tests__/security.test.ts (primary security tests)
+      - lib/files/__tests__/reader.test.ts (integration tests for read validation)
+      - lib/files/__tests__/writer.test.ts (integration tests for write validation)
+      - lib/files/__tests__/lister.test.ts (integration tests for list validation)
+    </locations>
+
+    <ideas>
+      <idea ac="1" ac-id="AC-E2-07">
+        Test: Directory traversal rejection
+        - Test path '../../../etc/passwd' is rejected
+        - Test path '..\\..\\..\\Windows\\System32' is rejected (Windows)
+        - Test path '.../.../.../` is rejected
+        - Verify error message indicates security violation
+        - Verify security event is logged
+      </idea>
+
+      <idea ac="1" ac-id="AC-E2-07">
+        Test: Absolute path handling
+        - Test absolute Unix paths outside allowed dirs are rejected (/etc/passwd)
+        - Test absolute Windows paths outside allowed dirs are rejected (C:\Windows\System32)
+        - Test absolute paths within AGENTS_PATH are accepted
+        - Test absolute paths within OUTPUT_PATH are accepted
+        - Verify proper error messages distinguish between allowed/disallowed absolute paths
+      </idea>
+
+      <idea ac="1" ac-id="AC-E2-07">
+        Test: Null byte injection
+        - Test path 'file\0.txt' is rejected
+        - Test path 'folder\0/file.txt' is rejected
+        - Verify error message indicates null byte security violation
+      </idea>
+
+      <idea ac="2" ac-id="AC-E2-08">
+        Test: Agents folder write rejection
+        - Test validateWritePath() rejects paths that resolve to agents folder
+        - Verify error message indicates "read-only" restriction
+        - Test various path formats (relative, absolute within agents)
+        - Verify rejection is logged as security event
+      </idea>
+
+      <idea ac="3" ac-id="AC-E2-09">
+        Test: Output folder write acceptance
+        - Test validateWritePath() accepts valid paths in output folder
+        - Test nested paths in output folder are accepted
+        - Test absolute paths within OUTPUT_PATH are accepted
+        - Verify returned absolute paths are correct
+      </idea>
+
+      <idea ac="4">
+        Test: Symbolic link resolution and validation
+        - Create symlink pointing outside base directory
+        - Verify validatePath() rejects the symlink (resolved path escapes)
+        - Create symlink pointing within base directory
+        - Verify validatePath() accepts the symlink (resolved path safe)
+        - Test on both Unix and Windows (if possible)
+      </idea>
+
+      <idea ac="5">
+        Test: Cross-platform path normalization
+        - Test Unix paths with forward slashes are normalized correctly
+        - Test Windows paths with backslashes are normalized correctly
+        - Test mixed separators are handled (foo/bar\baz)
+        - Test './' and '../' are resolved correctly on both platforms
+        - Test empty path and '.' path are handled correctly
+      </idea>
+
+      <idea ac="6">
+        Test: Security logging verification
+        - Capture console.error calls during security validation failures
+        - Verify log includes: relativePath, reason, context details
+        - Test various security violations all produce detailed logs
+        - Verify log format is consistent and parseable
+      </idea>
+
+      <idea ac="all">
+        Integration test: Full file operation security flow
+        - Test readFileContent() with malicious paths (should reject)
+        - Test writeFileContent() with malicious paths (should reject)
+        - Test writeFileContent() to agents folder (should reject)
+        - Test listFiles() with malicious paths (should reject)
+        - Verify all rejections produce proper error messages and logs
+      </idea>
+
+      <idea ac="all">
+        Security attack simulation suite
+        - Run comprehensive attack vectors from tech spec (lines 558-602)
+        - Document all attack patterns tested
+        - Verify 100% of attacks are blocked
+        - Generate security test report
+        - Compare results against OWASP path traversal patterns
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
