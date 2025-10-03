@@ -1,0 +1,192 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>2</storyId>
+    <title>Create API Route Structure</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-1.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>organized API route structure</iWant>
+    <soThat>I can build endpoints for chat, agents, and files</soThat>
+    <tasks>
+      - Create API type definitions (AC: 5)
+        - Create types/api.ts with ApiResponse interface
+        - Define ChatRequest and ChatResponse types
+        - Define Agent interface (id, name, description, path)
+        - Define FileNode interface (name, path, type, children)
+      - Create /api/chat route (AC: 1, 4, 5, 6)
+        - Create app/api/chat/route.ts with POST handler
+        - Implement request validation for agentId and message fields
+        - Return placeholder echo response with proper ApiResponse&lt;ChatResponse&gt; type
+        - Handle JSON parsing errors with proper error responses
+      - Create /api/agents route (AC: 2, 4, 5)
+        - Create app/api/agents/route.ts with GET handler
+        - Return placeholder Agent array (sample agent for testing)
+        - Use proper ApiResponse&lt;Agent[]&gt; type
+      - Create /api/files route (AC: 3, 4, 5)
+        - Create app/api/files/route.ts with GET handler
+        - Return empty FileNode array as placeholder
+        - Use proper ApiResponse&lt;FileNode[]&gt; type
+      - Test all API routes (AC: 1-7)
+        - Test POST /api/chat with curl or fetch
+        - Test GET /api/agents with curl or fetch
+        - Test GET /api/files with curl or fetch
+        - Verify proper JSON responses with success/error format
+        - Test validation errors (missing fields in POST /api/chat)
+        - Verify 404 handling for unknown routes like /api/unknown
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. /api/chat route created and responds to POST
+    2. /api/agents route created and responds to GET
+    3. /api/files route created and responds to GET
+    4. Each route returns proper JSON responses
+    5. Routes use TypeScript types for request/response
+    6. Basic request validation in place
+    7. 404 handling for unknown routes
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-1.md</path>
+        <title>Story 1.2: Create API Route Structure</title>
+        <section>Implementation Steps</section>
+        <snippet>Complete implementation guide with TypeScript code examples for all API routes (/api/chat, /api/agents, /api/files). Includes ApiResponse type definition, request validation patterns, and testing instructions with curl commands.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Story 1.2: Create API Route Structure</title>
+        <section>Epic 1: Backend Foundation &amp; Infrastructure</section>
+        <snippet>Story definition with acceptance criteria requiring organized API route structure for chat, agents, and files endpoints. Technical notes specify Next.js App Router pattern with route.ts files and TypeScript types.</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Data Fetching Approach</title>
+        <section>2.4</section>
+        <snippet>Frontend → API Routes → Business Logic pattern. Frontend fetches from API routes, API routes call business logic. Clean separation ensures UI doesn't touch file system or OpenAI directly. API routes provide security boundary.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Epic 1: Backend Foundation &amp; Infrastructure</title>
+        <section>Epics</section>
+        <snippet>Epic goal: Establish Next.js backend infrastructure to support OpenAI integration and frontend communication. Scope includes API route structure for chat, agents, and files with environment configuration and error handling.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/layout.tsx</path>
+        <kind>component</kind>
+        <symbol>RootLayout</symbol>
+        <lines>existing</lines>
+        <reason>Root layout component established in Story 1.1. API routes will integrate with this Next.js App Router structure.</reason>
+      </artifact>
+      <artifact>
+        <path>app/page.tsx</path>
+        <kind>component</kind>
+        <symbol>Home</symbol>
+        <lines>existing</lines>
+        <reason>Main page component established in Story 1.1. Will eventually consume the API routes created in this story.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <next>14.2.0</next>
+        <react>^18</react>
+        <react-dom>^18</react-dom>
+        <typescript>^5</typescript>
+        <types-node>^20</types-node>
+        <types-react>^18</types-react>
+        <types-react-dom>^18</types-react-dom>
+        <eslint>^8</eslint>
+        <eslint-config-next>14.2.0</eslint-config-next>
+        <tailwindcss>^3.4.0</tailwindcss>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Use Next.js 14 App Router API routes: app/api/[route]/route.ts pattern
+    - Use NextRequest and NextResponse types from next/server
+    - Implement proper try/catch for error handling
+    - Return appropriate HTTP status codes (200, 400, 404, 500)
+    - All API routes return consistent ApiResponse&lt;T&gt; JSON structure with success/data/error fields
+    - No implicit any types - all request/response shapes must be typed
+    - Prerequisites: Story 1.1 must be complete (Next.js initialized with TypeScript)
+    - API routes defined as route.ts files with exported HTTP method handlers (GET, POST, etc. as async functions)
+    - File-based routing: /app/api/chat/route.ts → /api/chat
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ApiResponse&lt;T&gt;</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface ApiResponse&lt;T = any&gt; { success: boolean; data?: T; error?: string; code?: number }</signature>
+      <path>types/api.ts</path>
+      <usage>Standard wrapper for all API route responses</usage>
+    </interface>
+    <interface>
+      <name>ChatRequest</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface ChatRequest { agentId: string; message: string; conversationId?: string }</signature>
+      <path>types/api.ts</path>
+      <usage>Request body type for POST /api/chat</usage>
+    </interface>
+    <interface>
+      <name>ChatResponse</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface ChatResponse { conversationId: string; message: { id: string; role: 'user' | 'assistant'; content: string; timestamp: string } }</signature>
+      <path>types/api.ts</path>
+      <usage>Response data type for POST /api/chat</usage>
+    </interface>
+    <interface>
+      <name>Agent</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface Agent { id: string; name: string; description: string; path: string }</signature>
+      <path>types/api.ts</path>
+      <usage>Agent model for GET /api/agents</usage>
+    </interface>
+    <interface>
+      <name>FileNode</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface FileNode { name: string; path: string; type: 'file' | 'directory'; children?: FileNode[] }</signature>
+      <path>types/api.ts</path>
+      <usage>File tree node for GET /api/files</usage>
+    </interface>
+    <interface>
+      <name>NextRequest</name>
+      <kind>Next.js Type</kind>
+      <signature>import { NextRequest } from 'next/server'</signature>
+      <path>next/server</path>
+      <usage>Request type for API route handlers</usage>
+    </interface>
+    <interface>
+      <name>NextResponse</name>
+      <kind>Next.js Type</kind>
+      <signature>import { NextResponse } from 'next/server'</signature>
+      <path>next/server</path>
+      <usage>Response builder for API route handlers</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Unit tests are optional for Epic 1 foundational stories. Manual testing with curl or browser fetch is acceptable for API route validation. Focus testing on: request validation (missing fields), proper JSON response format, correct HTTP status codes, and 404 handling for unknown routes. Testing infrastructure will be added in future epics per architecture plan.</standards>
+    <locations>No test directories exist yet. Future test locations will follow Next.js conventions: __tests__/, *.test.ts, or *.spec.ts files adjacent to implementation.</locations>
+    <ideas>
+      <idea ac="1">Test POST /api/chat with valid request body (agentId, message) - expect 200 and ApiResponse&lt;ChatResponse&gt;</idea>
+      <idea ac="1,6">Test POST /api/chat with missing agentId - expect 400 with error message</idea>
+      <idea ac="1,6">Test POST /api/chat with missing message - expect 400 with error message</idea>
+      <idea ac="2">Test GET /api/agents - expect 200 and ApiResponse&lt;Agent[]&gt; with placeholder sample agent</idea>
+      <idea ac="3">Test GET /api/files - expect 200 and ApiResponse&lt;FileNode[]&gt; with empty array</idea>
+      <idea ac="4">Verify all routes return JSON with success field</idea>
+      <idea ac="5">Verify TypeScript types compile without errors</idea>
+      <idea ac="7">Test GET /api/unknown-route - expect 404 response</idea>
+    </ideas>
+  </tests>
+</story-context>
