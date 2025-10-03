@@ -1,0 +1,153 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.2</storyId>
+    <title>File Operation Tools Implementation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to implement the core file operation tools (read_file, write_file, list_files)</iWant>
+    <soThat>OpenAI function calls can execute actual file operations required by BMAD agents</soThat>
+    <tasks>
+      - Create File Reader module (lib/files/reader.ts)
+      - Create File Writer module (lib/files/writer.ts)
+      - Create File Lister module (lib/files/lister.ts)
+      - Create Path Security module (lib/files/security.ts)
+      - Update Environment Configuration (verify AGENTS_PATH, OUTPUT_PATH)
+      - Write comprehensive unit tests for all modules
+      - Integration testing for all file operations
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">read_file() reads files from agents and output folders (AC-E2-04)</ac>
+    <ac id="2">write_file() writes files to output folder with auto-mkdir (AC-E2-05)</ac>
+    <ac id="3">list_files() returns directory contents as FileNode array (AC-E2-06)</ac>
+    <ac id="4">All operations complete in &lt; 100ms for files under 1MB</ac>
+    <ac id="5">Errors handled gracefully (ENOENT, EACCES, ENOSPC)</ac>
+    <ac id="6">File operations use async/await with fs/promises</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-2.md" title="Tech Spec: Epic 2 - OpenAI Integration with File Operations" section="Story 2.2: File Operation Tools Implementation">
+        Implementation patterns for file reader, writer, and lister. Dual-folder search pattern (try agents first, fallback to output). Path security validation. Performance requirements (&lt;100ms for &lt;1MB files). Error handling for ENOENT, EACCES, ENOSPC.
+      </doc>
+      <doc path="docs/prd.md" title="Agent Orchestrator PRD" section="FR-6: File Operation Tools">
+        read_file(path) - Load instruction/workflow files on-demand. write_file(path, content) - Create output files with directory preservation. list_files(directory) - Browse available files. Auto-create parent directories. Restrict operations to authorized paths (agents for reads, output for writes).
+      </doc>
+      <doc path="docs/stories/story-2.1.md" title="Story 2.1: OpenAI SDK Integration" section="Senior Developer Review - Security Notes">
+        Advisory recommendations: Add path validation constraints to function tool schemas. Implement path security validation before file operations. Use path.resolve() + prefix checking to block directory traversal. Add Zod schemas for function call argument validation.
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Section 2.1: Modular Monolith Pattern">
+        File operations module in /lib/files per established conventions. Async/await throughout for consistency with Next.js patterns. Clear separation between modules (security, reader, writer, lister).
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 2: OpenAI Integration - Story 2.2">
+        Acceptance criteria and task breakdown for file operations implementation.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="lib/utils/env.ts" kind="module" symbol="env.AGENTS_PATH, env.OUTPUT_PATH" lines="54-64" reason="Environment configuration already includes AGENTS_PATH and OUTPUT_PATH with defaults. File operations will use these constants."/>
+      <file path="lib/openai/function-tools.ts" kind="module" symbol="READ_FILE_TOOL, WRITE_FILE_TOOL, LIST_FILES_TOOL" lines="17-89" reason="Function tool schemas already defined in Story 2.1. File operation implementations in this story will execute these function calls."/>
+      <file path="lib/utils/errors.ts" kind="module" symbol="error handling patterns" lines="1-50" reason="Existing error handling utilities for consistent error responses. File operations should follow same patterns for ENOENT, EACCES, ENOSPC errors."/>
+      <file path="types/index.ts" kind="types" symbol="FileNode interface" lines="TBD" reason="Need to define FileNode interface for list_files return type with properties: name, path, type, size, children?"/>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" usage="Framework - provides built-in Node.js runtime"/>
+        <package name="openai" version="^4.104.0" usage="OpenAI SDK - function calling integration (from Story 2.1)"/>
+        <builtin name="fs/promises" usage="Async file operations (readFile, writeFile, readdir, stat, mkdir)"/>
+        <builtin name="path" usage="Path manipulation and validation (join, dirname, resolve, normalize, isAbsolute)"/>
+        <builtin name="crypto" usage="UUID generation (for conversation IDs, not directly used in file ops but imported in utils)"/>
+      </node>
+      <testing>
+        <package name="jest" version="^30.2.0" usage="Unit test framework"/>
+        <package name="@types/jest" version="^30.0.0" usage="TypeScript types for Jest"/>
+        <package name="ts-jest" version="^29.4.4" usage="TypeScript support for Jest"/>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security" priority="critical">
+      All file paths MUST be validated through security module before any fs operation. Block directory traversal (../, absolute paths outside allowed dirs). Use path.normalize() and path.resolve() for path validation. Symbolic links must be resolved and validated.
+    </constraint>
+    <constraint type="security" priority="critical">
+      Write operations MUST be restricted to OUTPUT_PATH only. Writes to AGENTS_PATH must be rejected with clear error. Read operations allowed in AGENTS_PATH (read-only) and OUTPUT_PATH.
+    </constraint>
+    <constraint type="architecture" priority="high">
+      Follow modular monolith pattern. Create separate modules: lib/files/reader.ts, lib/files/writer.ts, lib/files/lister.ts, lib/files/security.ts. Each module has single responsibility.
+    </constraint>
+    <constraint type="performance" priority="high">
+      File read/write operations must complete in &lt;100ms for files under 1MB. Use performance.now() for timing measurements in tests. Log slow operations for monitoring.
+    </constraint>
+    <constraint type="error-handling" priority="high">
+      Graceful error handling for all file system errors: ENOENT (file not found) → user-friendly message, EACCES (permission denied) → clear error, ENOSPC (disk full) → actionable message. Log detailed errors server-side only.
+    </constraint>
+    <constraint type="testing" priority="high">
+      Comprehensive unit test coverage: Test each module independently. Test security validations (directory traversal, absolute paths, null bytes). Test error handling for all failure modes. Test performance requirements.
+    </constraint>
+    <constraint type="async" priority="medium">
+      ALL file operations MUST use async/await with fs/promises. No synchronous fs operations (no fs.readFileSync, fs.writeFileSync). Ensures non-blocking I/O consistent with Next.js patterns.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface kind="type" name="FileNode" signature="interface FileNode { name: string; path: string; type: 'file' | 'directory'; size?: number; children?: FileNode[]; }" path="types/index.ts" reason="Return type for list_files function. Represents file/directory metadata with optional recursive children."/>
+    <interface kind="function" name="validatePath" signature="function validatePath(relativePath: string, baseDir: string): string" path="lib/files/security.ts" reason="Validates path is within allowed base directory. Returns absolute path if valid, throws error if invalid (directory traversal, absolute path, null bytes)."/>
+    <interface kind="function" name="validateWritePath" signature="function validateWritePath(relativePath: string): string" path="lib/files/security.ts" reason="Validates write path is in OUTPUT_PATH and NOT in AGENTS_PATH. Returns absolute path if valid, throws error if attempting to write to agents folder."/>
+    <interface kind="function" name="readFileContent" signature="async function readFileContent(relativePath: string): Promise&lt;string&gt;" path="lib/files/reader.ts" reason="Reads file from agents or output folder. Dual-folder search: try AGENTS_PATH first, fallback to OUTPUT_PATH. Returns file contents as UTF-8 string."/>
+    <interface kind="function" name="writeFileContent" signature="async function writeFileContent(relativePath: string, content: string): Promise&lt;void&gt;" path="lib/files/writer.ts" reason="Writes file to OUTPUT_PATH only. Auto-creates parent directories if needed. Validates path through validateWritePath before writing."/>
+    <interface kind="function" name="listFiles" signature="async function listFiles(relativePath: string, recursive?: boolean): Promise&lt;FileNode[]&gt;" path="lib/files/lister.ts" reason="Lists files/directories at path. Dual-folder search (agents or output). Returns FileNode array. Supports recursive listing via optional parameter."/>
+    <interface kind="constant" name="env.AGENTS_PATH" signature="get AGENTS_PATH(): string" path="lib/utils/env.ts" reason="Environment variable for agents directory path. Default: ./agents. Used by file operations for read access."/>
+    <interface kind="constant" name="env.OUTPUT_PATH" signature="get OUTPUT_PATH(): string" path="lib/utils/env.ts" reason="Environment variable for output directory path. Default: ./output. Used by file operations for write access."/>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Unit tests using Jest framework with ts-jest for TypeScript support. Test files located in __tests__ subdirectories alongside source files. Follow existing test patterns from lib/openai/__tests__ and lib/utils/__tests__. Mock file system operations where appropriate. Use performance.now() for timing tests to verify &lt;100ms requirement. Test security validations comprehensively with known attack patterns.
+    </standards>
+
+    <locations>
+      lib/files/__tests__/reader.test.ts
+      lib/files/__tests__/writer.test.ts
+      lib/files/__tests__/lister.test.ts
+      lib/files/__tests__/security.test.ts
+    </locations>
+
+    <ideas>
+      <test ac="1">Test read_file from agents folder (success case)</test>
+      <test ac="1">Test read_file from output folder (success case)</test>
+      <test ac="1">Test read_file dual-folder search (try agents, fallback to output)</test>
+      <test ac="1">Test read_file handles ENOENT gracefully (file not found)</test>
+      <test ac="1">Test read_file handles EACCES gracefully (permission denied)</test>
+      <test ac="2">Test write_file creates file in output folder</test>
+      <test ac="2">Test write_file auto-creates parent directories (mkdir recursive)</test>
+      <test ac="2">Test write_file rejects writes to agents folder (validateWritePath)</test>
+      <test ac="2">Test write_file handles ENOSPC gracefully (disk full)</test>
+      <test ac="3">Test list_files returns FileNode array with correct structure</test>
+      <test ac="3">Test list_files distinguishes files vs directories (type field)</test>
+      <test ac="3">Test list_files includes size for files, optional for directories</test>
+      <test ac="3">Test list_files recursive mode includes children</test>
+      <test ac="3">Test list_files non-recursive mode omits children</test>
+      <test ac="4">Test file operations complete &lt;100ms for 500KB file</test>
+      <test ac="4">Test file operations complete &lt;100ms for 1MB file</test>
+      <test ac="4">Test performance logging for slow operations</test>
+      <test ac="5">Test all error codes handled: ENOENT, EACCES, ENOSPC</test>
+      <test ac="5">Test error messages are user-friendly (no stack traces)</test>
+      <test ac="6">Test all operations use async/await (no sync calls)</test>
+      <test ac="all">Security: Test directory traversal blocked (../../etc/passwd)</test>
+      <test ac="all">Security: Test absolute paths blocked (/etc/passwd, C:\Windows)</test>
+      <test ac="all">Security: Test null bytes rejected (file\0.txt)</test>
+      <test ac="all">Security: Test symbolic link resolution and validation</test>
+      <test ac="all">Integration: Test complete read-write-list workflow</test>
+    </ideas>
+  </tests>
+</story-context>
