@@ -1,0 +1,153 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>6</storyId>
+    <title>Project Structure and Organization</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-1.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer</asA>
+    <iWant>clear project structure and organization</iWant>
+    <soThat>code is maintainable and follows Next.js best practices</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,4">Create folder structure</task>
+      <task id="2" ac="6">Create index files for clean imports</task>
+      <task id="3" ac="5,7">Create README.md with project documentation</task>
+      <task id="4" ac="6">Verify clean imports work</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">/app folder for Next.js pages and API routes</criterion>
+    <criterion id="2">/lib folder for utilities and helpers</criterion>
+    <criterion id="3">/types folder for TypeScript types</criterion>
+    <criterion id="4">/components folder for React components (for later)</criterion>
+    <criterion id="5">README.md with project overview and setup instructions</criterion>
+    <criterion id="6">Clear separation between frontend and backend code</criterion>
+    <criterion id="7">Folder structure documented in README</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 11: Component and Integration Overview</section>
+        <snippet>Defines the complete module structure including /lib, /components, /types folders with specific organization patterns for business logic, UI components, and type definitions.</snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 13.2: File Organization</section>
+        <snippet>Provides detailed folder structure with explanations for each directory purpose. Critical folders: /lib for framework-agnostic business logic, /components organized by feature, /app/api for Next.js API routes.</snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 14: Proposed Source Tree</section>
+        <snippet>Complete source tree showing all directories and files including: app/, components/{chat,file-viewer,navigation,ui,providers}, lib/{openai,agents,files,utils}, types/{agent.ts,message.ts,file.ts,api.ts}.</snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-1.md</path>
+        <title>Tech Spec: Epic 1 - Backend Foundation & Infrastructure</title>
+        <section>Story 1.6: Project Structure and Organization</section>
+        <snippet>Implementation steps: Create folder structure (lib/utils, types, components subdirectories), create README.md with project overview, setup instructions, and architecture reference. Create index files for clean imports (lib/utils/index.ts, types/index.ts).</snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 1.6: Project Structure and Organization</section>
+        <snippet>Technical notes: Follow Next.js 14 App Router conventions, create index files for clean imports, document architectural decisions, keep structure simple but scalable.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/errors.ts</path>
+        <kind>module</kind>
+        <symbol>AppError, ValidationError, NotFoundError, handleApiError</symbol>
+        <lines>1-56</lines>
+        <reason>Existing error handling module that will be exported via lib/utils/index.ts for clean imports</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/env.ts</path>
+        <kind>module</kind>
+        <symbol>validateEnv, env</symbol>
+        <lines>1-23</lines>
+        <reason>Existing environment validation module that will be exported via lib/utils/index.ts for clean imports</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/api.ts</path>
+        <kind>module</kind>
+        <symbol>ApiResponse, ChatRequest, ChatResponse, Agent, FileNode</symbol>
+        <lines>1-38</lines>
+        <reason>Existing API type definitions that will be exported via types/index.ts for clean imports</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/__tests__/errors.test.ts</path>
+        <kind>test</kind>
+        <symbol>AppError, ValidationError, NotFoundError tests</symbol>
+        <lines>1-94</lines>
+        <reason>Example test file demonstrating the __tests__ subdirectory pattern for organizing tests alongside source code</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="next" version="14.2.0" />
+        <dependency name="react" version="^18" />
+        <dependency name="react-dom" version="^18" />
+        <dependency name="typescript" version="^5" devDependency="true" />
+        <dependency name="eslint" version="^8" devDependency="true" />
+        <dependency name="eslint-config-next" version="14.2.0" devDependency="true" />
+        <dependency name="tailwindcss" version="^3.4.0" devDependency="true" />
+        <dependency name="jest" version="^30.2.0" devDependency="true" />
+        <dependency name="@testing-library/react" version="^16.3.0" devDependency="true" />
+        <dependency name="@testing-library/jest-dom" version="^6.9.1" devDependency="true" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Follow Next.js 14 App Router conventions with app/ directory for pages and API routes</constraint>
+    <constraint>Keep business logic in /lib framework-agnostic (no Next.js/React dependencies) for testability</constraint>
+    <constraint>Organize components by feature area (chat, file-viewer, navigation, ui, providers) not by component type</constraint>
+    <constraint>Use index files for clean exports: lib/utils/index.ts and types/index.ts to enable imports from @/lib/utils and @/types</constraint>
+    <constraint>Create subdirectories for test files: __tests__ alongside source code (e.g., lib/utils/__tests__/)</constraint>
+    <constraint>Maintain separation between frontend (components, app/page.tsx) and backend (app/api, lib) code</constraint>
+    <constraint>Use TypeScript path alias @/ configured in tsconfig.json for absolute imports</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>lib/utils/index.ts</name>
+      <kind>module-export</kind>
+      <signature>export * from './env'\nexport * from './errors'</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/index.ts</path>
+    </interface>
+    <interface>
+      <name>types/index.ts</name>
+      <kind>module-export</kind>
+      <signature>export * from './api'</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/index.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Jest is configured with TypeScript support (ts-jest). Tests are organized using the __tests__ subdirectory pattern alongside source code. Use @testing-library/react for component tests (later epics). Test files use .test.ts or .test.tsx extensions. Run tests with `npm test` or `npm run test:watch`.
+    </standards>
+    <locations>
+      <location>lib/**/__tests__/**/*.test.ts</location>
+      <location>components/**/__tests__/**/*.test.tsx (for future component tests)</location>
+    </locations>
+    <ideas>
+      <idea ac="1,2,3,4">Manual verification: Create directories and verify they exist using ls or file explorer</idea>
+      <idea ac="6">Unit test: Verify index files export expected modules by importing and checking exports</idea>
+      <idea ac="6">Integration test: Verify clean imports work by creating a test file that imports from @/lib/utils and @/types</idea>
+      <idea ac="5,7">Manual verification: Open README.md and verify it contains project overview, setup instructions, and folder structure diagram</idea>
+    </ideas>
+  </tests>
+</story-context>

@@ -1,6 +1,6 @@
 # Story 1.3: Environment Configuration
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

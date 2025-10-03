@@ -1,6 +1,6 @@
 # Story 1.4: Error Handling Middleware
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

@@ -1,0 +1,239 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>1.5</storyId>
+    <title>Basic Health Check Endpoint</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-1.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>a developer</asA>
+    <iWant>a health check endpoint</iWant>
+    <soThat>I can verify the server is running and monitor uptime</soThat>
+    <tasks>
+      - [ ] Create health check API route (AC: 1, 2, 3)
+        - [ ] Create `/app/api/health/route.ts` file
+        - [ ] Implement GET handler that returns 200 status
+        - [ ] Include status: "ok" in response body
+        - [ ] Include timestamp in ISO8601 format
+        - [ ] Add uptime and environment info to response
+      - [ ] Configure response caching behavior (AC: 4)
+        - [ ] Set `dynamic = 'force-dynamic'` to disable caching
+        - [ ] Ensure endpoint responds in &lt; 100ms
+        - [ ] Test response time with curl
+      - [ ] Test health check endpoint (AC: 5, 6)
+        - [ ] Verify endpoint accessible without authentication
+        - [ ] Test with curl: GET http://localhost:3000/api/health
+        - [ ] Verify response format matches specification
+        - [ ] Document endpoint for future Docker healthcheck configuration
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. `/api/health` endpoint created
+    2. Returns 200 OK when server is healthy
+    3. Response includes { status: "ok", timestamp: ISO8601 }
+    4. Endpoint responds quickly (&lt; 100ms)
+    5. Can be called without authentication
+    6. Used for Docker health checks later
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-1.md</path>
+        <title>Tech Spec: Epic 1 - Backend Foundation &amp; Infrastructure</title>
+        <section>Story 1.5: Basic Health Check Endpoint</section>
+        <snippet>
+          **Endpoint Specification:**
+          - Route: `/api/health`
+          - Method: GET
+          - Response: JSON with status, timestamp, uptime, environment
+          - Status Code: Always 200 OK (when server is running)
+          - Performance: &lt; 100ms response time
+          - Caching: Disabled via `dynamic = 'force-dynamic'`
+
+          **Future Usage:**
+          - Docker HEALTHCHECK directive (Epic 5, Story 5.6)
+          - Monitoring and uptime tracking
+          - Deployment verification (confirm server started successfully)
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>API Route Structure</section>
+        <snippet>
+          **API Route Structure:**
+          /app/api/
+            ├── agents/route.ts      # GET /api/agents
+            ├── chat/route.ts        # POST /api/chat
+            ├── files/route.ts       # GET /api/files
+            ├── files/[path]/route.ts # GET /api/files/[path]
+            └── health/route.ts      # GET /api/health
+
+          Next.js App Router with TypeScript
+          Server Components + Client Components hybrid rendering
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-8: Observability</section>
+        <snippet>
+          Health check endpoints for monitoring and uptime verification.
+          Docker HEALTHCHECK support for container orchestration.
+          Simple server status verification without authentication.
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST handler</symbol>
+        <lines>1-54</lines>
+        <reason>Example Next.js API route pattern using NextResponse.json() and proper TypeScript types - demonstrates the structure to follow for health check endpoint</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/agents/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>GET handler</symbol>
+        <lines>1-38</lines>
+        <reason>Example GET endpoint pattern - health check will follow similar structure but simpler (no error handling middleware needed)</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/errors.ts</path>
+        <kind>utility</kind>
+        <symbol>handleApiError, AppError classes</symbol>
+        <lines>1-95</lines>
+        <reason>Error handling utilities used by other API routes - health check intentionally does NOT use these (health check should never throw errors per story requirements)</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/api.ts</path>
+        <kind>types</kind>
+        <symbol>ApiResponse interface</symbol>
+        <lines>1-57</lines>
+        <reason>TypeScript API types - health check response should be typed, though it won't use the ApiResponse wrapper (direct JSON response)</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <nodejs>
+        <package name="next" version="14.2.0">Framework providing API route functionality and NextResponse</package>
+        <package name="typescript" version="^5">Type safety for route handler implementation</package>
+        <package name="react" version="^18">Required peer dependency for Next.js</package>
+        <package name="react-dom" version="^18">Required peer dependency for Next.js</package>
+      </nodejs>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <rule>Use Next.js App Router route handler pattern with async GET function</rule>
+      <source>solution-architecture.md - API Route Structure section</source>
+    </constraint>
+    <constraint>
+      <rule>Return NextResponse.json() for JSON responses with proper TypeScript typing</rule>
+      <source>Established pattern in app/api/chat/route.ts and app/api/agents/route.ts</source>
+    </constraint>
+    <constraint>
+      <rule>Set `export const dynamic = 'force-dynamic'` to disable caching for health check</rule>
+      <source>story-1.5.md Dev Notes - ensures fresh health status on every request</source>
+    </constraint>
+    <constraint>
+      <rule>Health check must NEVER throw errors - if server can respond, it's "healthy"</rule>
+      <source>story-1.5.md Lessons from Previous Stories - alignment note</source>
+    </constraint>
+    <constraint>
+      <rule>Do NOT use error handler middleware (handleApiError) for health check endpoint</rule>
+      <source>story-1.5.md Dev Notes - health check is exception to error handling pattern</source>
+    </constraint>
+    <constraint>
+      <rule>No authentication check required - this is a public endpoint</rule>
+      <source>story-1.5.md AC #5 and alignment notes</source>
+    </constraint>
+    <constraint>
+      <rule>Keep implementation simple with no business logic - just server status confirmation</rule>
+      <source>story-1.5.md Dev Notes - health check pattern</source>
+    </constraint>
+    <constraint>
+      <rule>Response must be &lt; 100ms (performance requirement)</rule>
+      <source>story-1.5.md AC #4 and tech-spec-epic-1.md</source>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>NextResponse.json()</name>
+      <kind>function</kind>
+      <signature>NextResponse.json(body: any, init?: ResponseInit): NextResponse</signature>
+      <path>next/server</path>
+      <usage>Return JSON response with status code - use for health check response</usage>
+    </interface>
+    <interface>
+      <name>process.uptime()</name>
+      <kind>function</kind>
+      <signature>process.uptime(): number</signature>
+      <path>Node.js built-in</path>
+      <usage>Returns server uptime in seconds - include in health check response</usage>
+    </interface>
+    <interface>
+      <name>process.env.NODE_ENV</name>
+      <kind>variable</kind>
+      <signature>string | undefined</signature>
+      <path>Node.js built-in</path>
+      <usage>Current environment (development/production) - include in health check response</usage>
+    </interface>
+    <interface>
+      <name>Date.prototype.toISOString()</name>
+      <kind>method</kind>
+      <signature>toISOString(): string</signature>
+      <path>JavaScript built-in</path>
+      <usage>Returns ISO8601 formatted timestamp - required in health check response per AC #3</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with ts-jest for TypeScript support
+      Test location: Adjacent __tests__ directories following Next.js conventions
+      Test file naming: [module-name].test.ts
+      Test structure: describe/it blocks with clear test descriptions
+      Mocking: Use jest.spyOn for console.error in API route tests to prevent output pollution
+
+      Health check testing approach:
+      - Manual testing with curl for response time verification
+      - No unit tests required for health check (too simple, no business logic)
+      - Integration testing will verify endpoint availability in later stories
+    </standards>
+    <locations>
+      - lib/utils/__tests__/*.test.ts (existing pattern for utility tests)
+      - app/api/**/__tests__/*.test.ts (pattern for API route tests, not used for health check)
+      - Manual testing via curl commands (primary testing method for health check)
+    </locations>
+    <ideas>
+      <test ac="1,2,3">
+        Manual Test: curl http://localhost:3000/api/health
+        Verify response contains { status: "ok", timestamp: "&lt;ISO8601&gt;", uptime: &lt;number&gt;, environment: "development" }
+        Verify HTTP 200 status code
+      </test>
+      <test ac="4">
+        Manual Test: curl -w "@curl-format.txt" -o /dev/null -s http://localhost:3000/api/health
+        Verify total response time &lt; 100ms
+        Note: May need to create curl-format.txt with timing template or use -w "%{time_total}\n"
+      </test>
+      <test ac="5">
+        Manual Test: Call endpoint without any authentication headers
+        Verify endpoint responds successfully (no 401 Unauthorized)
+      </test>
+      <test ac="6">
+        Documentation Test: Confirm endpoint is documented in story completion notes
+        Verify response format matches Docker HEALTHCHECK requirements (simple 200 OK check)
+        Future Epic 5 Story 5.6 will implement actual Docker HEALTHCHECK configuration
+      </test>
+    </ideas>
+  </tests>
+</story-context>
