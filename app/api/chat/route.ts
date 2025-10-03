@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse, ChatRequest, ChatResponse } from '@/types/api';
+import { handleApiError, ValidationError } from '@/lib/utils/errors';
 
 /**
  * POST /api/chat
  * Handles chat messages with agent orchestration
  *
  * Story 1.2: API Route Structure
+ * Story 1.4: Error Handling Middleware
  * - Validates required fields (agentId, message)
  * - Returns placeholder echo response
- * - Proper error handling with ApiResponse wrapper
+ * - Uses centralized error handling with ValidationError and handleApiError
  */
 export async function POST(request: NextRequest) {
   try {
@@ -17,25 +19,11 @@ export async function POST(request: NextRequest) {
 
     // Validate required fields
     if (!body.agentId || typeof body.agentId !== 'string') {
-      return NextResponse.json<ApiResponse<never>>(
-        {
-          success: false,
-          error: 'Missing or invalid required field: agentId',
-          code: 400,
-        },
-        { status: 400 }
-      );
+      throw new ValidationError('Missing or invalid required field: agentId');
     }
 
     if (!body.message || typeof body.message !== 'string') {
-      return NextResponse.json<ApiResponse<never>>(
-        {
-          success: false,
-          error: 'Missing or invalid required field: message',
-          code: 400,
-        },
-        { status: 400 }
-      );
+      throw new ValidationError('Missing or invalid required field: message');
     }
 
     // Generate placeholder response
@@ -60,14 +48,6 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    // Handle JSON parsing errors and other exceptions
-    return NextResponse.json<ApiResponse<never>>(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to process chat request',
-        code: 500,
-      },
-      { status: 500 }
-    );
+    return handleApiError(error);
   }
 }

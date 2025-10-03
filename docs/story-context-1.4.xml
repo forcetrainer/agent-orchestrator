@@ -1,0 +1,140 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>1</epicId>
+    <storyId>4</storyId>
+    <title>Error Handling Middleware</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-02</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-1.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>consistent error handling across all API routes</iWant>
+    <soThat>errors are logged properly and returned in a standard format to clients</soThat>
+    <tasks>
+      <task id="1" status="pending">Create error handling utilities (AC: 1, 5)</task>
+      <task id="2" status="pending">Implement error logging (AC: 3, 7)</task>
+      <task id="3" status="pending">Update existing API routes to use error handler (AC: 2, 4, 6)</task>
+      <task id="4" status="pending">Test error handling across all scenarios (AC: 3, 4, 5, 6, 7)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Error handler utility function created</criterion>
+    <criterion id="2">All API routes use error handler</criterion>
+    <criterion id="3">Errors logged to console with stack traces</criterion>
+    <criterion id="4">Errors returned as JSON with standard format</criterion>
+    <criterion id="5">Different error types handled (validation, not found, server error)</criterion>
+    <criterion id="6">HTTP status codes set correctly (400, 404, 500)</criterion>
+    <criterion id="7">Error messages are user-friendly (no stack traces in response)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-1.md" title="Tech Spec: Epic 1 - Backend Foundation" section="Story 1.4: Error Handling Middleware">
+        <snippet>Provides complete implementation steps for creating lib/utils/errors.ts with AppError, ValidationError, NotFoundError classes. Includes handleApiError() function that logs full error server-side (error, stack, timestamp), determines status code (AppError.statusCode or 500), and returns user-friendly message without stack traces. Standard response format: { success: false, error: string, code: number }</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Agent Orchestrator - Epic Breakdown" section="Story 1.4: Error Handling Middleware">
+        <snippet>Defines acceptance criteria and technical notes. Specifies creation of lib/errorHandler.ts utility, wrapping async handlers with try/catch, and returning { success: false, error: message, code: status } format. Emphasizes logging full error details server-side only.</snippet>
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture Document" section="Error Handling Patterns">
+        <snippet>Architecture emphasizes minimal dependencies and use of Next.js/Node.js built-ins. Error handling should follow Next.js API route best practices with proper ApiResponse wrapper type for consistency.</snippet>
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Quality Attributes">
+        <snippet>System should provide clear error messages to users while maintaining security by not exposing internal implementation details or stack traces in client responses.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="types/api.ts" kind="types" symbol="ApiResponse" lines="8-13" reason="Standard API response interface that all error responses must conform to">
+        <snippet>export interface ApiResponse&lt;T = any&gt; {
+  success: boolean;
+  data?: T;
+  error?: string;
+  code?: number;
+}</snippet>
+      </artifact>
+      <artifact path="app/api/chat/route.ts" kind="route" symbol="POST" lines="13-73" reason="Existing API route that needs to be updated to use centralized error handler">
+        <snippet>Current error handling is inline. Story requires replacing inline validation errors (lines 20-38) and catch block error handling (lines 62-72) with ValidationError and handleApiError() pattern.</snippet>
+      </artifact>
+      <artifact path="app/api/agents/route.ts" kind="route" symbol="GET" lines="12-41" reason="Existing API route that needs to be updated to use centralized error handler">
+        <snippet>Current error handling in catch block (lines 31-39) needs to be replaced with handleApiError() for consistency.</snippet>
+      </artifact>
+      <artifact path="app/api/files/route.ts" kind="route" symbol="GET" lines="12-34" reason="Existing API route that needs to be updated to use centralized error handler">
+        <snippet>Current error handling in catch block (lines 24-32) needs to be replaced with handleApiError() for consistency.</snippet>
+      </artifact>
+      <artifact path="lib/utils/env.ts" kind="utility" symbol="validateEnv" lines="15-30" reason="Example of proper error handling pattern - throws Error with clear message, similar approach for error utilities">
+        <snippet>Shows pattern for validation errors with clear messages. Error handler utilities should follow similar approach for throwing typed errors.</snippet>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">Built-in NextResponse for API route responses</package>
+        <package name="typescript" version="^5">Type safety for error classes and handleApiError function</package>
+        <package name="@types/node" version="^20">Node.js type definitions including Error and console</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture" priority="critical">
+      Error handler must use Next.js built-in NextResponse and follow API route patterns. No external error handling libraries (like express-async-errors or boom) should be added. Keep dependencies minimal per project philosophy.
+    </constraint>
+    <constraint type="security" priority="critical">
+      Stack traces and internal error details MUST NOT be exposed to client responses. Only log full error context server-side via console.error. Client responses should contain user-friendly messages only.
+    </constraint>
+    <constraint type="consistency" priority="high">
+      All API routes must use the same error handling pattern. Every route should wrap logic in try/catch and call handleApiError(error) in the catch block. All errors must conform to ApiResponse&lt;never&gt; type.
+    </constraint>
+    <constraint type="http-status" priority="high">
+      HTTP status codes must be semantically correct: 400 for client validation errors, 404 for not found, 500 for server errors. The status code must be set both in the ApiResponse.code field and the NextResponse status option.
+    </constraint>
+    <constraint type="logging" priority="medium">
+      Error logs should include: error object, stack trace (if available), timestamp, and request context where applicable. Use console.error for server-side logging (sufficient for MVP, structured logging can be added later).
+    </constraint>
+    <constraint type="naming" priority="medium">
+      Follow existing project naming conventions: lib/utils/ for utilities, PascalCase for classes (AppError, ValidationError, NotFoundError), camelCase for functions (handleApiError).
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ApiResponse" kind="type" signature="interface ApiResponse<T = any> { success: boolean; data?: T; error?: string; code?: number }" path="types/api.ts">
+      Standard API response wrapper that all error responses must conform to. Error responses should have success: false, error: string message, and code: number status.
+    </interface>
+    <interface name="NextResponse" kind="class" signature="NextResponse.json<T>(body: T, options?: { status: number })" path="next/server">
+      Next.js built-in response class for API routes. Use NextResponse.json() to return JSON responses with proper status codes.
+    </interface>
+    <interface name="handleApiError" kind="function" signature="handleApiError(error: unknown): NextResponse<ApiResponse<never>>" path="lib/utils/errors.ts">
+      Central error handling function to be created. Takes any error, logs it server-side, determines appropriate status code, and returns standardized error response.
+    </interface>
+    <interface name="AppError" kind="class" signature="class AppError extends Error { constructor(statusCode: number, message: string, isOperational = true) }" path="lib/utils/errors.ts">
+      Base error class to be created. Extends Error with statusCode and isOperational properties for operational vs programmer errors.
+    </interface>
+    <interface name="ValidationError" kind="class" signature="class ValidationError extends AppError { constructor(message: string) }" path="lib/utils/errors.ts">
+      Validation error class to be created. Always returns 400 status code for client-side validation failures.
+    </interface>
+    <interface name="NotFoundError" kind="class" signature="class NotFoundError extends AppError { constructor(message: string) }" path="lib/utils/errors.ts">
+      Not found error class to be created. Always returns 404 status code for missing resources.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Epic 1 focuses on foundational setup. Unit tests for error handling utilities are optional for MVP but recommended. Manual testing is sufficient: verify validation errors return 400, not found returns 404, server errors return 500, stack traces appear in logs but not responses. Integration tests can be added in Epic 6 (Polish phase).
+    </standards>
+    <locations>
+      If unit tests are created, place them in: lib/utils/__tests__/errors.test.ts following Next.js testing conventions.
+    </locations>
+    <ideas>
+      <idea acId="1,5">Test AppError class stores statusCode and message correctly</idea>
+      <idea acId="1,5">Test ValidationError extends AppError with 400 status</idea>
+      <idea acId="1,5">Test NotFoundError extends AppError with 404 status</idea>
+      <idea acId="3,7">Test handleApiError logs full error with stack trace server-side</idea>
+      <idea acId="4,6">Test handleApiError returns ApiResponse with correct status code</idea>
+      <idea acId="7">Test handleApiError returns user-friendly message without stack trace in response</idea>
+      <idea acId="2,4,6">Test /api/chat route uses ValidationError for missing fields (integration test)</idea>
+      <idea acId="2,4,6">Test /api/agents route uses handleApiError in catch block (integration test)</idea>
+    </ideas>
+  </tests>
+</story-context>
