@@ -1,9 +1,9 @@
 # Tech Spec: Epic 2 - OpenAI Integration with File Operations
 
 **Epic:** OpenAI Integration with File Operations
-**Stories:** 2.1 - 2.6 (6 stories)
+**Stories:** 2.1 - 2.6 (7 stories: 2.1, 2.2, 2.3, 2.3.5, 2.4, 2.5, 2.6)
 **Dependencies:** Epic 1 (Backend Foundation)
-**Estimated Effort:** 2-3 days
+**Estimated Effort:** 2-3 days (includes 1hr smoke test in 2.3.5)
 
 ---
 
@@ -600,6 +600,236 @@ try {
 }
 "
 ```
+
+---
+
+### Story 2.3.5: OpenAI Integration Smoke Test
+
+**Purpose:** Risk mitigation story to validate that Stories 2.1-2.3 integrate correctly with OpenAI's API before building additional layers (agent discovery, conversation state). This prevents costly rework if function tool schemas or SDK integration have issues.
+
+**Acceptance Criteria:**
+1. ✅ OpenAI API connection succeeds with valid API key (AC-E2-21)
+2. ✅ Function tool schemas accepted by OpenAI (no validation errors) (AC-E2-22)
+3. ✅ At least one function call executes successfully (read_file) (AC-E2-23)
+4. ✅ Function execution result returns to OpenAI correctly (AC-E2-24)
+5. ✅ Test completes in < 5 seconds (validates performance) (AC-E2-25)
+6. ✅ Test script documented for future regression testing (AC-E2-26)
+
+**Implementation Steps:**
+
+1. **Create Test Data:**
+```bash
+# Create test file for read_file function
+mkdir -p agents/smoke-test
+cat > agents/smoke-test/test.md << 'EOF'
+# Smoke Test File
+
+This file is used to validate OpenAI integration.
+EOF
+```
+
+2. **Create Smoke Test Script (`scripts/test-openai-smoke.ts`):**
+```typescript
+import { getOpenAIClient } from '@/lib/openai/client'
+import { FUNCTION_TOOLS } from '@/lib/openai/function-tools'
+import { readFileContent } from '@/lib/files/reader'
+
+/**
+ * Smoke test to validate OpenAI integration (Stories 2.1-2.3)
+ *
+ * This test validates:
+ * - OpenAI SDK connection works
+ * - Function tool schemas are accepted
+ * - Function calling executes correctly
+ * - Results return to OpenAI properly
+ */
+async function smokeTest() {
+  console.log('[smoke-test] Starting OpenAI integration smoke test...\n')
+  const startTime = performance.now()
+
+  try {
+    // Step 1: Validate client connection
+    console.log('[1/4] Testing OpenAI client initialization...')
+    const client = getOpenAIClient()
+    console.log('✓ OpenAI client initialized\n')
+
+    // Step 2: Make initial API call with function tools
+    console.log('[2/4] Testing function tool schema validation...')
+    const response = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo', // Use cheaper model for testing
+      messages: [
+        {
+          role: 'user',
+          content: 'Please use the read_file function to read the file "smoke-test/test.md" and tell me what it says.'
+        }
+      ],
+      tools: FUNCTION_TOOLS,
+      tool_choice: 'auto',
+    })
+
+    const choice = response.choices[0]
+    if (!choice) {
+      throw new Error('No response from OpenAI')
+    }
+
+    console.log('✓ Function tools accepted by OpenAI API\n')
+
+    // Step 3: Validate function call was requested
+    console.log('[3/4] Testing function call execution...')
+    const message = choice.message
+
+    if (!message.tool_calls || message.tool_calls.length === 0) {
+      throw new Error('OpenAI did not request any tool calls (expected read_file)')
+    }
+
+    const toolCall = message.tool_calls[0]
+    console.log(`✓ OpenAI requested function: ${toolCall.function.name}`)
+
+    // Step 4: Execute function and validate result
+    const functionArgs = JSON.parse(toolCall.function.arguments)
+    console.log(`  Arguments: ${JSON.stringify(functionArgs)}\n`)
+
+    if (toolCall.function.name !== 'read_file') {
+      throw new Error(`Expected read_file, got ${toolCall.function.name}`)
+    }
+
+    console.log('[4/4] Testing function execution and result handling...')
+    const fileContent = await readFileContent(functionArgs.path)
+    console.log(`✓ File read successfully (${fileContent.length} bytes)`)
+
+    // Send result back to OpenAI to complete the loop
+    const finalResponse = await client.chat.completions.create({
+      model: 'gpt-3.5-turbo',
+      messages: [
+        { role: 'user', content: 'Please read smoke-test/test.md' },
+        message,
+        {
+          role: 'tool',
+          tool_call_id: toolCall.id,
+          content: fileContent,
+        }
+      ],
+      tools: FUNCTION_TOOLS,
+    })
+
+    console.log('✓ Function result sent back to OpenAI successfully\n')
+
+    // Performance validation
+    const duration = performance.now() - startTime
+    console.log(`[PERFORMANCE] Total test time: ${(duration / 1000).toFixed(2)}s`)
+
+    if (duration > 5000) {
+      console.warn('⚠ WARNING: Test exceeded 5 second target')
+    } else {
+      console.log('✓ Performance target met (< 5s)\n')
+    }
+
+    // Final response
+    const finalChoice = finalResponse.choices[0]
+    console.log('[FINAL RESPONSE]')
+    console.log(finalChoice.message.content)
+    console.log('\n' + '='.repeat(60))
+    console.log('✅ SMOKE TEST PASSED')
+    console.log('='.repeat(60))
+    console.log('\nStories 2.1-2.3 validated:')
+    console.log('  ✓ Story 2.1: OpenAI SDK integration')
+    console.log('  ✓ Story 2.2: File operations (read_file)')
+    console.log('  ✓ Story 2.3: Path security (validated in file read)')
+    console.log('\nReady to proceed to Story 2.4 (Agent Discovery)\n')
+
+  } catch (error: any) {
+    const duration = performance.now() - startTime
+    console.error('\n' + '='.repeat(60))
+    console.error('❌ SMOKE TEST FAILED')
+    console.error('='.repeat(60))
+    console.error(`\nError: ${error.message}`)
+    console.error(`\nTest duration: ${(duration / 1000).toFixed(2)}s`)
+    console.error('\n⚠ DO NOT PROCEED to Story 2.4 until this test passes')
+    console.error('Review Stories 2.1-2.3 implementation\n')
+    process.exit(1)
+  }
+}
+
+// Run smoke test
+smokeTest()
+```
+
+3. **Add Test Script to package.json:**
+```json
+{
+  "scripts": {
+    "test:smoke": "tsx scripts/test-openai-smoke.ts"
+  }
+}
+```
+
+4. **Create Test Documentation (`scripts/README.md`):**
+```markdown
+# OpenAI Integration Smoke Test
+
+## Purpose
+Validates that the OpenAI integration foundation (Stories 2.1-2.3) works correctly before building additional features.
+
+## Prerequisites
+- OpenAI API key set in `.env` file: `OPENAI_API_KEY=sk-...`
+- Stories 2.1, 2.2, 2.3 completed
+- Test file exists at `agents/smoke-test/test.md`
+
+## Running the Test
+
+```bash
+npm run test:smoke
+```
+
+## Expected Output
+
+✅ Pass criteria:
+- All 4 test steps complete successfully
+- Test completes in < 5 seconds
+- Final response from OpenAI contains file content
+
+❌ Fail scenarios:
+- OpenAI client initialization fails → Check API key
+- Function tools rejected → Review function-tools.ts schema
+- Function execution fails → Check file operations implementation
+- Performance > 5s → Check API latency / file I/O performance
+
+## What This Test Validates
+
+| Story | Component | Validation |
+|-------|-----------|------------|
+| 2.1 | OpenAI SDK | Client initializes and connects |
+| 2.1 | Function Tools | Schemas accepted by OpenAI API |
+| 2.2 | File Reader | read_file executes successfully |
+| 2.3 | Path Security | Path validation doesn't block valid reads |
+
+## Regression Testing
+
+Run this test:
+- After any changes to `lib/openai/*`
+- After any changes to `lib/files/*`
+- Before deploying to production
+- As part of CI/CD pipeline (future)
+```
+
+**Testing:**
+```bash
+# Run smoke test
+npm run test:smoke
+
+# Should see:
+# ✅ SMOKE TEST PASSED
+# All 4 steps completed
+# Performance < 5s
+```
+
+**Estimated Effort:** 1 hour
+
+**Notes:**
+- This is a **test script**, not production code
+- Purpose is risk mitigation, not feature delivery
+- Success criteria: All tests pass, ready to proceed to 2.4
+- Failure criteria: Fix identified issues before continuing epic
 
 ---
 

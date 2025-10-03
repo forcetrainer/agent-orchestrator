@@ -31,6 +31,11 @@ import { env } from '@/lib/utils/env';
 export function validatePath(relativePath: string, baseDir: string): string {
   // Reject null bytes (security: prevent null byte injection)
   if (relativePath.includes('\0')) {
+    console.error('[Security] Path validation failed:', {
+      relativePath,
+      reason: 'null byte detected',
+      baseDir
+    });
     throw new Error('Invalid path: null bytes are not allowed');
   }
 
@@ -49,6 +54,12 @@ export function validatePath(relativePath: string, baseDir: string): string {
     const isInOutput = normalizedInput.startsWith(outputPath + sep) || normalizedInput === outputPath;
 
     if (!isInAgents && !isInOutput) {
+      console.error('[Security] Path validation failed:', {
+        relativePath,
+        reason: 'absolute path outside allowed directories',
+        resolvedPath: normalizedInput,
+        allowedDirs: { agentsPath, outputPath }
+      });
       throw new Error(`Invalid path: absolute paths must be within allowed directories (${agentsPath} or ${outputPath})`);
     }
 
@@ -60,6 +71,12 @@ export function validatePath(relativePath: string, baseDir: string): string {
 
   // Ensure the resolved path is within the base directory (prevents ../ traversal)
   if (!resolvedPath.startsWith(normalizedBase + sep) && resolvedPath !== normalizedBase) {
+    console.error('[Security] Path validation failed:', {
+      relativePath,
+      reason: 'directory traversal attempt',
+      resolvedPath,
+      baseDir: normalizedBase
+    });
     throw new Error(`Invalid path: '${relativePath}' resolves outside base directory '${baseDir}'`);
   }
 
@@ -86,10 +103,22 @@ export function validateWritePath(relativePath: string): string {
   const isInAgents = absolutePath.startsWith(agentsPath + sep) || absolutePath === agentsPath;
 
   if (isInAgents) {
+    console.error('[Security] Write validation failed:', {
+      relativePath,
+      reason: 'write to agents folder rejected (read-only)',
+      resolvedPath: absolutePath,
+      agentsPath
+    });
     throw new Error(`Invalid write path: cannot write to agents folder (read-only). Use output folder instead.`);
   }
 
   if (!isInOutput) {
+    console.error('[Security] Write validation failed:', {
+      relativePath,
+      reason: 'write outside OUTPUT_PATH',
+      resolvedPath: absolutePath,
+      outputPath
+    });
     throw new Error(`Invalid write path: writes must be within OUTPUT_PATH (${outputPath})`);
   }
 

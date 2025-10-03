@@ -66,6 +66,32 @@ describe('security module', () => {
       const result = validatePath('./templates/agent.md', env.AGENTS_PATH);
       expect(result).toContain('templates/agent.md');
     });
+
+    it('should reject Windows-style directory traversal', () => {
+      // On Unix/Mac, backslashes are literal filename chars, not path separators
+      // This test only applies on Windows where backslash is a path separator
+      const { sep } = require('path');
+      if (sep === '\\') {
+        expect(() => validatePath('..\\..\\..\\Windows\\System32', env.AGENTS_PATH)).toThrow(
+          'resolves outside base directory'
+        );
+      }
+    });
+
+    it('should reject Windows absolute paths outside allowed directories', () => {
+      // Only test on Windows or if path.isAbsolute recognizes it
+      const { isAbsolute } = require('path');
+      if (isAbsolute('C:\\Windows\\System32')) {
+        expect(() => validatePath('C:\\Windows\\System32', env.AGENTS_PATH)).toThrow(
+          'must be within allowed directories'
+        );
+      }
+    });
+
+    it('should handle mixed path separators', () => {
+      const result = validatePath('templates/subfolder\\file.md', env.AGENTS_PATH);
+      expect(result).toBeDefined();
+    });
   });
 
   describe('validateWritePath', () => {
@@ -95,6 +121,89 @@ describe('security module', () => {
       const result = validateWritePath('deep/nested/path/file.txt');
       expect(result).toContain('output');
       expect(result).toContain('deep/nested/path/file.txt');
+    });
+  });
+
+  describe('security attack simulation', () => {
+    // Platform-independent attack vectors that work on all systems
+    const attackVectors = [
+      { path: '../../etc/passwd', desc: 'Unix directory traversal' },
+      { path: '../../../etc/passwd', desc: 'Deep Unix directory traversal' },
+      { path: '/etc/passwd', desc: 'Unix absolute path' },
+      { path: '/root/.ssh/id_rsa', desc: 'SSH key access attempt' },
+      { path: 'file\0.txt', desc: 'Null byte injection' },
+    ];
+
+    it.each(attackVectors)('should block attack: $desc', ({ path }) => {
+      expect(() => validatePath(path, env.AGENTS_PATH)).toThrow();
+    });
+
+    it('should block all write attacks to agents folder', () => {
+      const writeAttacks = [
+        '../agents/template.md',
+        '../../agents/important.md',
+      ];
+
+      writeAttacks.forEach(attack => {
+        expect(() => validateWritePath(attack)).toThrow();
+      });
+    });
+
+    it('should allow valid write to output folder', () => {
+      expect(() => validateWritePath('valid/output.json')).not.toThrow();
+    });
+  });
+
+  describe('security logging', () => {
+    let consoleErrorSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should log null byte security violations', () => {
+      expect(() => validatePath('file\0.txt', env.AGENTS_PATH)).toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Security] Path validation failed:',
+        expect.objectContaining({
+          relativePath: 'file\0.txt',
+          reason: 'null byte detected'
+        })
+      );
+    });
+
+    it('should log directory traversal attempts', () => {
+      expect(() => validatePath('../../etc/passwd', env.AGENTS_PATH)).toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Security] Path validation failed:',
+        expect.objectContaining({
+          relativePath: '../../etc/passwd',
+          reason: 'directory traversal attempt'
+        })
+      );
+    });
+
+    it('should log absolute path violations', () => {
+      expect(() => validatePath('/etc/passwd', env.AGENTS_PATH)).toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[Security] Path validation failed:',
+        expect.objectContaining({
+          relativePath: '/etc/passwd',
+          reason: 'absolute path outside allowed directories'
+        })
+      );
+    });
+
+    it('should log write to agents folder attempts', () => {
+      expect(() => validateWritePath('../agents/file.md')).toThrow();
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('[Security]'),
+        expect.any(Object)
+      );
     });
   });
 });

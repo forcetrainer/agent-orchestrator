@@ -210,7 +210,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 **Dependencies:** Epic 1 (Backend foundation must be complete - especially API routes and environment config)
 
-**Estimated Stories:** 10
+**Estimated Stories:** 11 (includes Story 2.3.5 smoke test for risk mitigation)
 
 ---
 
@@ -1267,11 +1267,11 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ## Summary
 
-**Total Stories:** 43 stories across 6 epics
+**Total Stories:** 44 stories across 6 epics
 
 **Epic Breakdown:**
 - Epic 1: 6 stories (Backend Foundation & Infrastructure)
-- Epic 2: 10 stories (OpenAI Integration with File Operations)
+- Epic 2: 11 stories (OpenAI Integration with File Operations - includes 2.3.5 smoke test)
 - Epic 3: 8 stories (Chat Interface and Agent Selection)
 - Epic 4: 7 stories (File Management and Viewer)
 - Epic 5: 6 stories (Docker Deployment and Configuration)
@@ -1279,7 +1279,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 **Development Sequence (Solo Developer - Strict Sequential):**
 1. **Sprint 1:** Epic 1 (ALL stories 1.1-1.6) - Backend foundation - MUST complete 100% before proceeding
-2. **Sprint 2:** Epic 2 (ALL stories 2.1-2.10) - OpenAI integration - MUST complete 100% before proceeding
+2. **Sprint 2:** Epic 2 (ALL stories 2.1-2.3.5, 2.4-2.10) - OpenAI integration - MUST complete 100% before proceeding
 3. **Sprint 3:** Epic 3 (ALL stories 3.1-3.8) - Chat Interface - MUST complete 100% before proceeding
 4. **Sprint 4:** Epic 4 (ALL stories 4.1-4.7) - File Viewer - MUST complete 100% before proceeding
 5. **Sprint 5:** Epic 5 (ALL stories 5.1-5.6) - Docker Deployment - MUST complete 100% before proceeding
