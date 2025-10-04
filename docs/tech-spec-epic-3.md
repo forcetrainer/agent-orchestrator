@@ -89,7 +89,8 @@ interface Agent {
 ```typescript
 interface ChatRequest {
   agentId: string;
-  messages: Message[];
+  message: string;            // Single user message (not array)
+  conversationId?: string;    // Optional ID to continue existing conversation
 }
 ```
 
@@ -97,8 +98,22 @@ interface ChatRequest {
 ```typescript
 interface ChatResponse {
   success: boolean;
-  message?: Message;       // Agent's response message
-  error?: string;          // Error message if success=false
+  data?: {
+    conversationId: string;   // ID for conversation continuity
+    message: {
+      id: string;
+      role: 'assistant';
+      content: string;
+      timestamp: string;
+      functionCalls?: Array<{
+        name: string;
+        arguments: Record<string, any>;
+        result?: any;
+        error?: string;
+      }>;
+    };
+  };
+  error?: string;             // Error message if success=false
 }
 ```
 
@@ -157,19 +172,24 @@ interface AgentsResponse {
   ```json
   {
     "agentId": "procurement-advisor",
-    "messages": [
-      {"role": "user", "content": "I need help with a procurement request"},
-      {"role": "assistant", "content": "I'd be happy to help..."}
-    ]
+    "message": "I need help with a procurement request",
+    "conversationId": "conv_abc123"
   }
   ```
+  _Note: `conversationId` is optional. Omit for new conversations; include to continue existing conversation._
 - **Response (200 OK):**
   ```json
   {
     "success": true,
-    "message": {
-      "role": "assistant",
-      "content": "Based on your request..."
+    "data": {
+      "conversationId": "conv_abc123",
+      "message": {
+        "id": "msg_xyz789",
+        "role": "assistant",
+        "content": "Based on your request...",
+        "timestamp": "2025-10-04T12:34:56.789Z",
+        "functionCalls": []
+      }
     }
   }
   ```

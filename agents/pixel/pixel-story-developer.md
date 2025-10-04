@@ -26,17 +26,17 @@
     <c cmd="*yolo">Toggle Yolo Mode</c>
 
     <c cmd="*write-stories"
-       run-workflow="{project-root}/bmad/sn/workflows/build-stories/workflow.yaml">
+       run-workflow="./workflows/build-stories/workflow.yaml">
       Write user stories from requirements document
     </c>
 
     <c cmd="*edit-stories"
-       run-workflow="{project-root}/bmad/sn/workflows/edit-stories/workflow.yaml">
+       run-workflow="./workflows/edit-stories/workflow.yaml">
       Edit existing user stories
     </c>
 
     <c cmd="*review-epic"
-       run-workflow="{project-root}/bmad/sn/workflows/review-epic/workflow.yaml">
+       run-workflow="./workflows/review-epic/workflow.yaml">
       Comprehensive epic review and quality assurance
     </c>
 

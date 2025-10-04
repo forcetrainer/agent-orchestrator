@@ -1,10 +1,11 @@
 /**
  * ChatPanel Component Tests
- * Story 3.1, Story 3.2 - Task 6.5
+ * Story 3.1, Story 3.2, Story 3.5 - Updated for message send functionality
  *
  * Tests layout, state management, and component integration
  * AC-1.1 through AC-1.4: Layout tests
  * AC-2.1 through AC-2.4: Message state management
+ * AC-5.1 through AC-5.8: Message send functionality (Story 3.5)
  */
 
 import { render, screen } from '@testing-library/react';
@@ -15,38 +16,40 @@ beforeAll(() => {
   Element.prototype.scrollTo = jest.fn();
 });
 
+// Mock fetch for AgentSelector
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({
+      success: true,
+      data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+    }),
+  })
+) as jest.Mock;
+
 describe('ChatPanel', () => {
-  // Story 3.2 - Task 6.5: State management test
-  it('renders full layout with MessageList when messages exist', () => {
-    render(<ChatPanel />);
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
 
-    // Should show MessageList with demo messages
-    expect(screen.getByText(/Hello! Can you help me understand/i)).toBeInTheDocument();
-    expect(screen.getByText(/Of course! I'd be happy to help/i)).toBeInTheDocument();
-
-    // Should show full layout (not centered)
+  // Story 3.5: Starts with empty messages array
+  it('renders centered layout when no messages exist', () => {
     const { container } = render(<ChatPanel />);
     const chatPanel = container.firstChild as HTMLElement;
-    expect(chatPanel).toHaveClass('flex', 'flex-col', 'h-screen');
+
+    // Should show centered layout (bg-gray-50 indicates centered mode)
+    expect(chatPanel).toHaveClass('flex', 'flex-col', 'h-screen', 'bg-gray-50');
   });
 
-  // Story 3.2 - Task 6.5: Verify messages array structure
-  it('initializes with demo messages for testing', () => {
-    render(<ChatPanel />);
-
-    // Verify user and assistant messages alternate
-    expect(screen.getByText(/How do I select which agent to use/i)).toBeInTheDocument();
-    expect(screen.getByText(/Great question! Agent selection/i)).toBeInTheDocument();
-  });
-
-  // Story 3.1 - Original tests (would work if messages array was empty)
+  // Story 3.1: Layout test
   it('applies full-screen height to layout', () => {
     const { container } = render(<ChatPanel />);
     const chatPanel = container.firstChild as HTMLElement;
     expect(chatPanel).toHaveClass('h-screen');
   });
 
-  it('renders MessageInput component', () => {
+  // Story 3.5: InputField component rendered
+  it('renders InputField component', () => {
     render(<ChatPanel />);
 
     const sendButton = screen.getByRole('button', { name: /send message/i });
@@ -56,15 +59,21 @@ describe('ChatPanel', () => {
     expect(textarea).toBeInTheDocument();
   });
 
-  // Story 3.2 - Task 6.5: Verify MessageList receives messages prop
-  it('passes messages array to MessageList component', () => {
+  // Story 3.4: Agent selector rendered
+  it('renders AgentSelector component', () => {
     render(<ChatPanel />);
 
-    // MessageList should render the demo messages
-    const messageHistory = screen.getByRole('log', { name: /message history/i });
-    expect(messageHistory).toBeInTheDocument();
+    // AgentSelector should be present (look for the container)
+    const selector = screen.getByRole('combobox');
+    expect(selector).toBeInTheDocument();
+  });
 
-    // Verify messages are displayed (proves messages prop was passed)
-    expect(screen.getByText(/Hello! Can you help me/i)).toBeInTheDocument();
+  // Story 3.5: Initializes with empty messages
+  it('initializes with empty messages array', () => {
+    render(<ChatPanel />);
+
+    // No MessageList should be rendered when messages are empty (centered layout instead)
+    const messageHistory = screen.queryByRole('log', { name: /message history/i });
+    expect(messageHistory).not.toBeInTheDocument();
   });
 });

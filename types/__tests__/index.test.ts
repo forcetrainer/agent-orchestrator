@@ -1,5 +1,5 @@
 import * as types from '../index'
-import type { ApiResponse, ChatRequest, ChatResponse, Agent, FileNode } from '../api'
+import type { ApiResponse, ChatRequest, ChatResponse, AgentSummary, FileNode } from '../api'
 
 describe('types/index', () => {
   describe('exports', () => {
@@ -19,11 +19,23 @@ describe('types/index', () => {
       }
       expect(chatRequest).toBeDefined()
 
+      const agentSummary: types.AgentSummary = {
+        id: 'test',
+        name: 'Test Agent',
+        title: 'Test Title',
+        description: 'Test description',
+        path: '/agents/test'
+      }
+      expect(agentSummary).toBeDefined()
+
       const agent: types.Agent = {
         id: 'test',
         name: 'Test Agent',
+        title: 'Test Title',
         description: 'Test description',
-        capabilities: ['test']
+        path: '/agents/test',
+        mainFile: '/agents/test/agent.md',
+        fullContent: '# Test Agent\nFull content here'
       }
       expect(agent).toBeDefined()
 

@@ -14,7 +14,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { Agent } from '@/types';
+import { AgentSummary } from '@/types/api';
 
 interface AgentSelectorProps {
   /** Currently selected agent ID */
@@ -27,7 +27,7 @@ export function AgentSelector({
   selectedAgentId,
   onAgentSelect,
 }: AgentSelectorProps) {
-  const [agents, setAgents] = useState<Agent[]>([]);
+  const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 

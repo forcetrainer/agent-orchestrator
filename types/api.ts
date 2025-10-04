@@ -41,12 +41,14 @@ export interface ChatResponse {
 }
 
 /**
- * Agent model for GET /api/agents
+ * Agent model for GET /api/agents (simplified for API responses)
  */
-export interface Agent {
+export interface AgentSummary {
   id: string;
   name: string;
-  description: string;
+  title: string;
+  description?: string;
+  icon?: string;
   path: string;
 }
 

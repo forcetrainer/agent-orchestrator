@@ -69,6 +69,7 @@ export async function parseAgentFile(
       icon: icon?.trim(),
       path: dirPath,
       mainFile: validatedFile,
+      fullContent: content,
     };
   } catch (error: any) {
     if (error.code === 'ENOENT') {

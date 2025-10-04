@@ -13,9 +13,9 @@ project_name: "{config_source}:project_name"
 date: system-generated
 
 # Module path and component files
-installed_path: "{project-root}/bmad/sn/workflows/intake-app"
-template: "{project-root}/bmad/sn/templates/initial-requirements.md"
-instructions: "{installed_path}/instructions.md"
+installed_path: "./workflows/intake-app"
+template: "./templates/initial-requirements.md"
+instructions: "./instructions.md"
 
 # Category specific
 category: "Application Development"

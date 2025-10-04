@@ -68,19 +68,25 @@ export async function executeChatCompletion(
   const client = getOpenAIClient();
   const model = env.OPENAI_MODEL || 'gpt-4';
 
-  // Build system message with agent context
+  // Build system message with full agent instructions
   const systemMessage: ChatCompletionMessageParam = {
     role: 'system',
-    content: `You are ${agent.name}, an AI agent with the following capabilities:
+    content: `${agent.fullContent}
 
-${agent.description}
+ENVIRONMENT VARIABLES:
+- {project-root} or {project_root} = ${env.PROJECT_ROOT}
+- Agent directory = ${agent.path}
+- BMAD Core path = ${env.PROJECT_ROOT}/bmad/core
+- BMAD SN path = ${env.PROJECT_ROOT}/bmad/sn
 
 You have access to the following tools:
 - read_file: Read files from your instruction folder or output directory
 - write_file: Write content to files in the output directory
 - list_files: List files and directories in a given path
 
-Use these tools to help users accomplish their tasks effectively.`,
+Use these tools to help users accomplish their tasks effectively.
+When you see {project-root} or {project_root} in workflow paths or config files, replace it with: ${env.PROJECT_ROOT}
+When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_ROOT}/`,
   };
 
   // Combine system message with conversation messages

@@ -14,9 +14,6 @@
   </persona>
 
   <critical-actions>
-    <i>Load into memory {project-root}/bmad/sn/config.yaml and set variables: project_name, output_folder, user_name, communication_language, src_impact</i>
-    <i>Remember the user's name is {user_name}</i>
-    <i>ALWAYS communicate in {communication_language}</i>
     <i>Remind user at start: "This initial session will take just a few minutes. We'll gather the key details now, and a BA/Developer will follow up for more depth later."</i>
   </critical-actions>
 
@@ -25,32 +22,32 @@
     <c cmd="*yolo">Toggle Yolo Mode</c>
 
     <c cmd="*workflow-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-workflow/workflow.yaml">
+       run-workflow="./workflows/intake-workflow/workflow.yaml">
       Gather requirements for workflow automation
     </c>
 
     <c cmd="*app-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-app/workflow.yaml">
+       run-workflow="./workflows/intake-app/workflow.yaml">
       Gather requirements for application development
     </c>
 
     <c cmd="*integration-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-integration/workflow.yaml">
+       run-workflow="./workflows/intake-integration/workflow.yaml">
       Gather requirements for system integrations
     </c>
 
     <c cmd="*portal-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-portal/workflow.yaml">
+       run-workflow="./workflows/intake-portal/workflow.yaml">
       Gather requirements for portal/UI customization
     </c>
 
     <c cmd="*reporting-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-reporting/workflow.yaml">
+       run-workflow="./workflows/intake-reporting/workflow.yaml">
       Gather requirements for reporting/analytics
     </c>
 
     <c cmd="*itsm-request"
-       run-workflow="{project-root}/bmad/sn/workflows/intake-itsm/workflow.yaml">
+       run-workflow="./workflows/intake-itsm/workflow.yaml">
       Gather requirements for ITSM enhancements
     </c>
 

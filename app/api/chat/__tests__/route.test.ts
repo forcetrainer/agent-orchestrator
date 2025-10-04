@@ -28,9 +28,11 @@ describe('POST /api/chat', () => {
   const mockAgent = {
     id: 'test-agent',
     name: 'Test Agent',
+    title: 'Test Agent Title',
     description: 'A test agent',
     path: '/agents/test-agent',
     mainFile: '/agents/test-agent/agent.md',
+    fullContent: '# Test Agent\nThis is a test agent for unit testing.',
   };
 
   beforeEach(() => {

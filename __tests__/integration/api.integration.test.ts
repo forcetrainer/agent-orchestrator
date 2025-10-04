@@ -51,8 +51,7 @@ describe('API Integration Tests', () => {
         expect(agent).toHaveProperty('name');
         expect(agent).toHaveProperty('title'); // Required in XML-based discovery
         expect(agent).toHaveProperty('path');
-        expect(agent).toHaveProperty('mainFile');
-        // description and icon are optional
+        // description and icon are optional per AgentSummary interface
       }
     });
   });
@@ -97,7 +96,7 @@ describe('API Integration Tests', () => {
       expect(data.data.message).toHaveProperty('role', 'assistant');
       expect(data.data.message).toHaveProperty('content');
       expect(data.data.message).toHaveProperty('timestamp');
-    });
+    }, 30000); // 30 second timeout for OpenAI API call
 
     it('should return 400 when agentId is missing', async () => {
       const response = await fetch(`${BASE_URL}/api/chat`, {

@@ -1,0 +1,309 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.5</storyId>
+    <title>Basic Message Send Functionality</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>to send messages to the agent</iWant>
+    <soThat>I can interact and get responses</soThat>
+    <tasks>
+      <task id="1" ac="5.1, 5.2, 5.3, 5.6, 5.7">
+        <title>Create InputField component with message submission</title>
+        <subtasks>
+          <subtask id="1.1">Create components/chat/InputField.tsx component with textarea and send button</subtask>
+          <subtask id="1.2">Implement controlled input with React state (value, onChange)</subtask>
+          <subtask id="1.3">Handle Enter key submission (Enter sends, Shift+Enter adds newline)</subtask>
+          <subtask id="1.4">Handle send button click submission</subtask>
+          <subtask id="1.5">Clear input field after successful submission</subtask>
+          <subtask id="1.6">Validate non-empty message before submission (trim whitespace)</subtask>
+          <subtask id="1.7">Accept multiline input with proper textarea styling</subtask>
+          <subtask id="1.8">Disable input and button when disabled prop is true</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="5.4, 5.5, 5.8">
+        <title>Implement message send logic in ChatPanel</title>
+        <subtasks>
+          <subtask id="2.1">Add messages state array to ChatPanel: useState&lt;Message[]&gt;([])</subtask>
+          <subtask id="2.2">Add isLoading state: useState&lt;boolean&gt;(false)</subtask>
+          <subtask id="2.3">Create handleSendMessage function accepting user message string</subtask>
+          <subtask id="2.4">Add user message to messages array immediately (optimistic update)</subtask>
+          <subtask id="2.5">Set isLoading=true before API call</subtask>
+          <subtask id="2.6">POST to /api/chat with {agentId, messages} payload</subtask>
+          <subtask id="2.7">Parse response and add assistant message to messages array</subtask>
+          <subtask id="2.8">Set isLoading=false after response (success or error)</subtask>
+          <subtask id="2.9">Handle errors by adding error message to chat (role='error')</subtask>
+          <subtask id="2.10">Pass isLoading state to InputField as disabled prop</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="5.1, 5.5">
+        <title>Update ChatPanel to integrate InputField</title>
+        <subtasks>
+          <subtask id="3.1">Import and render InputField component at bottom of ChatPanel</subtask>
+          <subtask id="3.2">Pass handleSendMessage as onSend callback prop</subtask>
+          <subtask id="3.3">Pass isLoading as disabled prop to InputField</subtask>
+          <subtask id="3.4">Ensure InputField appears at bottom of chat layout (fixed position or flex)</subtask>
+          <subtask id="3.5">Verify messages state updates trigger MessageList re-render</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="5.8">
+        <title>API request handling and error management</title>
+        <subtasks>
+          <subtask id="4.1">Implement try/catch for fetch call to /api/chat</subtask>
+          <subtask id="4.2">Handle network errors (fetch rejection, offline)</subtask>
+          <subtask id="4.3">Handle API errors (400, 404, 500 responses)</subtask>
+          <subtask id="4.4">Parse error messages from API response</subtask>
+          <subtask id="4.5">Display error messages in chat with distinct styling (from Story 3.8)</subtask>
+          <subtask id="4.6">Log detailed errors to console for debugging</subtask>
+          <subtask id="4.7">Ensure user can send new messages after error (isLoading reset)</subtask>
+        </subtasks>
+      </task>
+      <task id="5">
+        <title>Unit tests for InputField component</title>
+        <subtasks>
+          <subtask id="5.1">Test component renders with textarea and send button</subtask>
+          <subtask id="5.2">Test controlled input updates on typing</subtask>
+          <subtask id="5.3">Test Enter key triggers onSend callback</subtask>
+          <subtask id="5.4">Test Shift+Enter adds newline (does NOT trigger onSend)</subtask>
+          <subtask id="5.5">Test send button click triggers onSend callback</subtask>
+          <subtask id="5.6">Test input clears after submission</subtask>
+          <subtask id="5.7">Test empty message is NOT submitted (trimmed)</subtask>
+          <subtask id="5.8">Test input is disabled when disabled=true</subtask>
+          <subtask id="5.9">Test multiline messages accepted and submitted</subtask>
+        </subtasks>
+      </task>
+      <task id="6">
+        <title>Integration tests for message send flow</title>
+        <subtasks>
+          <subtask id="6.1">Mock POST /api/chat endpoint with successful response</subtask>
+          <subtask id="6.2">Test full flow: type message → send → user message appears → API called → assistant message appears</subtask>
+          <subtask id="6.3">Test loading state: input disabled during API call, re-enabled after response</subtask>
+          <subtask id="6.4">Test error handling: API error → error message appears in chat → input re-enabled</subtask>
+          <subtask id="6.5">Test empty message validation: empty input → send button does nothing</subtask>
+          <subtask id="6.6">Test conversation history: multiple messages accumulate in messages array</subtask>
+          <subtask id="6.7">Test agent selection requirement: cannot send without selected agent (if applicable)</subtask>
+        </subtasks>
+      </task>
+      <task id="7">
+        <title>Manual validation and UX testing</title>
+        <subtasks>
+          <subtask id="7.1">Test sending messages with real backend (Epic 2 integration)</subtask>
+          <subtask id="7.2">Verify agent responses appear correctly</subtask>
+          <subtask id="7.3">Test multiline messages with Shift+Enter</subtask>
+          <subtask id="7.4">Test rapid message sending (ensure no race conditions)</subtask>
+          <subtask id="7.5">Test long message handling (500+ characters)</subtask>
+          <subtask id="7.6">Verify input focus behavior after sending</subtask>
+          <subtask id="7.7">Test error states with backend unavailable</subtask>
+          <subtask id="7.8">Verify loading indicator prevents double submission</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-5.1">Clicking send button submits message to /api/chat</criterion>
+    <criterion id="AC-5.2">Pressing Enter in input field submits message</criterion>
+    <criterion id="AC-5.3">Input field clears after message is sent</criterion>
+    <criterion id="AC-5.4">User message immediately appears in chat history</criterion>
+    <criterion id="AC-5.5">Input is disabled while waiting for agent response</criterion>
+    <criterion id="AC-5.6">Empty messages are not sent</criterion>
+    <criterion id="AC-5.7">Long messages are accepted (multi-line support)</criterion>
+    <criterion id="AC-5.8">Agent response appears when received from backend</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Story 3.5: Basic Message Send Functionality</section>
+        <snippet>AC-5.1 through AC-5.8 define message send requirements. POST to /api/chat with {agentId, messages} payload. Response: {success, message?, error?}. User message appears immediately (optimistic update). Input disabled during processing. Enter sends, Shift+Enter adds newline.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Data Models and Contracts - Message Interface</section>
+        <snippet>Message { role: 'user' | 'assistant' | 'error', content: string, timestamp?: number }. ChatRequest { agentId: string, messages: Message[] }. ChatResponse { success: boolean, message?: Message, error?: string }.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Workflows and Sequencing - Message Send Flow</section>
+        <snippet>1. User types message in InputField. 2. User clicks send or presses Enter. 3. Frontend validates non-empty. 4. Frontend adds user message to array. 5. Frontend sets isLoading=true. 6. Frontend POSTs to /api/chat with agentId and messages. 7. Backend loads agent if not cached. 8. Backend calls OpenAI with messages + functions. 9. OpenAI function calling loop executes (Epic 2). 10. Backend returns assistant message. 11. Frontend adds assistant message. 12. Frontend sets isLoading=false. 13. MessageList auto-scrolls.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Non-Functional Requirements - Performance</section>
+        <snippet>Message send responsiveness: User message appears in &lt; 100ms. Loading indicator appears within 200ms. Input field responsiveness: No lag during typing.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Technical Specification: OpenAI Integration</title>
+        <section>Story 2.1: OpenAI API Integration Setup</section>
+        <snippet>/api/chat endpoint calls OpenAI with chat completion. Function calling enabled. Returns response with assistant message. Epic 2 MUST be 100% complete before Story 3.5.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 3.5: Basic Message Send Functionality</section>
+        <snippet>Prerequisites: Story 3.2 (Display Messages), Story 3.4 (Agent Selection), Epic 2 COMPLETE (all stories 2.1-2.10). POST to /api/chat with {agentId, messages}. Handle form submission (preventDefault). Basic validation for empty messages. Consider shift+Enter for multi-line vs Enter to send.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>ChatPanel</symbol>
+        <lines>22-82</lines>
+        <reason>Main chat container that needs message send logic integration. Currently has selectedAgentId state and demo messages. Need to add isLoading state, handleSendMessage function, and integrate with /api/chat.</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/MessageList.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageList</symbol>
+        <lines>20-57</lines>
+        <reason>Displays messages array with auto-scroll behavior. Will receive updated messages from ChatPanel when new messages sent/received. Already implements auto-scroll on messages change.</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/MessageInput.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageInput</symbol>
+        <lines>N/A</lines>
+        <reason>Existing component that may need refactoring or replacement. Story 3.5 creates InputField.tsx which may supersede or complement MessageInput.</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>32-98</lines>
+        <reason>Backend endpoint that handles chat requests. Already accepts ChatRequest with agentId, message, conversationId. Returns ChatResponse with conversationId and message. Note: Current interface uses 'message' (singular) not 'messages' (array) - may need verification against Story 3.5 requirements.</reason>
+      </artifact>
+      <artifact>
+        <path>types/index.ts</path>
+        <kind>types</kind>
+        <symbol>Message</symbol>
+        <lines>56-67</lines>
+        <reason>Message interface definition. Note: Current type has id, timestamp as Date, and role includes 'system'. Story 3.5 spec shows role: 'user' | 'assistant' | 'error' without 'system', and timestamp as optional number. Type alignment may be needed.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="next" version="14.2.0" />
+        <package name="openai" version="^4.104.0" />
+        <package name="react-markdown" version="^10.1.0" />
+        <package name="remark-gfm" version="^4.0.1" />
+      </node>
+      <testing>
+        <package name="jest" version="^30.2.0" />
+        <package name="@testing-library/react" version="^16.3.0" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+        <package name="jest-environment-jsdom" version="^30.2.0" />
+        <package name="ts-jest" version="^29.4.4" />
+      </testing>
+      <dev>
+        <package name="typescript" version="^5" />
+        <package name="@types/react" version="^18" />
+        <package name="@types/react-dom" version="^18" />
+        <package name="@types/node" version="^20" />
+        <package name="tailwindcss" version="^3.4.0" />
+        <package name="autoprefixer" version="^10.4.17" />
+        <package name="postcss" version="^8" />
+        <package name="eslint" version="^8" />
+        <package name="eslint-config-next" version="14.2.0" />
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use React useState for messages array and loading state (no Redux/Zustand in MVP per Tech Spec)</constraint>
+    <constraint>Optimistic UI update: Add user message immediately before API call per UX best practices</constraint>
+    <constraint>Prevent default form submission (e.preventDefault()) for proper React handling</constraint>
+    <constraint>Trim whitespace from input before validation to detect truly empty messages</constraint>
+    <constraint>Disable submit button during loading to prevent double submission</constraint>
+    <constraint>Clear input only after successful message addition to state (not before)</constraint>
+    <constraint>Focus input after sending for smooth UX per design guidelines</constraint>
+    <constraint>Enter key sends message, Shift+Enter adds newline (ChatGPT/Slack convention)</constraint>
+    <constraint>Use textarea not input for multiline support (AC-5.7 requirement)</constraint>
+    <constraint>Performance target: User message appears in &lt; 100ms, loading indicator within 200ms (NFR-1)</constraint>
+    <constraint>No dangerouslySetInnerHTML usage (XSS security per Tech Spec)</constraint>
+    <constraint>API endpoint must be POST /api/chat with {agentId, messages} payload</constraint>
+    <constraint>Epic 2 MUST be 100% complete before implementing this story (hard dependency)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ChatPanel.handleSendMessage</name>
+      <kind>function</kind>
+      <signature>(message: string) =&gt; Promise&lt;void&gt;</signature>
+      <path>components/chat/ChatPanel.tsx</path>
+      <description>Callback function that handles message submission. Adds user message to state, calls /api/chat, adds assistant response to state.</description>
+    </interface>
+    <interface>
+      <name>InputField.onSend</name>
+      <kind>prop</kind>
+      <signature>onSend: (message: string) =&gt; void</signature>
+      <path>components/chat/InputField.tsx (NEW)</path>
+      <description>Callback prop for InputField component. Triggered when user submits a message via Enter key or send button.</description>
+    </interface>
+    <interface>
+      <name>InputField.disabled</name>
+      <kind>prop</kind>
+      <signature>disabled?: boolean</signature>
+      <path>components/chat/InputField.tsx (NEW)</path>
+      <description>Prop to disable input field and send button during API call processing.</description>
+    </interface>
+    <interface>
+      <name>POST /api/chat</name>
+      <kind>api-endpoint</kind>
+      <signature>POST /api/chat { agentId: string, messages: Message[] } =&gt; { success: boolean, message?: Message, error?: string }</signature>
+      <path>app/api/chat/route.ts</path>
+      <description>Backend endpoint that processes chat messages. NOTE: Current implementation uses 'message' (singular) and 'conversationId' - verify alignment with Story 3.5 spec requiring 'messages' (array).</description>
+    </interface>
+    <interface>
+      <name>Message</name>
+      <kind>interface</kind>
+      <signature>interface Message { role: 'user' | 'assistant' | 'error', content: string, timestamp?: number }</signature>
+      <path>types/index.ts</path>
+      <description>Message type definition. NOTE: Current type has additional fields (id, Date timestamp, 'system' role) - verify alignment with Story 3.5 spec.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with React Testing Library. Unit tests for components (80%+ coverage). Integration tests for user flows. Component tests in __tests__ subdirectories. Use @testing-library/react for component rendering. Mock API calls with whatwg-fetch. Target 90%+ coverage for state management logic.
+    </standards>
+    <locations>
+      components/chat/__tests__/InputField.test.tsx
+      components/chat/__tests__/ChatPanel.test.tsx
+      __tests__/integration/message-send.integration.test.ts
+    </locations>
+    <ideas>
+      <idea ac="AC-5.1">Test clicking send button triggers fetch to /api/chat with correct payload</idea>
+      <idea ac="AC-5.2">Test pressing Enter in textarea (without Shift) triggers onSend callback</idea>
+      <idea ac="AC-5.2">Test Shift+Enter adds newline without triggering submission</idea>
+      <idea ac="AC-5.3">Test input field value clears after successful message send</idea>
+      <idea ac="AC-5.4">Test user message appears in messages array immediately (before API response)</idea>
+      <idea ac="AC-5.5">Test input and button disabled when isLoading=true</idea>
+      <idea ac="AC-5.5">Test input re-enabled after API response (success or error)</idea>
+      <idea ac="AC-5.6">Test trimmed empty string does not trigger submission</idea>
+      <idea ac="AC-5.6">Test whitespace-only message does not trigger submission</idea>
+      <idea ac="AC-5.7">Test multiline message (with newlines) submits correctly</idea>
+      <idea ac="AC-5.8">Test assistant message appears in messages array after successful API response</idea>
+      <idea ac="AC-5.8">Test error message appears in messages array (role='error') after API error</idea>
+      <idea>Integration: Full flow from typing → send → user message → API call → assistant response</idea>
+      <idea>Edge case: Rapid submissions - ensure isLoading prevents double submission</idea>
+      <idea>Edge case: Very long message (500+ chars) - ensure textarea handles and submits correctly</idea>
+      <idea>Error handling: Network error (offline) - verify error message displayed and input re-enabled</idea>
+      <idea>Error handling: API 400/404/500 - verify error parsing and display</idea>
+    </ideas>
+  </tests>
+</story-context>

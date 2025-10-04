@@ -25,9 +25,11 @@ describe('OpenAI Chat Service', () => {
   const mockAgent: Agent = {
     id: 'test-agent',
     name: 'Test Agent',
+    title: 'Test Agent Title',
     description: 'A test agent for unit tests',
     path: '/agents/test-agent',
     mainFile: '/agents/test-agent/agent.md',
+    fullContent: '# Test Agent\nA test agent for unit tests.',
   };
 
   const mockClient = {
@@ -546,7 +548,7 @@ describe('OpenAI Chat Service', () => {
       );
     });
 
-    it('should include agent name and description in system message', async () => {
+    it('should include full agent content in system message', async () => {
       mockClient.chat.completions.create.mockResolvedValueOnce({
         choices: [
           {
@@ -565,7 +567,7 @@ describe('OpenAI Chat Service', () => {
       const systemMessage = callArgs.messages[0];
 
       expect(systemMessage.role).toBe('system');
-      expect(systemMessage.content).toContain('Test Agent');
+      expect(systemMessage.content).toContain('# Test Agent');
       expect(systemMessage.content).toContain('A test agent for unit tests');
       expect(systemMessage.content).toContain('read_file');
       expect(systemMessage.content).toContain('write_file');

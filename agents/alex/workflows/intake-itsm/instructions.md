@@ -1,7 +1,7 @@
 # ITSM Enhancement Intake Instructions
 
 <critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.md</critical>
-<critical>You MUST have already loaded and processed: {project_root}/bmad/sn/workflows/intake-itsm/workflow.yaml</critical>
+<critical>You MUST have already loaded and processed: ./workflows/intake-itsm/workflow.yaml</critical>
 
 <workflow>
 

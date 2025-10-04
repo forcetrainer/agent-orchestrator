@@ -86,4 +86,13 @@ export const env = {
   get OPENAI_MODEL(): string {
     return process.env.OPENAI_MODEL || 'gpt-4';
   },
+
+  /**
+   * Project root directory (absolute path)
+   * Used by agents to resolve {project-root} in workflow paths
+   * Default: current working directory
+   */
+  get PROJECT_ROOT(): string {
+    return process.env.PROJECT_ROOT || process.cwd();
+  },
 } as const;

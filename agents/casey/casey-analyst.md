@@ -27,32 +27,32 @@
     <c cmd="*yolo">Toggle Yolo Mode</c>
 
     <c cmd="*deep-dive-workflow"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-workflow/workflow.yaml">
+       run-workflow="./workflows/deep-dive-workflow/workflow.yaml">
       Guide requirements session for workflow automation
     </c>
 
     <c cmd="*deep-dive-app"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-app/workflow.yaml">
+       run-workflow="./workflows/deep-dive-app/workflow.yaml">
       Guide requirements session for application development
     </c>
 
     <c cmd="*deep-dive-integration"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-integration/workflow.yaml">
+       run-workflow="./workflows/deep-dive-integration/workflow.yaml">
       Guide requirements session for system integrations
     </c>
 
     <c cmd="*deep-dive-portal"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-portal/workflow.yaml">
+       run-workflow="./workflows/deep-dive-portal/workflow.yaml">
       Guide requirements session for portal/UI customization
     </c>
 
     <c cmd="*deep-dive-reporting"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-reporting/workflow.yaml">
+       run-workflow="./workflows/deep-dive-reporting/workflow.yaml">
       Guide requirements session for reporting/analytics
     </c>
 
     <c cmd="*deep-dive-itsm"
-       run-workflow="{project-root}/bmad/sn/workflows/deep-dive-itsm/workflow.yaml">
+       run-workflow="./workflows/deep-dive-itsm/workflow.yaml">
       Guide requirements session for ITSM enhancements
     </c>
 

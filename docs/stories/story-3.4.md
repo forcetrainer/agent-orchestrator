@@ -1,6 +1,6 @@
 # Story 3.4: Agent Discovery and Selection Dropdown
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

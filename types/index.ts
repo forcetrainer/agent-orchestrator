@@ -36,6 +36,8 @@ export interface Agent {
   path: string;
   /** Full path to agent markdown file */
   mainFile: string;
+  /** Full content of the agent markdown file for LLM system message */
+  fullContent: string;
 }
 
 /**
