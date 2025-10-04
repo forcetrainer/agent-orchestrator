@@ -699,6 +699,33 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
+#### Story 3.9: Validate Lazy-Loading with Complex BMAD Agent Workflow
+
+**As a** developer
+**I want** to validate that lazy-loading works with complex BMAD agents
+**So that** I can confirm OpenAI function calling properly loads multiple instruction files on-demand
+
+**Prerequisites:** Stories 3.5-3.8 complete (functional chat interface working), Epic 2 complete (OpenAI integration with read_file function)
+
+**Acceptance Criteria:**
+1. Select or create a complex BMAD agent that requires loading at least 3 instruction files during execution
+2. Agent uses lazy-loading pattern (files loaded via read_file when agent requests them, not upfront)
+3. Test agent via chat interface with realistic workflow that triggers multiple instruction loads
+4. Verify in console logs that read_file is called multiple times for different instruction files
+5. Agent successfully completes workflow using dynamically loaded instructions
+6. All lazy-loaded files return correct content to OpenAI
+7. Agent behavior matches expected BMAD agent patterns
+8. Document any OpenAI compatibility issues discovered during testing
+
+**Technical Notes:**
+- Use existing BMAD agent (bmad/bmm/agents/architect or similar) OR create test agent with workflow that loads templates/instructions
+- Monitor `/api/chat` logs to verify read_file function calls
+- Test should simulate real-world agent usage (not just basic "hello world")
+- This validates PRD Goal #1: "Prove that lazy-loading instruction pattern is viable with OpenAI function calling"
+- Consider testing with agent that has `<i>Load into memory...` patterns
+
+---
+
 ### Epic 4: File Management and Viewer
 
 **Epic Goal:** Enable users to view and verify agent-generated outputs
@@ -1278,12 +1305,12 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ## Summary
 
-**Total Stories:** 44 stories across 6 epics
+**Total Stories:** 45 stories across 6 epics
 
 **Epic Breakdown:**
 - Epic 1: 6 stories (Backend Foundation & Infrastructure)
 - Epic 2: 11 stories (OpenAI Integration with File Operations - includes 2.3.5 smoke test)
-- Epic 3: 8 stories (Chat Interface and Agent Selection)
+- Epic 3: 9 stories (Chat Interface and Agent Selection)
 - Epic 4: 7 stories (File Management and Viewer)
 - Epic 5: 6 stories (Docker Deployment and Configuration)
 - Epic 6: 8 stories (Polish, Testing, and Documentation)
@@ -1291,7 +1318,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 **Development Sequence (Solo Developer - Strict Sequential):**
 1. **Sprint 1:** Epic 1 (ALL stories 1.1-1.6) - Backend foundation - MUST complete 100% before proceeding
 2. **Sprint 2:** Epic 2 (ALL stories 2.1-2.3.5, 2.4-2.10) - OpenAI integration - MUST complete 100% before proceeding
-3. **Sprint 3:** Epic 3 (ALL stories 3.1-3.8) - Chat Interface - MUST complete 100% before proceeding
+3. **Sprint 3:** Epic 3 (ALL stories 3.1-3.9) - Chat Interface - MUST complete 100% before proceeding
 4. **Sprint 4:** Epic 4 (ALL stories 4.1-4.7) - File Viewer - MUST complete 100% before proceeding
 5. **Sprint 5:** Epic 5 (ALL stories 5.1-5.6) - Docker Deployment - MUST complete 100% before proceeding
 6. **Sprint 6:** Epic 6 (ALL stories 6.1-6.8) - Polish, Testing, Documentation

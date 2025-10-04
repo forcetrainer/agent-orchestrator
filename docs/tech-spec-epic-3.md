@@ -1045,6 +1045,17 @@ The following agents already comply with the new requirements:
 **AC-8.6:** User can still send new messages after error
 **AC-8.7:** Errors don't crash the interface
 
+### Story 3.9: Validate Lazy-Loading with Complex BMAD Agent Workflow
+
+**AC-9.1:** Select or create a complex BMAD agent that requires loading at least 3 instruction files during execution
+**AC-9.2:** Agent uses lazy-loading pattern (files loaded via read_file when agent requests them, not upfront)
+**AC-9.3:** Test agent via chat interface with realistic workflow that triggers multiple instruction loads
+**AC-9.4:** Verify in console logs that read_file is called multiple times for different instruction files
+**AC-9.5:** Agent successfully completes workflow using dynamically loaded instructions
+**AC-9.6:** All lazy-loaded files return correct content to OpenAI
+**AC-9.7:** Agent behavior matches expected BMAD agent patterns
+**AC-9.8:** Document any OpenAI compatibility issues discovered during testing
+
 ## Traceability Mapping
 
 | AC ID | Requirement Source | Spec Section(s) | Component(s)/API(s) | Test Idea |
@@ -1057,6 +1068,7 @@ The following agents already comply with the new requirements:
 | **AC-6.1 - AC-6.6** | Story 3.6, PRD FR-4, NFR-1 | Services: LoadingIndicator; Workflows: Message Send Flow step 5 | LoadingIndicator component | Unit test: loading state toggles correctly; Manual test: verify UX during slow responses |
 | **AC-7.1 - AC-7.6** | Story 3.7, PRD FR-12 | Workflows: New Conversation Flow | ChatInterface reset button | Integration test: clear messages array, verify state reset, agent doesn't remember context |
 | **AC-8.1 - AC-8.7** | Story 3.8, PRD FR-4, NFR-2, UX Principle 4 | Services: ErrorDisplay; Workflows: Error Handling Flow; NFR: Security (error sanitization) | ErrorDisplay component, error handling in ChatInterface | Unit test: error display styling; Integration test: API failure → error message shown → user can retry |
+| **AC-9.1 - AC-9.8** | Story 3.9, PRD Goal #1, FR-2, FR-6 | Epic 2 file operations; APIs: POST /api/chat with read_file function calling | Chat interface with complex BMAD agent, backend read_file implementation | Integration test: complex agent workflow → verify multiple read_file calls in logs → workflow completes successfully; Validation: document OpenAI compatibility findings |
 
 ## Risks, Assumptions, Open Questions
 
