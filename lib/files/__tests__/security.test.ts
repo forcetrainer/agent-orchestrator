@@ -20,19 +20,19 @@ describe('security module', () => {
 
     it('should reject directory traversal attempts with ../', () => {
       expect(() => validatePath('../../etc/passwd', env.AGENTS_PATH)).toThrow(
-        'resolves outside base directory'
+        'Access denied'
       );
     });
 
     it('should reject null bytes in paths', () => {
       expect(() => validatePath('file\0.txt', env.AGENTS_PATH)).toThrow(
-        'null bytes are not allowed'
+        'Access denied'
       );
     });
 
     it('should reject absolute paths outside allowed directories', () => {
       expect(() => validatePath('/etc/passwd', env.AGENTS_PATH)).toThrow(
-        'must be within allowed directories'
+        'Access denied'
       );
     });
 
@@ -113,7 +113,7 @@ describe('security module', () => {
 
     it('should reject null bytes in write paths', () => {
       expect(() => validateWritePath('output\0.txt')).toThrow(
-        'null bytes are not allowed'
+        'Access denied'
       );
     });
 

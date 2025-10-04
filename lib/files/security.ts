@@ -36,7 +36,7 @@ export function validatePath(relativePath: string, baseDir: string): string {
       reason: 'null byte detected',
       baseDir
     });
-    throw new Error('Invalid path: null bytes are not allowed');
+    throw new Error('Access denied');
   }
 
   // Normalize the base directory to absolute path
@@ -60,7 +60,7 @@ export function validatePath(relativePath: string, baseDir: string): string {
         resolvedPath: normalizedInput,
         allowedDirs: { agentsPath, outputPath }
       });
-      throw new Error(`Invalid path: absolute paths must be within allowed directories (${agentsPath} or ${outputPath})`);
+      throw new Error('Access denied');
     }
 
     return normalizedInput;
@@ -77,7 +77,7 @@ export function validatePath(relativePath: string, baseDir: string): string {
       resolvedPath,
       baseDir: normalizedBase
     });
-    throw new Error(`Invalid path: '${relativePath}' resolves outside base directory '${baseDir}'`);
+    throw new Error('Access denied');
   }
 
   return resolvedPath;
@@ -109,7 +109,7 @@ export function validateWritePath(relativePath: string): string {
       resolvedPath: absolutePath,
       agentsPath
     });
-    throw new Error(`Invalid write path: cannot write to agents folder (read-only). Use output folder instead.`);
+    throw new Error('Access denied');
   }
 
   if (!isInOutput) {
@@ -119,7 +119,7 @@ export function validateWritePath(relativePath: string): string {
       resolvedPath: absolutePath,
       outputPath
     });
-    throw new Error(`Invalid write path: writes must be within OUTPUT_PATH (${outputPath})`);
+    throw new Error('Access denied');
   }
 
   return absolutePath;

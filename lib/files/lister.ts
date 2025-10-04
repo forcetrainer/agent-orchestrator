@@ -98,22 +98,34 @@ export async function listFiles(
 
     // Handle specific error cases with user-friendly messages
     if (error.code === 'ENOENT') {
-      console.error(`[list_files] Directory not found: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[list_files] Directory not found: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Directory not found: ${relativePath}`);
     }
 
     if (error.code === 'EACCES') {
-      console.error(`[list_files] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[list_files] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Permission denied: ${relativePath}`);
     }
 
     if (error.code === 'ENOTDIR') {
-      console.error(`[list_files] Not a directory: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[list_files] Not a directory: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Not a directory: ${relativePath}`);
     }
 
     // Re-throw other errors (including security validation errors)
-    console.error(`[list_files] Error listing ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`);
+    console.error(
+      `[list_files] Error listing ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`,
+      '\nStack:', error.stack
+    );
     throw error;
   }
 }

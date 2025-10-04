@@ -333,6 +333,174 @@ describe('OpenAI Chat Service', () => {
       });
     });
 
+    it('should return structured error format for OpenAI', async () => {
+      mockReadFileContent.mockRejectedValueOnce(new Error('Permission denied: secret.txt'));
+
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  id: 'call_perm',
+                  type: 'function',
+                  function: {
+                    name: 'read_file',
+                    arguments: JSON.stringify({ path: 'secret.txt' }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Access denied',
+            },
+          },
+        ],
+      });
+
+      const messages = [{ role: 'user' as const, content: 'Read secret.txt' }];
+      const result = await executeChatCompletion(mockAgent, messages);
+
+      expect(result.functionCalls).toHaveLength(1);
+      expect(result.functionCalls[0].error).toBe('Permission denied: secret.txt');
+
+      // Verify the error was sent to OpenAI in structured format
+      const secondCallArgs = mockClient.chat.completions.create.mock.calls[1][0];
+      const toolMessage = secondCallArgs.messages.find((m: any) => m.role === 'tool');
+      const toolContent = JSON.parse(toolMessage.content);
+      expect(toolContent).toEqual({
+        success: false,
+        error: 'Permission denied: secret.txt'
+      });
+    });
+
+    it('should allow conversation to continue after errors', async () => {
+      // First error
+      mockReadFileContent.mockRejectedValueOnce(new Error('File not found: missing.txt'));
+      // Second successful call
+      mockReadFileContent.mockResolvedValueOnce('Found content');
+
+      // First response with error
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: {
+                    name: 'read_file',
+                    arguments: JSON.stringify({ path: 'missing.txt' }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      // Agent tries again with different file
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  id: 'call_2',
+                  type: 'function',
+                  function: {
+                    name: 'read_file',
+                    arguments: JSON.stringify({ path: 'found.txt' }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      // Final success response
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Found the file on second try',
+            },
+          },
+        ],
+      });
+
+      const messages = [{ role: 'user' as const, content: 'Read files' }];
+      const result = await executeChatCompletion(mockAgent, messages);
+
+      expect(result.functionCalls).toHaveLength(2);
+      expect(result.functionCalls[0].error).toBe('File not found: missing.txt');
+      expect(result.functionCalls[1].result).toBe('Found content');
+      expect(result.content).toBe('Found the file on second try');
+    });
+
+    it('should log stack traces for function errors', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+      const testError = new Error('Test error');
+      mockReadFileContent.mockRejectedValueOnce(testError);
+
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              tool_calls: [
+                {
+                  id: 'call_stack',
+                  type: 'function',
+                  function: {
+                    name: 'read_file',
+                    arguments: JSON.stringify({ path: 'test.txt' }),
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      });
+
+      mockClient.chat.completions.create.mockResolvedValueOnce({
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: 'Error handled',
+            },
+          },
+        ],
+      });
+
+      const messages = [{ role: 'user' as const, content: 'Read test.txt' }];
+      await executeChatCompletion(mockAgent, messages);
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const calls = consoleErrorSpy.mock.calls;
+      const stackCall = calls.find(call =>
+        call.some(arg => typeof arg === 'string' && arg.includes('Stack:'))
+      );
+      expect(stackCall).toBeDefined();
+
+      consoleErrorSpy.mockRestore();
+    });
+
     it('should throw error when max iterations exceeded', async () => {
       // Mock infinite loop of tool calls
       mockClient.chat.completions.create.mockResolvedValue({

@@ -48,17 +48,34 @@ export async function writeFileContent(
 
     // Handle specific error cases with user-friendly messages
     if (error.code === 'EACCES') {
-      console.error(`[write_file] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[write_file] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Permission denied: ${relativePath}`);
     }
 
     if (error.code === 'ENOSPC') {
-      console.error(`[write_file] Disk full: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[write_file] Disk full: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Disk full: Cannot write ${relativePath}`);
     }
 
+    if (error.code === 'EROFS') {
+      console.error(
+        `[write_file] Read-only filesystem: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
+      throw new Error(`Cannot write to read-only filesystem: ${relativePath}`);
+    }
+
     // Re-throw other errors (including security validation errors)
-    console.error(`[write_file] Error writing ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`);
+    console.error(
+      `[write_file] Error writing ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`,
+      '\nStack:', error.stack
+    );
     throw error;
   }
 }

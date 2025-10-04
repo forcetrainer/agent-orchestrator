@@ -52,17 +52,26 @@ export async function readFileContent(relativePath: string): Promise<string> {
 
     // Handle specific error cases with user-friendly messages
     if (error.code === 'ENOENT') {
-      console.error(`[read_file] File not found: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[read_file] File not found: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`File not found: ${relativePath}`);
     }
 
     if (error.code === 'EACCES') {
-      console.error(`[read_file] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`);
+      console.error(
+        `[read_file] Permission denied: ${relativePath} (${duration.toFixed(2)}ms)`,
+        '\nStack:', error.stack
+      );
       throw new Error(`Permission denied: ${relativePath}`);
     }
 
     // Re-throw other errors (including security validation errors)
-    console.error(`[read_file] Error reading ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`);
+    console.error(
+      `[read_file] Error reading ${relativePath}: ${error.message} (${duration.toFixed(2)}ms)`,
+      '\nStack:', error.stack
+    );
     throw error;
   }
 }

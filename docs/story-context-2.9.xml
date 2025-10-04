@@ -1,0 +1,267 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>9</storyId>
+    <title>Error Handling for File Operations</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>clear error messages when file operations fail</iWant>
+    <soThat>I understand what went wrong</soThat>
+    <tasks>
+- [ ] Enhance File Reader Error Messages (AC: 1, 2, 7)
+  - [ ] Review current error handling in `lib/files/reader.ts`
+  - [ ] Add specific error messages for ENOENT (file not found)
+  - [ ] Add specific error messages for EACCES (permission denied)
+  - [ ] Ensure error messages include file path for context
+  - [ ] Log detailed error information to console with stack trace
+  - [ ] Return user-friendly error messages to OpenAI
+  - [ ] Test error scenarios (missing file, no permissions)
+
+- [ ] Enhance File Writer Error Messages (AC: 2, 4, 7)
+  - [ ] Review current error handling in `lib/files/writer.ts`
+  - [ ] Add specific error messages for EACCES (permission denied)
+  - [ ] Add specific error messages for ENOSPC (disk full)
+  - [ ] Add specific error messages for EROFS (read-only filesystem)
+  - [ ] Ensure parent directory creation errors are handled
+  - [ ] Log detailed error information to console with stack trace
+  - [ ] Return user-friendly error messages to OpenAI
+  - [ ] Test error scenarios (permission denied, disk full simulation)
+
+- [ ] Enhance File Lister Error Messages (AC: 1, 2, 7)
+  - [ ] Review current error handling in `lib/files/lister.ts`
+  - [ ] Add specific error messages for ENOENT (directory not found)
+  - [ ] Add specific error messages for EACCES (permission denied)
+  - [ ] Add specific error messages for ENOTDIR (path is not a directory)
+  - [ ] Log detailed error information to console
+  - [ ] Return user-friendly error messages to OpenAI
+  - [ ] Test error scenarios (missing directory, invalid path)
+
+- [ ] Security Error Message Sanitization (AC: 3)
+  - [ ] Review security.ts error messages
+  - [ ] Ensure security violations return generic "Access denied" message
+  - [ ] Ensure error messages don't leak sensitive path information
+  - [ ] Ensure error messages don't reveal directory structure
+  - [ ] Log full security violation details server-side only
+  - [ ] Test with various attack patterns to verify no information leakage
+
+- [ ] Error Format Standardization for OpenAI (AC: 5)
+  - [ ] Create error result format for function calling
+  - [ ] Update chat.ts to format file operation errors consistently
+  - [ ] Ensure errors return as structured objects (not thrown exceptions)
+  - [ ] Include error type, message, and optional context
+  - [ ] Test error format is parseable by OpenAI
+  - [ ] Verify error format matches OpenAI function calling best practices
+
+- [ ] Conversation Continuity After Errors (AC: 6)
+  - [ ] Verify chat service handles file operation errors gracefully
+  - [ ] Ensure errors don't terminate the conversation loop
+  - [ ] Ensure errors don't corrupt conversation state
+  - [ ] Test that agent can attempt retry after error
+  - [ ] Test that agent can switch to different operation after error
+  - [ ] Verify error recovery in multi-turn conversations
+
+- [ ] Error Logging Enhancement (AC: 7)
+  - [ ] Implement structured error logging utility
+  - [ ] Add timestamp, operation type, and error details to logs
+  - [ ] Log stack traces for unexpected errors
+  - [ ] Log user-facing error messages alongside internal errors
+  - [ ] Add contextual information (file path, operation type, user ID if available)
+  - [ ] Test that logs provide sufficient debugging information
+
+- [ ] Error Handling Integration Tests
+  - [ ] Test end-to-end error flow: file not found → user sees clear message
+  - [ ] Test end-to-end error flow: permission denied → user sees clear message
+  - [ ] Test end-to-end error flow: security violation → generic message shown
+  - [ ] Test conversation continues after errors
+  - [ ] Test multiple errors in single conversation
+  - [ ] Verify all error scenarios documented in tech spec
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">File not found errors explain which file is missing</criterion>
+    <criterion id="2">Permission errors are caught and reported</criterion>
+    <criterion id="3">Path security violations show "Access denied" without details</criterion>
+    <criterion id="4">Disk full or write errors are handled gracefully</criterion>
+    <criterion id="5">Errors returned to OpenAI in parseable format</criterion>
+    <criterion id="6">Agent can continue conversation after file error</criterion>
+    <criterion id="7">Detailed errors logged to console for debugging</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.2: File Operation Tools Implementation</section>
+        <snippet>Error handling patterns for file operations: ENOENT (file not found), EACCES (permission denied), ENOSPC (disk full). All operations should catch errors, log details server-side, and return user-friendly messages.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.3: Path Security & Validation</section>
+        <snippet>Security error sanitization: violations should return generic "Access denied" without revealing path details. Full context logged server-side only to prevent information disclosure.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.5: Chat API Route with Function Calling Loop</section>
+        <snippet>Function calling error handling: errors caught and returned as function results (not thrown). Conversation loop continues after errors, allowing agent to recover and adjust behavior.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 2.9: Error Handling for File Operations</section>
+        <snippet>User story focused on clear, actionable error messages. Covers file operations errors, security violations, conversation continuity, and detailed logging for debugging.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>module</kind>
+        <symbol>readFileContent</symbol>
+        <lines>26-68</lines>
+        <reason>Current error handling implementation for read operations. Already handles ENOENT and EACCES with specific messages and logging. This story enhances error messages and ensures consistency.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/writer.ts</path>
+        <kind>module</kind>
+        <symbol>writeFileContent</symbol>
+        <lines>27-64</lines>
+        <reason>Current error handling for write operations. Handles EACCES and ENOSPC. This story adds EROFS handling and enhances error message quality.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/lister.ts</path>
+        <kind>module</kind>
+        <symbol>listFiles</symbol>
+        <lines>29-119</lines>
+        <reason>Current error handling for list operations. Handles ENOENT, EACCES, ENOTDIR. This story ensures error messages are clear and consistent with other file operations.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath, validateWritePath</symbol>
+        <lines>1-126</lines>
+        <reason>Security validation with error logging. This story ensures security error messages are sanitized (no information leakage) while maintaining detailed server-side logging.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/chat.ts</path>
+        <kind>module</kind>
+        <symbol>executeChatCompletion</symbol>
+        <lines>64-198</lines>
+        <reason>Function calling loop that catches file operation errors. Currently catches errors and adds them to function call results (lines 152-156). This story standardizes error format for OpenAI compatibility.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/__tests__/reader.test.ts</path>
+        <kind>test</kind>
+        <symbol>reader module</symbol>
+        <lines>1-100</lines>
+        <reason>Existing test patterns for file reader. Shows testing approach for error scenarios (ENOENT, directory traversal). This story adds tests for enhanced error messages and formats.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="fs/promises" version="built-in">Node.js file system promises API</package>
+        <package name="path" version="built-in">Node.js path manipulation utilities</package>
+        <package name="openai" version="^4.104.0">OpenAI API client for function calling</package>
+        <package name="jest" version="^30.2.0">Testing framework</package>
+        <package name="ts-jest" version="^29.4.4">TypeScript support for Jest</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST NOT leak sensitive path information in security error messages - use generic "Access denied" for security violations</constraint>
+    <constraint>MUST log detailed error information server-side (console.error) with stack traces for debugging</constraint>
+    <constraint>MUST return errors as structured objects to OpenAI (not throw exceptions in function calling loop)</constraint>
+    <constraint>MUST preserve conversation continuity after errors - errors should not terminate chat loop</constraint>
+    <constraint>MUST include file path context in user-facing error messages (except security violations)</constraint>
+    <constraint>MUST handle Node.js error codes: ENOENT (file not found), EACCES (permission denied), ENOSPC (disk full), ENOTDIR (not a directory), EROFS (read-only filesystem)</constraint>
+    <constraint>MUST maintain consistency with existing error handling patterns in lib/files modules</constraint>
+    <constraint>MUST format errors for OpenAI function calling: {success: false, error: {type, message}}</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ExecutedFunctionCall</name>
+      <kind>type</kind>
+      <signature>
+interface ExecutedFunctionCall {
+  name: string;
+  arguments: Record&lt;string, any&gt;;
+  result?: any;
+  error?: string;
+}
+      </signature>
+      <path>lib/openai/chat.ts:30-36</path>
+      <usage>Function call tracking in chat service. Error field populated when file operation fails. This story ensures error messages in this field are clear and actionable.</usage>
+    </interface>
+    <interface>
+      <name>ChatCompletionResult</name>
+      <kind>type</kind>
+      <signature>
+interface ChatCompletionResult {
+  content: string;
+  functionCalls: ExecutedFunctionCall[];
+}
+      </signature>
+      <path>lib/openai/chat.ts:38-44</path>
+      <usage>Result type for chat completions. Contains array of function calls with error information. This story ensures errors in functionCalls are formatted consistently.</usage>
+    </interface>
+    <interface>
+      <name>readFileContent</name>
+      <kind>function</kind>
+      <signature>async function readFileContent(relativePath: string): Promise&lt;string&gt;</signature>
+      <path>lib/files/reader.ts:26</path>
+      <usage>Reads files from agents or output folders. Throws errors with specific messages for ENOENT, EACCES. This story enhances error message quality and consistency.</usage>
+    </interface>
+    <interface>
+      <name>writeFileContent</name>
+      <kind>function</kind>
+      <signature>async function writeFileContent(relativePath: string, content: string): Promise&lt;void&gt;</signature>
+      <path>lib/files/writer.ts:27</path>
+      <usage>Writes files to output folder. Throws errors for EACCES, ENOSPC. This story adds EROFS handling and improves error messages.</usage>
+    </interface>
+    <interface>
+      <name>listFiles</name>
+      <kind>function</kind>
+      <signature>async function listFiles(relativePath?: string, recursive?: boolean): Promise&lt;FileNode[]&gt;</signature>
+      <path>lib/files/lister.ts:29</path>
+      <usage>Lists directory contents. Throws errors for ENOENT, EACCES, ENOTDIR. This story ensures error messages are clear and consistent.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Tests use Jest testing framework with TypeScript support (ts-jest). File operation tests follow AAA pattern (Arrange-Act-Assert) with proper setup/teardown in beforeAll/afterEach hooks. Tests create temporary test directories and files, then clean up after execution. Error scenarios tested using expect().rejects.toThrow() assertions. Performance requirements validated with performance.now() measurements. Security tests verify errors are thrown for attack patterns without leaking information.
+    </standards>
+    <locations>
+      <location>lib/files/__tests__/reader.test.ts</location>
+      <location>lib/files/__tests__/writer.test.ts</location>
+      <location>lib/files/__tests__/lister.test.ts</location>
+      <location>lib/files/__tests__/security.test.ts</location>
+      <location>lib/openai/__tests__/chat.test.ts (may need creation)</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Test file not found error message includes file path and is user-friendly: "File not found: missing.txt"</idea>
+      <idea ac="2">Test permission denied error message is clear: "Permission denied: protected.txt"</idea>
+      <idea ac="3">Test security violation returns generic message without path details: "Access denied" (not "Access denied: ../../etc/passwd")</idea>
+      <idea ac="4">Test disk full error is handled gracefully with clear message: "Disk full: Cannot write large-file.txt"</idea>
+      <idea ac="4">Test read-only filesystem (EROFS) error returns actionable message</idea>
+      <idea ac="5">Test error format in chat service function calling: {error: "File not found: test.txt"} returned to OpenAI</idea>
+      <idea ac="5">Test structured error object contains type and message fields for OpenAI parsing</idea>
+      <idea ac="6">Test conversation continues after file error - agent receives error in function result and can send next message</idea>
+      <idea ac="6">Test multiple errors in single conversation - conversation state not corrupted</idea>
+      <idea ac="7">Test console.error called with detailed information including file path and error code</idea>
+      <idea ac="7">Test error logging includes timestamp and operation type (read/write/list)</idea>
+      <idea ac="1,2,3,4">Integration test: trigger each error type end-to-end through chat API and verify user sees appropriate message</idea>
+      <idea ac="3">Security test: verify error messages don't leak paths, directory structure, or other sensitive information</idea>
+    </ideas>
+  </tests>
+</story-context>

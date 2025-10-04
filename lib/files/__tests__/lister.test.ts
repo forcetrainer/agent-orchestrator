@@ -143,7 +143,20 @@ describe('lister module', () => {
     });
 
     it('should reject directory traversal attempts', async () => {
-      await expect(listFiles('../../etc')).rejects.toThrow();
+      await expect(listFiles('../../etc')).rejects.toThrow('Access denied');
+    });
+
+    it('should log stack trace for errors', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await listFiles('nonexistent-dir').catch(() => {});
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const calls = consoleErrorSpy.mock.calls;
+      const stackCall = calls.find(call => call.some(arg => typeof arg === 'string' && arg.includes('Stack:')));
+      expect(stackCall).toBeDefined();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle root directory listing (empty path)', async () => {

@@ -84,7 +84,25 @@ describe('reader module', () => {
     });
 
     it('should reject directory traversal attempts', async () => {
-      await expect(readFileContent('../../etc/passwd')).rejects.toThrow();
+      await expect(readFileContent('../../etc/passwd')).rejects.toThrow('Access denied');
+    });
+
+    it('should return clear error message for file not found', async () => {
+      const error = await readFileContent('missing.txt').catch(e => e);
+      expect(error.message).toBe('File not found: missing.txt');
+    });
+
+    it('should log stack trace for errors', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await readFileContent('nonexistent.txt').catch(() => {});
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const calls = consoleErrorSpy.mock.calls;
+      const stackCall = calls.find(call => call.some(arg => typeof arg === 'string' && arg.includes('Stack:')));
+      expect(stackCall).toBeDefined();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('should complete in <100ms for small files', async () => {

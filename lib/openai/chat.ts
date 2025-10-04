@@ -151,8 +151,12 @@ Use these tools to help users accomplish their tasks effectively.`,
             console.log(`[chat] Function ${functionName} executed successfully`);
           } catch (err: any) {
             error = err.message || String(err);
-            result = { error };
-            console.error(`[chat] Function ${functionName} failed:`, error);
+            // Return structured error format for OpenAI
+            result = {
+              success: false,
+              error: error
+            };
+            console.error(`[chat] Function ${functionName} failed:`, error, '\nStack:', err.stack);
           }
 
           // Track function call

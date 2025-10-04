@@ -69,13 +69,26 @@ describe('writer module', () => {
     it('should reject writes to agents folder via traversal', async () => {
       await expect(
         writeFileContent('../agents/bad.txt', 'should fail')
-      ).rejects.toThrow();
+      ).rejects.toThrow('Access denied');
     });
 
     it('should reject directory traversal attempts', async () => {
       await expect(
         writeFileContent('../../etc/passwd', 'should fail')
-      ).rejects.toThrow();
+      ).rejects.toThrow('Access denied');
+    });
+
+    it('should log stack trace for errors', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+
+      await writeFileContent('../../etc/passwd', 'fail').catch(() => {});
+
+      expect(consoleErrorSpy).toHaveBeenCalled();
+      const calls = consoleErrorSpy.mock.calls;
+      const stackCall = calls.find(call => call.some(arg => typeof arg === 'string' && arg.includes('Stack:')));
+      expect(stackCall).toBeDefined();
+
+      consoleErrorSpy.mockRestore();
     });
 
     it('should overwrite existing files', async () => {
