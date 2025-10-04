@@ -1,0 +1,224 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>7</storyId>
+    <title>Agent Loading and Initialization</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an agent builder</asA>
+    <iWant>my agent to load its initial instructions when selected</iWant>
+    <soThat>the agent knows its role and capabilities</soThat>
+    <tasks>
+      - Create Agent Parser Module (AC: 6)
+      - Create Agent Loader Module (AC: 1, 7)
+      - Integrate Agent Loading into Chat Service (AC: 2, 3)
+      - Update Chat API Route (AC: 1, 7)
+      - Implement Lazy-Loading Pattern (AC: 4, 5)
+      - Testing and Validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. When agent is selected, system reads agent definition file
+    2. Agent definition passed as system message to OpenAI
+    3. Agent initializes with correct personality and instructions
+    4. Agent can request additional instruction files via read_file
+    5. Lazy-loading: Not all instructions loaded upfront
+    6. Agent metadata (name, description) extracted correctly
+    7. Multiple agents can be switched without reloading app
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.4: Agent Discovery &amp; Loading (lines 836-996)</section>
+        <snippet>Agent Discovery Pattern: Scan agents folder recursively to find all agent.md files, extract metadata (id, name, description) from each agent file, cache agents in memory to avoid repeated file system access. Performance target: &lt; 500ms to load 10 agents</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Key Data Models (lines 62-94)</section>
+        <snippet>Agent interface: { id: string, name: string, description: string, path: string, mainFile: string }</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Chat Service Implementation (lines 1035-1042)</section>
+        <snippet>System prompt construction: Include agent name, description, and available tools context</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 2.7: Agent Loading and Initialization (lines 371-394)</section>
+        <snippet>Agent builder wants agent to load initial instructions when selected. Agent definition passed as system message to OpenAI. Lazy-loading: Not all instructions loaded upfront. Agent uses read_file to request additional instructions.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>Description, Context and Goals (lines 1-99)</section>
+        <snippet>Core capabilities: OpenAI Compatibility Testing, Simple Deployment (&lt;1 hour for simple agents), End-User Interface. BMAD philosophy: file-based storage, lazy-loading instruction patterns, no complex configuration</snippet>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Technology Stack (lines 17-36)</section>
+        <snippet>Framework: Next.js 14.2.0, Language: TypeScript 5.3.0, LLM Integration: openai 4.28.0, File Operations: fs/promises (Node.js built-in), Path Security: path (Node.js built-in)</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/agents/parser.ts</path>
+        <kind>module</kind>
+        <symbol>parseAgentFile</symbol>
+        <lines>1-69</lines>
+        <reason>Implements agent metadata extraction from agent.md files using regex patterns for name (markdown heading) and description (blockquote). Returns Agent object or null if missing.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/loader.ts</path>
+        <kind>module</kind>
+        <symbol>loadAgents, getAgentById, clearAgentCache</symbol>
+        <lines>1-114</lines>
+        <reason>Implements agent discovery and caching. Scans agents folder, uses parser to extract metadata, caches results in memory. Provides lookup by ID and cache clearing for testing.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/chat.ts</path>
+        <kind>module</kind>
+        <symbol>executeChatCompletion</symbol>
+        <lines>1-199</lines>
+        <reason>Implements chat completion with function calling loop. Builds system message from agent metadata (name, description, tool context). Executes OpenAI API calls and handles function calling iteratively.</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>1-99</lines>
+        <reason>Chat API route that uses getAgentById to load agent, validates inputs, manages conversation state, passes agent to chat service. Returns 404 if agent not found.</reason>
+      </artifact>
+      <artifact>
+        <path>types/index.ts</path>
+        <kind>type-definition</kind>
+        <symbol>Agent</symbol>
+        <lines>24-35</lines>
+        <reason>Agent interface definition with id, name, description, path, and mainFile fields. Core data structure for agent metadata.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath</symbol>
+        <lines>existing</lines>
+        <reason>Path validation function used by agent parser to ensure secure file access. Prevents directory traversal attacks.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/env.ts</path>
+        <kind>module</kind>
+        <symbol>env.AGENTS_PATH</symbol>
+        <lines>existing</lines>
+        <reason>Environment configuration for agents folder location. Used by loader to determine base path for scanning.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" />
+        <package name="openai" version="^4.104.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+      </node>
+      <node-dev>
+        <package name="typescript" version="^5" />
+        <package name="@types/node" version="^20" />
+        <package name="@types/react" version="^18" />
+        <package name="tsx" version="^4.20.6" />
+        <package name="jest" version="^30.2.0" />
+        <package name="ts-jest" version="^29.4.4" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+        <package name="@testing-library/react" version="^16.3.0" />
+      </node-dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Agent Discovery Pattern: Scan agents folder recursively, cache in memory, performance target &lt; 500ms for 10 agents
+    - Lazy-Loading Pattern: Only load agent.md metadata upfront, not full instruction content. Agent uses read_file function calling to access additional files.
+    - System Prompt Format: Include agent name, description, and tool context (read_file, write_file, list_files)
+    - Path Security: All file operations must use validatePath for security validation
+    - Error Handling: Missing agent.md files should be skipped with warning logs, not throw errors
+    - Caching: Implement in-memory cache to avoid repeated file system scans
+    - API Integration: Chat API route must use getAgentById and return 404 if agent not found
+    - Testing Requirements: Unit tests for parser (valid/invalid files), loader (multiple agents/empty folder), and caching behavior
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Agent</name>
+      <kind>TypeScript Interface</kind>
+      <signature>interface Agent { id: string; name: string; description: string; path: string; mainFile: string; }</signature>
+      <path>types/index.ts:24-35</path>
+    </interface>
+    <interface>
+      <name>parseAgentFile</name>
+      <kind>Function</kind>
+      <signature>async function parseAgentFile(agentPath: string, agentId: string): Promise&lt;Agent | null&gt;</signature>
+      <path>lib/agents/parser.ts:28-68</path>
+    </interface>
+    <interface>
+      <name>loadAgents</name>
+      <kind>Function</kind>
+      <signature>async function loadAgents(forceReload = false): Promise&lt;Agent[]&gt;</signature>
+      <path>lib/agents/loader.ts:35-88</path>
+    </interface>
+    <interface>
+      <name>getAgentById</name>
+      <kind>Function</kind>
+      <signature>async function getAgentById(agentId: string): Promise&lt;Agent | null&gt;</signature>
+      <path>lib/agents/loader.ts:96-102</path>
+    </interface>
+    <interface>
+      <name>executeChatCompletion</name>
+      <kind>Function</kind>
+      <signature>async function executeChatCompletion(agent: Agent, messages: ChatCompletionMessageParam[]): Promise&lt;ChatCompletionResult&gt;</signature>
+      <path>lib/openai/chat.ts:64-198</path>
+    </interface>
+    <interface>
+      <name>validatePath</name>
+      <kind>Function</kind>
+      <signature>function validatePath(relativePath: string, baseDir: string): string</signature>
+      <path>lib/files/security.ts (existing)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Unit testing with Jest and ts-jest. Test files located in __tests__ subdirectories alongside source files. Testing requirements from tech-spec-epic-2.md:
+      - Agent parser: Test with valid agent.md files (name extraction, description extraction), invalid/malformed files (missing heading, missing description), and missing files (should return null)
+      - Agent loader: Test with multiple agents, empty agents folder, missing agent.md files (should skip with warning)
+      - Agent caching: Test cache behavior (first load scans file system, subsequent loads use cache, forceReload bypasses cache)
+      - Error handling: Test missing agents folder (should return empty array), permission errors, malformed agent.md
+      - Performance: Verify agent loading completes in &lt; 500ms for 10 agents
+    </standards>
+    <locations>
+      - lib/agents/__tests__/parser.test.ts
+      - lib/agents/__tests__/loader.test.ts
+      - lib/openai/__tests__/chat.test.ts (system prompt construction)
+      - app/api/chat/__tests__/route.test.ts (agent loading integration)
+    </locations>
+    <ideas>
+      <idea ac="1">Test that system reads agent.md when agent is selected via getAgentById</idea>
+      <idea ac="2">Test that agent definition is included in system message passed to executeChatCompletion</idea>
+      <idea ac="3">Test that system prompt includes agent name, description, and tool context</idea>
+      <idea ac="4">Test that agent can use read_file to load additional instruction files (integration test)</idea>
+      <idea ac="5">Test that only agent.md is loaded upfront, not workflow files (verify lazy-loading)</idea>
+      <idea ac="6">Test metadata extraction: valid name from heading, valid description from blockquote, fallback to agentId when missing</idea>
+      <idea ac="7">Test switching between multiple agents without cache conflicts</idea>
+      <idea>Performance test: Load 10 test agents and verify completion in &lt; 500ms</idea>
+      <idea>Security test: Verify validatePath is called for all agent file accesses</idea>
+      <idea>Error handling test: Missing agent.md returns null with warning log, not exception</idea>
+    </ideas>
+  </tests>
+</story-context>
