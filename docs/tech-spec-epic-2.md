@@ -479,26 +479,37 @@ export function validatePath(relativePath: string, baseDir: string): string {
 export function validateWritePath(relativePath: string): string {
   const { env } = require('@/lib/utils')
 
-  // Check if attempting to write to agents folder
-  try {
-    const agentsPath = validatePath(relativePath, env.AGENTS_PATH)
-    // If we got here, path is in agents folder - reject
-    const error = new Error('Cannot write to agents folder (read-only)')
-    console.error('[security] Write validation failed:', {
+  // First validate the path is safe
+  const absolutePath = validatePath(relativePath, env.OUTPUT_PATH)
+
+  // Ensure it's within OUTPUT_PATH (not AGENTS_PATH)
+  const outputPath = resolve(env.OUTPUT_PATH)
+  const agentsPath = resolve(env.AGENTS_PATH)
+
+  const isInOutput = absolutePath.startsWith(outputPath + sep) || absolutePath === outputPath
+  const isInAgents = absolutePath.startsWith(agentsPath + sep) || absolutePath === agentsPath
+
+  if (isInAgents) {
+    console.error('[Security] Write validation failed:', {
       relativePath,
-      reason: 'agents folder is read-only'
+      reason: 'write to agents folder rejected (read-only)',
+      resolvedPath: absolutePath,
+      agentsPath
     })
-    throw error
-  } catch (error: any) {
-    // If it's not in agents folder, that's good - continue
-    if (!error.message.includes('read-only')) {
-      // Some other validation error - propagate it
-      throw error
-    }
+    throw new Error(`Invalid write path: cannot write to agents folder (read-only). Use output folder instead.`)
   }
 
-  // Validate path is in output folder
-  return validatePath(relativePath, env.OUTPUT_PATH)
+  if (!isInOutput) {
+    console.error('[Security] Write validation failed:', {
+      relativePath,
+      reason: 'write outside OUTPUT_PATH',
+      resolvedPath: absolutePath,
+      outputPath
+    })
+    throw new Error(`Invalid write path: writes must be within OUTPUT_PATH (${outputPath})`)
+  }
+
+  return absolutePath
 }
 ```
 

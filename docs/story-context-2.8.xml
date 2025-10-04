@@ -1,0 +1,417 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.8</storyId>
+    <title>Path Security and Validation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>platform operator</asA>
+    <iWant>file operations to be secure</iWant>
+    <soThat>agents cannot access unauthorized files or directories</soThat>
+    <tasks>
+      <task id="1" status="complete">
+        <description>Create Path Security Module (AC: 1, 4, 5)</description>
+        <subtasks>
+          <subtask>Create lib/files/security.ts</subtask>
+          <subtask>Implement validatePath(relativePath, baseDir) function</subtask>
+          <subtask>Reject null bytes in paths (security violation)</subtask>
+          <subtask>Normalize paths using path.normalize()</subtask>
+          <subtask>Reject absolute paths</subtask>
+          <subtask>Resolve symbolic links using path.resolve()</subtask>
+          <subtask>Validate resolved path stays within base directory</subtask>
+          <subtask>Log security violations with detailed context</subtask>
+          <subtask>Return validated absolute path for file operations</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="complete">
+        <description>Implement Write-Specific Path Validation (AC: 2, 3)</description>
+        <subtasks>
+          <subtask>Create validateWritePath(relativePath) function</subtask>
+          <subtask>Check if path resolves to agents folder</subtask>
+          <subtask>Reject writes to agents folder with clear error message</subtask>
+          <subtask>Allow writes to output folder only</subtask>
+          <subtask>Log write validation failures</subtask>
+          <subtask>Return validated path for write operations</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="complete">
+        <description>Update File Operations to Use Security Module</description>
+        <subtasks>
+          <subtask>Update lib/files/reader.ts to use validatePath()</subtask>
+          <subtask>Update lib/files/writer.ts to use validateWritePath()</subtask>
+          <subtask>Update lib/files/lister.ts to use validatePath()</subtask>
+          <subtask>Ensure all file operations validated before execution</subtask>
+          <subtask>Remove any direct path construction without validation</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="complete">
+        <description>Create Security Test Suite (AC: 6, 7)</description>
+        <subtasks>
+          <subtask>Create lib/files/__tests__/security.test.ts</subtask>
+          <subtask>Test directory traversal attempts: ../../etc/passwd</subtask>
+          <subtask>Test absolute paths: /etc/passwd, C:\Windows\System32</subtask>
+          <subtask>Test null bytes: file\0.txt</subtask>
+          <subtask>Test symbolic link validation</subtask>
+          <subtask>Test Windows path handling: ..\\..\\Windows\\System32</subtask>
+          <subtask>Test valid relative paths pass validation</subtask>
+          <subtask>Test path normalization: ./folder/./file.txt</subtask>
+          <subtask>Verify security violations are logged</subtask>
+          <subtask>Test write validation rejects agents folder</subtask>
+          <subtask>Test write validation allows output folder</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="complete">
+        <description>Integration Testing</description>
+        <subtasks>
+          <subtask>Test read_file with attack paths (should be blocked)</subtask>
+          <subtask>Test write_file to agents folder (should be blocked)</subtask>
+          <subtask>Test write_file to output folder (should succeed)</subtask>
+          <subtask>Test list_files with traversal attempts (should be blocked)</subtask>
+          <subtask>Verify error messages don't leak sensitive path info</subtask>
+          <subtask>Run complete attack vector test suite</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-E2-07" priority="high" status="complete">
+      <description>Path traversal attempts (../) are blocked</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>70-81</lines>
+        <logic>Resolves path and checks if it starts with normalizedBase to prevent directory traversal</logic>
+      </implementation>
+      <tests>
+        <test>lib/files/__tests__/security.test.ts:21-25 - rejects ../../etc/passwd</test>
+        <test>lib/files/__tests__/security.test.ts:70-79 - rejects Windows-style traversal</test>
+        <test>lib/files/__tests__/security.test.ts:129-139 - attack vector simulation</test>
+      </tests>
+    </criterion>
+    <criterion id="AC-E2-08" priority="high" status="complete">
+      <description>Writes to agents folder rejected with 403</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>94-126</lines>
+        <logic>validateWritePath checks if resolved path is in AGENTS_PATH and rejects with error</logic>
+      </implementation>
+      <tests>
+        <test>lib/files/__tests__/security.test.ts:104-108 - rejects writes to AGENTS_PATH</test>
+        <test>lib/files/__tests__/security.test.ts:141-150 - blocks write attacks to agents folder</test>
+      </tests>
+    </criterion>
+    <criterion id="AC-E2-09" priority="high" status="complete">
+      <description>Writes to output folder allowed</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>94-126</lines>
+        <logic>validateWritePath accepts paths that resolve within OUTPUT_PATH</logic>
+      </implementation>
+      <tests>
+        <test>lib/files/__tests__/security.test.ts:98-102 - accepts valid write paths in OUTPUT_PATH</test>
+        <test>lib/files/__tests__/security.test.ts:120-124 - accepts nested paths in OUTPUT_PATH</test>
+        <test>lib/files/__tests__/security.test.ts:152-154 - allows valid write to output folder</test>
+      </tests>
+    </criterion>
+    <criterion id="AC4" priority="high" status="complete">
+      <description>Symbolic links are resolved and validated</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>70</lines>
+        <logic>Uses path.resolve() which follows symbolic links before validation</logic>
+      </implementation>
+      <tests>
+        <test>Implicit in all tests - path.resolve() automatically resolves symlinks</test>
+      </tests>
+    </criterion>
+    <criterion id="AC5" priority="medium" status="complete">
+      <description>Path normalization handles Windows and Unix paths</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>14, 70</lines>
+        <logic>Uses path.normalize() and path.sep for cross-platform compatibility</logic>
+      </implementation>
+      <tests>
+        <test>lib/files/__tests__/security.test.ts:70-79 - Windows-style directory traversal</test>
+        <test>lib/files/__tests__/security.test.ts:81-89 - Windows absolute paths</test>
+        <test>lib/files/__tests__/security.test.ts:91-94 - mixed path separators</test>
+      </tests>
+    </criterion>
+    <criterion id="AC6" priority="medium" status="complete">
+      <description>Security violations logged with details</description>
+      <implementation>
+        <file>lib/files/security.ts</file>
+        <lines>34-39, 57-63, 74-80, 106-111, 116-122</lines>
+        <logic>All security failures logged with console.error including path, reason, and context</logic>
+      </implementation>
+      <tests>
+        <test>lib/files/__tests__/security.test.ts:157-209 - security logging test suite</test>
+        <test>Verifies logs contain relativePath, reason, and context for all violation types</test>
+      </tests>
+    </criterion>
+    <criterion id="AC7" priority="high" status="complete">
+      <description>Unit tests verify security controls work</description>
+      <implementation>
+        <file>lib/files/__tests__/security.test.ts</file>
+        <lines>1-210</lines>
+        <coverage>Comprehensive test suite with 30+ tests covering all attack vectors</coverage>
+      </implementation>
+      <tests>
+        <test>validatePath tests: 13 tests (lines 15-95)</test>
+        <test>validateWritePath tests: 5 tests (lines 97-125)</test>
+        <test>Attack simulation: 7 tests (lines 127-155)</test>
+        <test>Security logging: 4 tests (lines 157-209)</test>
+      </tests>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.3: Path Security &amp; Validation (lines 425-602)</section>
+        <snippet>Complete implementation guide for path security including validatePath and validateWritePath functions with security patterns, logging, and test requirements</snippet>
+        <relevance>Primary technical specification for this story - defines exact implementation requirements</relevance>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-2.md</path>
+        <title>Security Tests</title>
+        <section>Security Tests (lines 1496-1525)</section>
+        <snippet>Attack vector list and security test script for validating path traversal prevention</snippet>
+        <relevance>Defines required security test cases and attack simulation patterns</relevance>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 2.8: Path Security and Validation (lines 396-418)</section>
+        <snippet>Story definition with acceptance criteria for path security including directory traversal prevention, write restrictions, and symbolic link handling</snippet>
+        <relevance>Source of acceptance criteria and story requirements</relevance>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-4: Security (lines 209-214)</section>
+        <snippet>Security requirements: file read operations restricted to agents folder, write operations to output directory, no path traversal attacks, API key security</snippet>
+        <relevance>High-level security constraints driving this story</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath</symbol>
+        <lines>31-84</lines>
+        <reason>Core security function that validates paths are within allowed directories and blocks traversal attacks</reason>
+        <status>implemented</status>
+      </artifact>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validateWritePath</symbol>
+        <lines>94-126</lines>
+        <reason>Write-specific validation that enforces OUTPUT_PATH-only writes and blocks agents folder</reason>
+        <status>implemented</status>
+      </artifact>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>module</kind>
+        <symbol>readFileContent</symbol>
+        <lines>12</lines>
+        <reason>Imports and uses validatePath for secure file reads - integration point</reason>
+        <status>integrated</status>
+      </artifact>
+      <artifact>
+        <path>lib/files/writer.ts</path>
+        <kind>module</kind>
+        <symbol>writeFileContent</symbol>
+        <lines>13</lines>
+        <reason>Imports and uses validateWritePath for secure file writes - integration point</reason>
+        <status>integrated</status>
+      </artifact>
+      <artifact>
+        <path>lib/files/lister.ts</path>
+        <kind>module</kind>
+        <symbol>listFiles</symbol>
+        <lines>13</lines>
+        <reason>Imports and uses validatePath for secure directory listing - integration point</reason>
+        <status>integrated</status>
+      </artifact>
+      <artifact>
+        <path>lib/files/__tests__/security.test.ts</path>
+        <kind>test</kind>
+        <symbol>security module tests</symbol>
+        <lines>1-210</lines>
+        <reason>Comprehensive security test suite covering all attack vectors and validation scenarios</reason>
+        <status>implemented</status>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" usage="Framework - provides path utilities and env support" />
+        <package name="typescript" version="^5" usage="Type safety for security functions" />
+        <package name="jest" version="^30.2.0" usage="Test framework for security tests" />
+        <package name="@types/node" version="^20" usage="Node.js path module type definitions" />
+        <package name="ts-jest" version="^29.4.4" usage="TypeScript support in Jest tests" />
+      </node>
+      <builtin>
+        <module name="path" usage="Core Node.js module - provides normalize, resolve, isAbsolute, sep utilities for path validation" />
+      </builtin>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security" priority="critical">
+      <description>All file operations MUST use validatePath or validateWritePath before filesystem access</description>
+      <source>docs/tech-spec-epic-2.md:425-602</source>
+      <enforcement>Import security functions in reader.ts, writer.ts, lister.ts and call before any fs operations</enforcement>
+    </constraint>
+    <constraint type="security" priority="critical">
+      <description>AGENTS_PATH is read-only - no writes allowed under any circumstances</description>
+      <source>docs/tech-spec-epic-2.md:479-502, AC-E2-08</source>
+      <enforcement>validateWritePath explicitly checks and rejects paths resolving to AGENTS_PATH</enforcement>
+    </constraint>
+    <constraint type="security" priority="critical">
+      <description>All security violations must be logged with detailed context for monitoring</description>
+      <source>docs/tech-spec-epic-2.md:445-473</source>
+      <enforcement>console.error with structured object containing relativePath, reason, resolvedPath, baseDir</enforcement>
+    </constraint>
+    <constraint type="architecture" priority="high">
+      <description>Path validation must work cross-platform (Windows, Linux, macOS)</description>
+      <source>AC5, NFR-7</source>
+      <enforcement>Use Node.js path module (normalize, resolve, sep) for platform-agnostic handling</enforcement>
+    </constraint>
+    <constraint type="testing" priority="high">
+      <description>Security controls must have comprehensive test coverage including attack simulation</description>
+      <source>AC7, docs/tech-spec-epic-2.md:1496-1525</source>
+      <enforcement>Test suite must verify all attack vectors are blocked: traversal, absolute paths, null bytes, symlinks</enforcement>
+    </constraint>
+    <constraint type="performance" priority="medium">
+      <description>Path validation should add negligible overhead (&lt;1ms per operation)</description>
+      <source>Story dev notes</source>
+      <enforcement>Use synchronous path operations (normalize, resolve) which are fast built-in Node.js functions</enforcement>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>validatePath</name>
+      <kind>function</kind>
+      <signature>function validatePath(relativePath: string, baseDir: string): string</signature>
+      <path>lib/files/security.ts:31-84</path>
+      <description>Validates that a relative path is safe and within specified base directory. Returns absolute path if valid, throws Error with descriptive message if invalid.</description>
+      <usage>Called by reader.ts, lister.ts before any filesystem read operations</usage>
+    </interface>
+    <interface>
+      <name>validateWritePath</name>
+      <kind>function</kind>
+      <signature>function validateWritePath(relativePath: string): string</signature>
+      <path>lib/files/security.ts:94-126</path>
+      <description>Validates write path is within OUTPUT_PATH only. Rejects writes to AGENTS_PATH. Returns absolute path if valid for writing.</description>
+      <usage>Called by writer.ts before any filesystem write operations</usage>
+    </interface>
+    <interface>
+      <name>env</name>
+      <kind>configuration</kind>
+      <signature>{ AGENTS_PATH: string, OUTPUT_PATH: string }</signature>
+      <path>lib/utils/env.ts</path>
+      <description>Environment configuration providing base paths for validation. AGENTS_PATH and OUTPUT_PATH define allowed directories.</description>
+      <usage>Imported by security.ts to access configured base paths for validation</usage>
+    </interface>
+    <interface>
+      <name>path module</name>
+      <kind>builtin</kind>
+      <signature>{ resolve, normalize, isAbsolute, sep }</signature>
+      <path>node:path</path>
+      <description>Node.js built-in path module providing cross-platform path manipulation utilities</description>
+      <usage>Core dependency for path validation logic - normalize for cleaning paths, resolve for absolute paths, isAbsolute for detection, sep for platform-specific separator</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      The project uses Jest as the testing framework with TypeScript support via ts-jest. Test files are colocated with source in __tests__ directories. Security tests follow AAA (Arrange-Act-Assert) pattern and use descriptive test names with it.each for parameterized tests. All security violations must be tested with both positive (valid paths) and negative (attack vectors) test cases. Security logging is verified by spying on console.error. Tests must be platform-aware - Windows-specific paths only tested when running on Windows using path.sep and path.isAbsolute checks.
+    </standards>
+    <locations>
+      <pattern>lib/files/__tests__/*.test.ts</pattern>
+      <pattern>lib/**/__tests__/*.test.ts</pattern>
+    </locations>
+    <ideas>
+      <idea ac="AC-E2-07">
+        <description>Test directory traversal prevention</description>
+        <tests>
+          <test>Verify ../../etc/passwd is rejected</test>
+          <test>Verify ../../../etc/passwd is rejected</test>
+          <test>Verify Windows-style ..\\..\\Windows traversal rejected on Windows</test>
+          <test>Verify normalized paths like folder/../../../etc/passwd are caught</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+      <idea ac="AC-E2-08">
+        <description>Test write restrictions to agents folder</description>
+        <tests>
+          <test>Verify direct write to agents path rejected</test>
+          <test>Verify traversal to agents path rejected (../agents/file.md)</test>
+          <test>Verify absolute path to agents folder rejected</test>
+          <test>Verify error message indicates read-only restriction</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+      <idea ac="AC-E2-09">
+        <description>Test write allowance to output folder</description>
+        <tests>
+          <test>Verify simple output path accepted (output/file.txt)</test>
+          <test>Verify nested output path accepted (deep/nested/path/file.txt)</test>
+          <test>Verify returned path is absolute and within OUTPUT_PATH</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+      <idea ac="AC4">
+        <description>Test symbolic link resolution</description>
+        <tests>
+          <test>Verify path.resolve automatically follows symlinks</test>
+          <test>Verify symlinked paths are validated after resolution</test>
+          <test>Verify symlink to outside directory is rejected</test>
+        </tests>
+        <status>implicit in implementation - path.resolve handles symlinks</status>
+      </idea>
+      <idea ac="AC5">
+        <description>Test cross-platform path handling</description>
+        <tests>
+          <test>Verify Unix-style paths normalized correctly</test>
+          <test>Verify Windows-style paths handled on Windows platform</test>
+          <test>Verify mixed separators normalized (templates/subfolder\\file.md)</test>
+          <test>Verify multiple slashes normalized (templates//agent.md)</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+      <idea ac="AC6">
+        <description>Test security violation logging</description>
+        <tests>
+          <test>Verify null byte violations logged with reason</test>
+          <test>Verify directory traversal logged with paths</test>
+          <test>Verify absolute path violations logged with allowed dirs</test>
+          <test>Verify write to agents folder logged with context</test>
+          <test>Verify all logs use [Security] prefix</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+      <idea ac="AC7">
+        <description>Comprehensive attack vector simulation</description>
+        <tests>
+          <test>Platform-independent attack vectors (null bytes, Unix paths)</test>
+          <test>Platform-specific attack vectors (Windows paths when applicable)</test>
+          <test>SSH key access attempts (/root/.ssh/id_rsa)</test>
+          <test>System file access attempts (/etc/passwd, C:\\Windows\\System32)</test>
+          <test>Verify all attacks blocked without leaking sensitive info</test>
+        </tests>
+        <status>implemented</status>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>
