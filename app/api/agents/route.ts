@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse, Agent } from '@/types/api';
 import { handleApiError } from '@/lib/utils/errors';
+import { loadAgents } from '@/lib/agents/loader';
 
 /**
  * GET /api/agents
@@ -8,21 +9,15 @@ import { handleApiError } from '@/lib/utils/errors';
  *
  * Story 1.2: API Route Structure
  * Story 1.4: Error Handling Middleware
- * - Returns placeholder sample agent for testing
+ * Story 2.10: Integrate agent loader to discover agents from filesystem
+ * - Uses loadAgents() to discover agents from agents folder
  * - Uses proper ApiResponse<Agent[]> type
  * - Uses centralized error handling with handleApiError
  */
 export async function GET(request: NextRequest) {
   try {
-    // Placeholder agent data for development
-    const agents: Agent[] = [
-      {
-        id: 'sample-agent-1',
-        name: 'Sample Agent',
-        description: 'A sample agent for testing the API route structure',
-        path: '/agents/sample',
-      },
-    ];
+    // Load agents from agents folder using lazy-loading pattern
+    const agents = await loadAgents();
 
     return NextResponse.json<ApiResponse<Agent[]>>(
       {

@@ -1,0 +1,120 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.10</storyId>
+    <title>Test with Sample BMAD Agent</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.10.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to validate a complete BMAD agent workflow</iWant>
+    <soThat>I prove OpenAI compatibility with real agent</soThat>
+    <tasks>
+      - Deploy Sample Agent (AC: 1)
+      - Validate Agent Loading (AC: 2)
+      - Test Basic Conversation (AC: 3)
+      - Test Instruction File Loading (AC: 4)
+      - Test Output File Generation (AC: 5, 6)
+      - End-to-End Workflow Validation (AC: 7)
+      - Document Test Results (AC: 8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Sample BMAD agent deployed to agents folder
+    2. Agent loads successfully when selected
+    3. User can have conversation with agent
+    4. Agent reads instruction files via read_file
+    5. Agent writes output files via write_file
+    6. Generated files appear in output directory
+    7. Complete workflow executes without errors
+    8. Document successful test case for reference
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-2.md" section="Epic Overview" snippet="Epic 2 validates fundamental hypothesis: BMAD agents can work with OpenAI API. Success criteria: OpenAI SDK integrated, file operations implemented, path security enforced, agents load with lazy-loading, chat API executes function calling loop." />
+      <doc path="docs/tech-spec-epic-2.md" section="Story 2.10 (lines 446-469 in epics.md)" snippet="Prerequisites: All Epic 2 stories complete. Choose simple BMAD agent for test. Document OpenAI compatibility modifications. Create test script for validation." />
+      <doc path="docs/epics.md" section="Epic 2 Overview (lines 199-214)" snippet="Epic Goal: Validate BMAD agents work with OpenAI API through function calling for file operations. Success Criteria: At least one BMAD agent executes successfully via OpenAI API, file operations work correctly, lazy-loading pattern viable, path security prevents unauthorized access." />
+      <doc path="docs/PRD.md" section="Goals" snippet="Goal 1: Validate OpenAI API Compatibility - Successfully deploy at least 3 different BMAD agents via OpenAI API. Document modifications and create reusable patterns. Success Metric: 95%+ of BMAD agent features work correctly with OpenAI API." />
+      <doc path="docs/tech-spec-epic-2.md" section="Testing Strategy" snippet="Integration Tests - Coverage Target: 80% for /app/api/chat. Test Scenarios: Full chat flow with function calling, multi-turn conversation, error handling, input validation. Performance Tests: File read &lt; 100ms, Agent loading &lt; 500ms, Chat API &lt; 2s to first OpenAI call." />
+    </docs>
+    <code>
+      <artifact path="lib/agents/loader.ts" kind="module" symbol="loadAgents, getAgentById" lines="1-114" reason="Agent discovery and loading logic - needed to verify agent loads successfully (AC 2)" />
+      <artifact path="lib/agents/parser.ts" kind="module" symbol="parseAgentFile" lines="1-50" reason="Parses agent.md files to extract metadata - validates agent structure" />
+      <artifact path="app/api/chat/route.ts" kind="api-route" symbol="POST" lines="1-99" reason="Chat API endpoint that orchestrates conversation with agents - validates end-to-end workflow (AC 3, 7)" />
+      <artifact path="lib/openai/chat.ts" kind="service" symbol="executeChatCompletion" lines="1-150" reason="Executes OpenAI chat completion with function calling loop - validates file operations (AC 4, 5)" />
+      <artifact path="lib/files/reader.ts" kind="module" symbol="readFileContent" lines="1-50" reason="Implements read_file function - validates instruction loading (AC 4)" />
+      <artifact path="lib/files/writer.ts" kind="module" symbol="writeFileContent" lines="1-50" reason="Implements write_file function - validates output generation (AC 5, 6)" />
+      <artifact path="lib/files/lister.ts" kind="module" symbol="listFiles" lines="1-80" reason="Implements list_files function - supports agent file discovery" />
+      <artifact path="lib/files/security.ts" kind="module" symbol="validatePath, validateWritePath" lines="1-120" reason="Path security validation - ensures no directory traversal in test" />
+      <artifact path="lib/utils/conversations.ts" kind="module" symbol="getConversation, addMessage" lines="1-80" reason="Conversation state management - validates multi-turn chat (AC 3)" />
+    </code>
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0" purpose="OpenAI SDK for function calling integration" />
+        <package name="next" version="14.2.0" purpose="Next.js framework for API routes" />
+        <package name="typescript" version="^5" purpose="Type safety and development" />
+        <package name="jest" version="^30.2.0" purpose="Testing framework for unit/integration tests" />
+        <package name="tsx" version="^4.20.6" purpose="TypeScript execution for test scripts" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Agent must follow BMAD file structure: agents/{agent-id}/agent.md as main file
+    - File operations must use security validation from lib/files/security.ts (no directory traversal)
+    - All file operations must execute via OpenAI function calling (not direct calls)
+    - Read operations restricted to AGENTS_PATH and OUTPUT_PATH environment variables
+    - Write operations restricted to OUTPUT_PATH only (agents folder is read-only)
+    - Agent loading must use lazy-loading pattern (load metadata only, not full instructions upfront)
+    - Conversation state maintained in memory (lost on server restart - documented MVP limitation)
+    - Performance expectations: File operations &lt; 100ms, Agent loading &lt; 500ms, Workflow completion &lt; 30s
+    - Test must validate complete workflow: discovery → loading → conversation → file operations → output verification
+  </constraints>
+
+  <interfaces>
+    <interface name="loadAgents" kind="function" signature="async function loadAgents(forceReload?: boolean): Promise&lt;Agent[]&gt;" path="lib/agents/loader.ts" usage="Call to discover all agents in agents folder. Use forceReload=true to bypass cache." />
+    <interface name="getAgentById" kind="function" signature="async function getAgentById(agentId: string): Promise&lt;Agent | null&gt;" path="lib/agents/loader.ts" usage="Look up specific agent by ID. Returns null if not found." />
+    <interface name="POST /api/chat" kind="api-endpoint" signature="POST { agentId: string, message: string, conversationId?: string }" path="app/api/chat/route.ts" usage="Send message to agent. Returns conversationId and assistant message. Include conversationId for multi-turn." />
+    <interface name="executeChatCompletion" kind="function" signature="async function executeChatCompletion(agent: Agent, messages: ChatCompletionMessageParam[]): Promise&lt;{content: string, functionCalls: FunctionCall[]}&gt;" path="lib/openai/chat.ts" usage="Execute OpenAI chat with function calling. Handles read_file, write_file, list_files." />
+    <interface name="Agent" kind="type" signature="{ id: string, name: string, description: string, path: string, mainFile: string }" path="types/index.ts" usage="Agent metadata structure returned by loader" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with TypeScript support (ts-jest).
+      Unit tests in __tests__ subdirectories alongside source files.
+      Integration tests in __tests__/integration/ at project root.
+      Test files use .test.ts extension.
+      Smoke test script for OpenAI integration in scripts/test-openai-smoke.ts.
+      Manual API testing via curl commands documented in tech spec.
+      Performance testing: measure file operations, agent loading, chat completion times.
+    </standards>
+    <locations>
+      lib/**/__tests__/*.test.ts
+      app/api/**/__tests__/*.test.ts
+      __tests__/integration/*.integration.test.ts
+      scripts/test-openai-smoke.ts (smoke test)
+    </locations>
+    <ideas>
+      - AC1: Create test agent structure (agent.md + workflows/) in agents/sample-agent
+      - AC2: Test GET /api/agents returns sample agent with correct metadata
+      - AC3: Test POST /api/chat initiates conversation, returns conversationId and response
+      - AC3: Test multi-turn conversation maintains context (send 2-3 messages with same conversationId)
+      - AC4: Prompt agent to read workflow file, verify read_file called and content returned
+      - AC5: Prompt agent to generate output, verify write_file called successfully
+      - AC6: Verify output file exists in output/ directory with correct content
+      - AC7: Execute complete workflow end-to-end, monitor logs for errors
+      - AC7: Verify path security enforced (no successful traversal attempts in logs)
+      - AC8: Create test documentation in scripts/test-results-story-2.10.md
+      - AC8: Document conversation transcript, function calls, performance metrics
+      - Integration test: Full workflow with real BMAD agent (not mocked)
+      - Performance test: Measure total workflow time (should be &lt; 30s for simple agent)
+    </ideas>
+  </tests>
+</story-context>
