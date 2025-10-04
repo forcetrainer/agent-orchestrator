@@ -1,6 +1,8 @@
 /**
  * Tests for OpenAI Client Module
  * Story 2.1: OpenAI SDK Integration & Function Tool Definitions
+ *
+ * @jest-environment node
  */
 
 import { getOpenAIClient, resetOpenAIClient } from '../client';

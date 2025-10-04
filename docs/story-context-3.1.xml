@@ -1,0 +1,260 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>1</storyId>
+    <title>Basic Chat UI Layout</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>a clean chat interface with message history</iWant>
+    <soThat>I can have conversations with agents in a familiar format</soThat>
+    <tasks>
+      <task id="1" ac="1.1,1.2,1.3,1.4,1.5">Create main page layout structure
+        <subtask>Create or update app/page.tsx with main layout container</subtask>
+        <subtask>Add Tailwind CSS classes for full-screen flex layout</subtask>
+        <subtask>Create message history container positioned above input field</subtask>
+        <subtask>Create input area container positioned at bottom</subtask>
+      </task>
+      <task id="2" ac="1.1,1.2,1.3,1.4">Build ChatInterface component
+        <subtask>Create components/chat/ChatInterface.tsx component file</subtask>
+        <subtask>Implement message history display area with scrollable container</subtask>
+        <subtask>Implement text input field with proper styling</subtask>
+        <subtask>Add send button next to input field</subtask>
+        <subtask>Apply ChatGPT/Claude.ai inspired styling (clean, minimal)</subtask>
+      </task>
+      <task id="3" ac="1.2">Build MessageList component (visual shell)
+        <subtask>Create components/chat/MessageList.tsx component</subtask>
+        <subtask>Add placeholder for message display area</subtask>
+        <subtask>Configure scrollable overflow behavior</subtask>
+      </task>
+      <task id="4" ac="1.1,1.3">Build InputField component
+        <subtask>Create components/chat/InputField.tsx component</subtask>
+        <subtask>Implement textarea with proper sizing and styling</subtask>
+        <subtask>Add send button with icon or text label</subtask>
+        <subtask>Position input and button in horizontal layout</subtask>
+      </task>
+      <task id="5" ac="1.5">Apply responsive design for desktop
+        <subtask>Test layout on Chrome (latest)</subtask>
+        <subtask>Test layout on Firefox (latest)</subtask>
+        <subtask>Verify responsive breakpoints work (md, lg, xl per UX spec)</subtask>
+        <subtask>Ensure max-width constraint for optimal reading (1200px per architecture)</subtask>
+      </task>
+      <task id="6" ac="1.4,1.6">Visual validation against design principles
+        <subtask>Verify layout resembles ChatGPT/Claude.ai interface</subtask>
+        <subtask>Confirm no interactive functionality implemented yet</subtask>
+        <subtask>Validate color scheme matches UX spec (primary blue, grays)</subtask>
+        <subtask>Check spacing and padding match 4px base unit system</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1.1">Chat interface displays with text input at bottom</criterion>
+    <criterion id="1.2">Message history area shows above input field</criterion>
+    <criterion id="1.3">Send button appears next to input field</criterion>
+    <criterion id="1.4">Layout resembles ChatGPT/Claude.ai (simple, clean, focused)</criterion>
+    <criterion id="1.5">Interface is responsive and works on desktop browsers</criterion>
+    <criterion id="1.6">No functionality required yet - just UI layout</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification: Chat Interface and Agent Selection">
+        <section name="Story 3.1: Basic Chat UI Layout">
+          AC-1.1 through AC-1.6 define the acceptance criteria for the basic chat UI layout.
+          Specifies ChatGPT-style interface with text input at bottom, message history above,
+          send button, responsive desktop layout, and no functionality required yet.
+        </section>
+        <section name="Services and Modules">
+          Defines ChatInterface, MessageList, and InputField components with their responsibilities:
+          - ChatInterface: Message history display, input field, send handling
+          - MessageList: Renders scrollable message history with auto-scroll
+          - InputField: Text input with send button, submission event
+        </section>
+        <section name="Data Models and Contracts">
+          Message interface: { role: 'user' | 'assistant' | 'error', content: string, timestamp?: number }
+          Note: This story only builds UI shell, data handling comes in Story 3.2
+        </section>
+        <section name="Performance">
+          Target: Initial page load &lt; 2 seconds to interactive state.
+          Frontend state management uses React useState (minimal overhead for MVP scale).
+        </section>
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture Document">
+        <section name="7.1 Component Structure">
+          Component Hierarchy shows:
+          RootLayout (Server) → AppProvider (Client, Context) → MainLayout (Client) →
+          ChatPanel (Client) → MessageList (Client) + MessageInput (Client).
+          Atomic pattern: Atoms (Button, Input) → Molecules (Message) → Organisms (ChatPanel) → Templates (MainLayout) → Pages (Home).
+        </section>
+        <section name="7.2 Styling Approach">
+          Tailwind CSS utility-first with design system variables:
+          - Primary: #3B82F6 (blue-500), Primary-hover: #2563EB
+          - Gray scale: gray-50 (#F9FAFB) to gray-900 (#111827)
+          - Base spacing: 4px increments
+          Inline utility classes per UX spec, no separate CSS files.
+        </section>
+        <section name="7.3 Responsive Design">
+          Desktop-first approach. Breakpoints: md: 768px+, lg: 1024px+, xl: 1280px+ (optimal).
+          Example: w-full md:w-[70%] for responsive width.
+          Mobile not optimized in MVP, desktop is primary target.
+        </section>
+        <section name="13.3 Naming Conventions">
+          Components: PascalCase (ChatPanel.tsx, MessageInput.tsx).
+          Folders: kebab-case (file-viewer/).
+          React components: Named exports (export function ChatPanel).
+        </section>
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document">
+        <section name="FR-3: ChatGPT-Style Chat UI">
+          Text input field with send button for user messages.
+          Chat history displays user messages and agent responses in conversation format.
+          Markdown rendering for agent responses (deferred to Story 3.3).
+          Clear visual distinction between user and agent messages (Story 3.2).
+        </section>
+        <section name="UX Design Principles">
+          1. Radical Familiarity: Interface should feel like ChatGPT/Claude.ai immediately, zero learning curve.
+          2. Invisible Complexity: Hide technical details, show simple chat interface.
+          3. Progressive Disclosure: Show only what's needed - chat interface is primary.
+          6. Speed as a Feature: Fast response times, instant interactions, no artificial delays.
+          10. Self-Documenting Interface: UI elements clearly labeled with purpose.
+        </section>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown">
+        <section name="Story 3.1: Basic Chat UI Layout">
+          Prerequisites: Epic 1 complete (Next.js project and API routes ready).
+          Technical Notes: Create page in app/page.tsx, use Tailwind CSS (already set up in Epic 1),
+          create reusable message component for chat bubbles.
+          This is a UI-only story - no backend integration required.
+        </section>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="app/page.tsx" kind="component" symbol="Home" lines="1-56">
+        Current placeholder page with Next.js welcome content.
+        Reason: This file needs to be replaced with ChatPanel component integration for Story 3.1.
+      </artifact>
+      <artifact path="app/layout.tsx" kind="layout" symbol="RootLayout" lines="1-28">
+        Root layout with metadata, Inter font, and environment validation.
+        Reason: Provides the wrapper for page.tsx; validates env on server startup. Story 3.1 works within this layout.
+      </artifact>
+      <artifact path="tailwind.config.ts" kind="config" symbol="config" lines="1-21">
+        Tailwind configuration with content paths and default theme extensions.
+        Reason: Story 3.1 will extend this config with custom colors per solution architecture design system (primary blue, grays).
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="next" version="14.2.0">Next.js framework - provides App Router, React Server Components, built-in TypeScript support</dependency>
+        <dependency name="react" version="^18">React library for building UI components</dependency>
+        <dependency name="react-dom" version="^18">React DOM rendering</dependency>
+        <dependency name="tailwindcss" version="^3.4.0">Utility-first CSS framework for styling (already configured)</dependency>
+        <dependency name="typescript" version="^5">TypeScript for type safety</dependency>
+        <devDependency name="@types/react" version="^18">TypeScript types for React</devDependency>
+        <devDependency name="@types/react-dom" version="^18">TypeScript types for React DOM</devDependency>
+        <devDependency name="eslint-config-next" version="14.2.0">ESLint configuration for Next.js</devDependency>
+      </node>
+      <note>
+        react-markdown (for markdown rendering) will be added in Story 3.3.
+        No backend dependencies needed for this UI-only story.
+      </note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      Component must be client component ('use client' directive) for interactivity in Story 3.2+.
+      Follow component hierarchy: RootLayout → MainLayout → ChatPanel → MessageList + MessageInput.
+    </constraint>
+    <constraint type="styling">
+      Use Tailwind CSS utility-first approach exclusively. No CSS modules, no styled-components.
+      Apply design system colors: primary #3B82F6, gray-50 to gray-900.
+      Base spacing: 4px increments (p-4, m-2, gap-4, etc.).
+    </constraint>
+    <constraint type="responsive">
+      Desktop-first approach. Breakpoints: md (768px+), lg (1024px+), xl (1280px+).
+      Max-width constraint: 1200px for optimal reading per architecture.
+      Mobile optimization explicitly deferred (PRD).
+    </constraint>
+    <constraint type="naming">
+      Component files: PascalCase (ChatPanel.tsx, MessageList.tsx, MessageInput.tsx).
+      Folders: kebab-case (components/chat/).
+      Exports: Named exports (export function ChatPanel).
+    </constraint>
+    <constraint type="functionality">
+      AC-1.6: No interactive functionality required yet - just UI layout.
+      Input field and send button are visual only (onClick/onChange handlers added in Story 3.5).
+      Message history is empty placeholder (messages displayed in Story 3.2).
+    </constraint>
+    <constraint type="testing">
+      Manual visual validation primary for this story (UI shell).
+      Test on Chrome and Firefox (latest versions).
+      Verify layout resembles ChatGPT/Claude.ai reference.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ChatPanel" kind="component" path="components/chat/ChatPanel.tsx (to be created)">
+      export function ChatPanel(): JSX.Element
+      // Main chat container component
+      // Renders MessageList above and MessageInput below
+      // Uses flex-col layout with full screen height
+    </interface>
+    <interface name="MessageList" kind="component" path="components/chat/MessageList.tsx (to be created)">
+      export function MessageList(): JSX.Element
+      // Scrollable message history container (placeholder for now)
+      // Will receive messages array prop in Story 3.2
+      // Configures overflow-y-auto for scrolling
+    </interface>
+    <interface name="MessageInput" kind="component" path="components/chat/MessageInput.tsx (to be created)">
+      export function MessageInput(): JSX.Element
+      // Text input field + send button in horizontal layout
+      // Textarea for multi-line support (Story 3.5 will add actual input handling)
+      // Send button positioned to right of input
+    </interface>
+    <interface name="Home page" kind="page" path="app/page.tsx (to be modified)">
+      export default function Home(): JSX.Element
+      // Replace current placeholder with ChatPanel component
+      // Apply full-screen layout container
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per Tech Spec Section "Test Strategy Summary":
+      - Unit Tests: Jest + React Testing Library for component rendering validation
+      - Target: 80%+ coverage for components (focus on logic, not just rendering)
+      - Integration Tests: Component integration without errors
+      - Manual E2E: Visual regression against ChatGPT/Claude.ai reference, browser compatibility (Chrome, Firefox)
+
+      For Story 3.1 (UI shell only):
+      - Manual testing is primary validation method
+      - Automated tests optional but recommended for component structure
+      - Focus on visual validation and responsive layout testing
+    </standards>
+    <locations>
+      Test files will be created in:
+      - components/chat/__tests__/ChatPanel.test.tsx
+      - components/chat/__tests__/MessageList.test.tsx
+      - components/chat/__tests__/MessageInput.test.tsx
+
+      Test framework already configured (jest.config.js from Epic 1).
+    </locations>
+    <ideas>
+      <test ac="1.1" idea="Unit test: MessageInput component renders with textarea and send button" />
+      <test ac="1.2" idea="Unit test: MessageList component renders with scrollable container" />
+      <test ac="1.3" idea="Unit test: Send button appears and is positioned correctly next to input" />
+      <test ac="1.4" idea="Manual test: Visual comparison with ChatGPT/Claude.ai screenshot - layout matches" />
+      <test ac="1.5" idea="Manual test: Resize browser window, verify responsive breakpoints work (md, lg, xl)" />
+      <test ac="1.5" idea="Manual test: Test on Chrome and Firefox latest versions" />
+      <test ac="1.6" idea="Unit test: Verify no onClick/onChange handlers implemented yet (visual shell only)" />
+      <test ac="1.1,1.2" idea="Integration test: ChatPanel renders both MessageList and MessageInput in correct order" />
+      <test ac="1.5" idea="Unit test: Max-width constraint (1200px) applied to main container" />
+    </ideas>
+  </tests>
+</story-context>

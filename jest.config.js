@@ -13,15 +13,18 @@ const customJestConfig = {
   },
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',
+    'components/**/*.{js,jsx,ts,tsx}',
     'lib/**/*.{js,jsx,ts,tsx}',
     '!**/*.d.ts',
     '!**/node_modules/**',
     '!**/.next/**',
   ],
-  // Use node environment for integration tests
+  // Use jsdom by default for component tests
+  testEnvironment: 'jsdom',
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
   testMatch: [
     '<rootDir>/**/__tests__/**/*.test.ts',
+    '<rootDir>/**/__tests__/**/*.test.tsx',
     '<rootDir>/**/__tests__/**/*.integration.test.ts',
   ],
   globalSetup: undefined,

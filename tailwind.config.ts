@@ -1,5 +1,14 @@
 import type { Config } from "tailwindcss";
 
+/**
+ * Tailwind Configuration
+ *
+ * Design System (per Solution Architecture Section 7.2):
+ * - Primary: #3B82F6 (blue-500), Hover: #2563EB (blue-600)
+ * - Gray scale: gray-50 to gray-900
+ * - Base spacing: 4px increments
+ * - Breakpoints: md (768px), lg (1024px), xl (1280px)
+ */
 const config: Config = {
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
@@ -8,10 +17,14 @@ const config: Config = {
   ],
   theme: {
     extend: {
-      backgroundImage: {
-        "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
-        "gradient-conic":
-          "conic-gradient(from 180deg at 50% 50%, var(--tw-gradient-stops))",
+      colors: {
+        primary: {
+          DEFAULT: '#3B82F6',
+          hover: '#2563EB',
+        },
+      },
+      maxWidth: {
+        'chat': '1200px', // Optimal reading width per architecture
       },
     },
   },

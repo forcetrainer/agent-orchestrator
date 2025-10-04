@@ -1,6 +1,8 @@
 /**
  * Integration tests for Epic 1 - Backend Foundation & Infrastructure
  * Tests all API routes end-to-end
+ *
+ * @jest-environment node
  */
 
 describe('API Integration Tests', () => {

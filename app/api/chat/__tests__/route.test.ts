@@ -2,6 +2,8 @@
  * Tests for Chat API Route
  * Story 2.5: Chat API Route with Function Calling Loop
  * Story 2.6: Conversation State Management
+ *
+ * @jest-environment node
  */
 
 import { POST } from '../route';
