@@ -1,16 +1,21 @@
 /**
  * Tests for Chat API Route
  * Story 2.5: Chat API Route with Function Calling Loop
+ * Story 2.6: Conversation State Management
  */
 
 import { POST } from '../route';
 import { getAgentById } from '@/lib/agents/loader';
 import { executeChatCompletion } from '@/lib/openai/chat';
+import { clearAllConversations } from '@/lib/utils/conversations';
 import { NextRequest } from 'next/server';
 
 // Mock dependencies
 jest.mock('@/lib/agents/loader');
 jest.mock('@/lib/openai/chat');
+jest.mock('@/lib/utils/logger', () => ({
+  log: jest.fn(),
+}));
 
 const mockGetAgentById = getAgentById as jest.MockedFunction<typeof getAgentById>;
 const mockExecuteChatCompletion = executeChatCompletion as jest.MockedFunction<
@@ -28,6 +33,7 @@ describe('POST /api/chat', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    clearAllConversations();
   });
 
   it('should return 200 with chat response when request is valid', async () => {
@@ -118,7 +124,7 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(400);
     expect(data.success).toBe(false);
-    expect(data.error).toBe('Missing or invalid required field: agentId');
+    expect(data.error).toBe('Agent ID is required');
   });
 
   it('should return 400 when message is missing', async () => {
@@ -134,7 +140,7 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(400);
     expect(data.success).toBe(false);
-    expect(data.error).toBe('Missing or invalid required field: message');
+    expect(data.error).toBe('Message is required');
   });
 
   it('should return 400 when agentId is not a string', async () => {
@@ -151,7 +157,7 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(400);
     expect(data.success).toBe(false);
-    expect(data.error).toBe('Missing or invalid required field: agentId');
+    expect(data.error).toBe('Agent ID is required');
   });
 
   it('should return 400 when message is not a string', async () => {
@@ -168,30 +174,62 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(400);
     expect(data.success).toBe(false);
-    expect(data.error).toBe('Missing or invalid required field: message');
+    expect(data.error).toBe('Message is required');
   });
 
-  it('should use existing conversationId when provided', async () => {
-    mockGetAgentById.mockResolvedValueOnce(mockAgent);
-    mockExecuteChatCompletion.mockResolvedValueOnce({
-      content: 'Response',
-      functionCalls: [],
-    });
+  it('should maintain conversation state across multiple messages', async () => {
+    mockGetAgentById.mockResolvedValue(mockAgent);
+    mockExecuteChatCompletion
+      .mockResolvedValueOnce({
+        content: 'First response',
+        functionCalls: [],
+      })
+      .mockResolvedValueOnce({
+        content: 'Second response remembering context',
+        functionCalls: [],
+      });
 
-    const request = new NextRequest('http://localhost:3000/api/chat', {
+    // First message - creates conversation
+    const request1 = new NextRequest('http://localhost:3000/api/chat', {
       method: 'POST',
       body: JSON.stringify({
         agentId: 'test-agent',
-        message: 'Hello',
-        conversationId: 'conv-123',
+        message: 'First message',
       }),
     });
 
-    const response = await POST(request);
-    const data = await response.json();
+    const response1 = await POST(request1);
+    const data1 = await response1.json();
+    const conversationId = data1.data.conversationId;
 
-    expect(response.status).toBe(200);
-    expect(data.data.conversationId).toBe('conv-123');
+    expect(response1.status).toBe(200);
+    expect(conversationId).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
+
+    // Second message - uses existing conversation
+    const request2 = new NextRequest('http://localhost:3000/api/chat', {
+      method: 'POST',
+      body: JSON.stringify({
+        agentId: 'test-agent',
+        message: 'Second message',
+        conversationId,
+      }),
+    });
+
+    const response2 = await POST(request2);
+    const data2 = await response2.json();
+
+    expect(response2.status).toBe(200);
+    expect(data2.data.conversationId).toBe(conversationId);
+
+    // Verify executeChatCompletion received history on second call
+    expect(mockExecuteChatCompletion).toHaveBeenCalledTimes(2);
+    const secondCallArgs = mockExecuteChatCompletion.mock.calls[1];
+    const messagesInSecondCall = secondCallArgs[1];
+
+    // Should include both user messages and first assistant response
+    expect(messagesInSecondCall.length).toBe(3); // user, assistant, user
   });
 
   it('should handle OpenAI API errors gracefully', async () => {
@@ -234,5 +272,129 @@ describe('POST /api/chat', () => {
 
     expect(response.status).toBe(200);
     expect(data.data.message.functionCalls).toBeUndefined();
+  });
+
+  describe('Story 2.6: Conversation State Management', () => {
+    it('should return 400 for invalid conversationId format', async () => {
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'test-agent',
+          message: 'Hello',
+          conversationId: 'invalid-uuid',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Conversation ID must be a valid UUID v4');
+    });
+
+    it('should return 400 for invalid agentId format (uppercase)', async () => {
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'TEST-AGENT',
+          message: 'Hello',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe(
+        'Agent ID must be lowercase alphanumeric with hyphens only'
+      );
+    });
+
+    it('should return 400 for empty message', async () => {
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'test-agent',
+          message: '   ',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Message cannot be empty');
+    });
+
+    it('should return 400 for message exceeding 10,000 characters', async () => {
+      const longMessage = 'a'.repeat(10001);
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'test-agent',
+          message: longMessage,
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(400);
+      expect(data.success).toBe(false);
+      expect(data.error).toContain('exceeds maximum length');
+    });
+
+    it('should generate UUID format conversationId for new conversations', async () => {
+      mockGetAgentById.mockResolvedValueOnce(mockAgent);
+      mockExecuteChatCompletion.mockResolvedValueOnce({
+        content: 'Response',
+        functionCalls: [],
+      });
+
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'test-agent',
+          message: 'Hello',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.data.conversationId).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+    });
+
+    it('should include message IDs and timestamps', async () => {
+      mockGetAgentById.mockResolvedValueOnce(mockAgent);
+      mockExecuteChatCompletion.mockResolvedValueOnce({
+        content: 'Response',
+        functionCalls: [],
+      });
+
+      const request = new NextRequest('http://localhost:3000/api/chat', {
+        method: 'POST',
+        body: JSON.stringify({
+          agentId: 'test-agent',
+          message: 'Hello',
+        }),
+      });
+
+      const response = await POST(request);
+      const data = await response.json();
+
+      expect(response.status).toBe(200);
+      expect(data.data.message.id).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+      );
+      expect(data.data.message.timestamp).toBeDefined();
+      expect(new Date(data.data.message.timestamp)).toBeInstanceOf(Date);
+    });
   });
 });

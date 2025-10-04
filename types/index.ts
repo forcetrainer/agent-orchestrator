@@ -33,3 +33,48 @@ export interface Agent {
   /** Full path to agent.md file */
   mainFile: string;
 }
+
+/**
+ * Function call structure from OpenAI function calling.
+ * Represents a tool call request from the LLM.
+ */
+export interface FunctionCall {
+  name: string;
+  arguments: Record<string, any>;
+  result?: any;
+  error?: string;
+}
+
+/**
+ * Message in a conversation.
+ * Represents a single message from user, assistant, or system.
+ */
+export interface Message {
+  /** Unique message identifier (UUID) */
+  id: string;
+  /** Role of the message sender */
+  role: 'user' | 'assistant' | 'system';
+  /** Message content */
+  content: string;
+  /** Message timestamp */
+  timestamp: Date;
+  /** Optional function calls made in this message */
+  functionCalls?: FunctionCall[];
+}
+
+/**
+ * Conversation containing multiple messages.
+ * Tracks conversation state with timestamps.
+ */
+export interface Conversation {
+  /** Unique conversation identifier (UUID) */
+  id: string;
+  /** Agent ID associated with this conversation */
+  agentId: string;
+  /** Array of messages in chronological order */
+  messages: Message[];
+  /** Conversation creation timestamp */
+  createdAt: Date;
+  /** Last update timestamp */
+  updatedAt: Date;
+}

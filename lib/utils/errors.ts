@@ -37,8 +37,11 @@ export class AppError extends Error {
  * Always returns HTTP 400 Bad Request
  */
 export class ValidationError extends AppError {
-  constructor(message: string) {
+  public readonly field?: string;
+
+  constructor(message: string, field?: string) {
     super(400, message);
+    this.field = field;
   }
 }
 

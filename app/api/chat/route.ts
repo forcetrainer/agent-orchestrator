@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse, ChatRequest, ChatResponse } from '@/types/api';
-import { handleApiError, ValidationError, NotFoundError } from '@/lib/utils/errors';
+import { handleApiError, NotFoundError } from '@/lib/utils/errors';
 import { getAgentById } from '@/lib/agents/loader';
 import { executeChatCompletion } from '@/lib/openai/chat';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
+import {
+  getConversation,
+  addMessage,
+} from '@/lib/utils/conversations';
+import {
+  validateAgentId,
+  validateMessage,
+  validateConversationId,
+} from '@/lib/utils/validation';
 
 /**
  * POST /api/chat
@@ -12,9 +21,11 @@ import type { ChatCompletionMessageParam } from 'openai/resources/chat/completio
  * Story 1.2: API Route Structure
  * Story 1.4: Error Handling Middleware
  * Story 2.5: Chat API Route with Function Calling Loop
- * - Validates required fields (agentId, message)
+ * Story 2.6: Conversation State Management
+ * - Validates all inputs (agentId, message, conversationId)
+ * - Manages conversation state across multiple messages
  * - Loads agent by ID (returns 404 if not found)
- * - Executes chat completion with function calling loop
+ * - Executes chat completion with full conversation history
  * - Returns response with conversationId and assistant message
  * - Uses centralized error handling
  */
@@ -23,14 +34,10 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body: ChatRequest = await request.json();
 
-    // Validate required fields
-    if (!body.agentId || typeof body.agentId !== 'string') {
-      throw new ValidationError('Missing or invalid required field: agentId');
-    }
-
-    if (!body.message || typeof body.message !== 'string') {
-      throw new ValidationError('Missing or invalid required field: message');
-    }
+    // Validate inputs
+    validateAgentId(body.agentId);
+    validateMessage(body.message);
+    validateConversationId(body.conversationId);
 
     // Load agent by ID
     const agent = await getAgentById(body.agentId);
@@ -39,32 +46,42 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError(`Agent not found: ${body.agentId}`);
     }
 
-    // Build conversation messages
-    // For now, we'll use a simple single-message conversation
-    // Story 2.6 will implement full conversation state management
-    const conversationId = body.conversationId || `conv-${Date.now()}`;
+    // Get or create conversation
+    const conversation = getConversation(body.conversationId, body.agentId);
 
-    const messages: ChatCompletionMessageParam[] = [
-      {
-        role: 'user',
-        content: body.message,
-      },
-    ];
+    // Add user message to conversation
+    const userMessage = addMessage(conversation.id, {
+      role: 'user',
+      content: body.message,
+    });
 
-    // Execute chat completion with function calling loop
+    // Build messages array for OpenAI (convert to ChatCompletionMessageParam format)
+    const messages: ChatCompletionMessageParam[] = conversation.messages.map(
+      (msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })
+    );
+
+    // Execute chat completion with full conversation history
     const result = await executeChatCompletion(agent, messages);
 
-    // Build response
-    const messageId = `msg-${Date.now()}`;
+    // Add assistant message to conversation
+    const assistantMessage = addMessage(conversation.id, {
+      role: 'assistant',
+      content: result.content,
+      functionCalls: result.functionCalls.length > 0 ? result.functionCalls : undefined,
+    });
 
+    // Build response
     const response: ChatResponse = {
-      conversationId,
+      conversationId: conversation.id,
       message: {
-        id: messageId,
+        id: assistantMessage.id,
         role: 'assistant',
-        content: result.content,
-        timestamp: new Date().toISOString(),
-        functionCalls: result.functionCalls.length > 0 ? result.functionCalls : undefined,
+        content: assistantMessage.content,
+        timestamp: assistantMessage.timestamp.toISOString(),
+        functionCalls: assistantMessage.functionCalls,
       },
     };
 

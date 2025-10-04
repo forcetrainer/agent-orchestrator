@@ -105,7 +105,7 @@ describe('API Integration Tests', () => {
       expect(response.status).toBe(400);
       expect(data).toHaveProperty('success', false);
       expect(data).toHaveProperty('error');
-      expect(data.error).toContain('agentId');
+      expect(data.error).toBe('Agent ID is required');
     });
 
     it('should return 400 when message is missing', async () => {
@@ -123,7 +123,7 @@ describe('API Integration Tests', () => {
       expect(response.status).toBe(400);
       expect(data).toHaveProperty('success', false);
       expect(data).toHaveProperty('error');
-      expect(data.error).toContain('message');
+      expect(data.error).toBe('Message is required');
     });
   });
 
