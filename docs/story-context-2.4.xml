@@ -1,0 +1,180 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>2.4</storyId>
+    <title>Agent Discovery & Loading</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>agent builder</asA>
+    <iWant>the system to automatically discover and load agents from the agents folder</iWant>
+    <soThat>my agents become available for selection without manual configuration</soThat>
+    <tasks>
+      - Create Agent Parser (AC: 2) to extract metadata from agent.md files
+      - Create Agent Loader (AC: 1, 3, 5, 6) to scan agents folder with caching
+      - Create Sample Agent for Testing (AC: 4) with proper metadata structure
+      - Update Agent Types (AC: 2) to define Agent interface
+      - Testing and Validation (AC: 1, 3, 4, 5, 6) to verify all acceptance criteria
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-E2-10">Agent loader scans agents folder and discovers all agents</criterion>
+    <criterion id="AC-E2-11">Agent parser extracts metadata from agent.md files</criterion>
+    <criterion id="AC-E2-16">Agent instructions lazy-loaded only when requested</criterion>
+    <criterion id="AC-4">Invalid agents (missing agent.md) are skipped with warning</criterion>
+    <criterion id="AC-5">Agent loading completes in < 500ms for 10 agents</criterion>
+    <criterion id="AC-6">Agents cached in memory after first load</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-2.md" title="Tech Spec: Epic 2 - OpenAI Integration" section="Story 2.4: Agent Discovery & Loading (lines 836-996)">
+        Defines complete implementation guidance including:
+        - Agent parser to extract metadata from agent.md files using regex patterns
+        - Agent loader with in-memory caching and lazy-loading pattern
+        - Performance requirements (< 500ms for 10 agents)
+        - Error handling for missing agent.md files
+        - Sample agent structure for testing
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 2, Story 2.7: Agent Loading and Initialization">
+        Defines user story for agent loading:
+        - When agent is selected, system reads agent definition file
+        - Agent definition passed as system message to OpenAI
+        - Support for BMAD's lazy-loading pattern
+        - Agent metadata extraction (name, description)
+        - Multiple agents can be switched without reloading app
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="FR-2: Agent Loading and Initialization">
+        Business requirements for agent loading:
+        - Selected agent's instruction files load into system on demand
+        - Support for BMAD's lazy-loading pattern - only load files when agent requests them
+        - Preserve agent's native directory structure and file organization
+        - Handle agent metadata and configuration from agent definition files
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Component Architecture - Agent Management Layer">
+        Architectural patterns for agent management:
+        - Agent metadata stored in-memory (no database)
+        - Lazy-loading pattern for instruction files
+        - File-based agent definitions
+        - Module location: /lib/agents/
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/files/reader.ts" kind="module" symbol="readFileContent" lines="26-68" reason="Foundation for parsing agent.md files - dual-folder search pattern (agents first, output fallback), security validation, async/await, performance logging">
+        Used by agent parser to read agent.md files safely with path validation
+      </artifact>
+      <artifact path="lib/files/security.ts" kind="module" symbol="validatePath" lines="N/A" reason="Required for validating agent file paths to prevent directory traversal attacks">
+        Critical security component that agent loader must use to validate all file paths
+      </artifact>
+      <artifact path="lib/utils/env.ts" kind="module" symbol="env.AGENTS_PATH" lines="54-56" reason="Defines AGENTS_PATH environment variable with default './agents' - source directory for agent discovery">
+        Agent loader will scan this directory to discover all agents
+      </artifact>
+      <artifact path="types/index.ts" kind="types" symbol="FileNode" lines="4-18" reason="Example of existing interface pattern - shows how to structure Agent interface with proper TypeScript typing and JSDoc comments">
+        Pattern to follow when creating Agent interface
+      </artifact>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="next" version="14.2.0" />
+        <package name="openai" version="^4.104.0" />
+        <package name="react" version="^18" />
+        <package name="@types/node" version="^20" />
+        <package name="typescript" version="^5" />
+        <package name="jest" version="^30.2.0" />
+      </ecosystem>
+      <note>Uses Node.js built-in fs/promises module for async file operations - no additional dependencies required for agent discovery</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="performance">Agent loading must complete in < 500ms for 10 agents (tech-spec-epic-2.md)</constraint>
+    <constraint type="architecture">Lazy-loading pattern: Only load agent metadata (name, description, path), NOT full instruction files (PRD FR-2)</constraint>
+    <constraint type="architecture">In-memory caching: Cache discovered agents in module-level variable or Map to avoid redundant file system scans (tech-spec-epic-2.md)</constraint>
+    <constraint type="security">All agent file paths must be validated through security.validatePath() before file access (Story 2.3 requirement)</constraint>
+    <constraint type="error-handling">Missing agent.md files should log warning and skip agent, not crash system (AC-4, tech-spec-epic-2.md)</constraint>
+    <constraint type="error-handling">Invalid metadata should use fallback values (directory name for agent ID, "No description" for description) (tech-spec-epic-2.md)</constraint>
+    <constraint type="module-location">Agent management code belongs in /lib/agents/ directory following Next.js lib/ pattern (solution-architecture.md)</constraint>
+    <constraint type="testing">Must create sample test agent at agents/test-agent/ with agent.md and workflows/process.md for validation (tech-spec-epic-2.md)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Agent" kind="TypeScript interface" signature="{ id: string; name: string; description: string; path: string; mainFile: string }" path="types/index.ts (to be added)">
+      Represents discovered agent with metadata. Fields:
+      - id: Agent identifier (directory name)
+      - name: Extracted from first markdown heading in agent.md
+      - description: Extracted from first blockquote in agent.md
+      - path: Absolute path to agent directory
+      - mainFile: Full path to agent.md file
+    </interface>
+    <interface name="loadAgents" kind="async function" signature="(forceReload?: boolean) => Promise<Agent[]>" path="lib/agents/loader.ts (to be created)">
+      Scans agents folder and returns array of discovered agents.
+      Uses in-memory cache unless forceReload=true.
+      Returns empty array if agents folder empty/missing.
+    </interface>
+    <interface name="getAgentById" kind="async function" signature="(agentId: string) => Promise<Agent | null>" path="lib/agents/loader.ts (to be created)">
+      Looks up agent by ID from cached agent list.
+      Returns Agent object if found, null otherwise.
+      Calls loadAgents() internally to ensure cache is populated.
+    </interface>
+    <interface name="parseAgentFile" kind="async function" signature="(agentPath: string, agentId: string) => Promise<Agent | null>" path="lib/agents/parser.ts (to be created)">
+      Reads agent.md file and extracts metadata.
+      Returns null if agent.md not found (with warning log).
+      Uses regex to extract name (first heading) and description (first blockquote).
+    </interface>
+    <interface name="clearAgentCache" kind="function" signature="() => void" path="lib/agents/loader.ts (to be created)">
+      Clears cached agents for testing purposes.
+      Sets cache variable to null to force re-scan on next loadAgents() call.
+    </interface>
+    <interface name="readFileContent" kind="async function" signature="(relativePath: string) => Promise<string>" path="lib/files/reader.ts (existing)">
+      Used by parseAgentFile to read agent.md contents.
+      Searches agents folder first, then output folder.
+      Throws Error if file not found in either location.
+    </interface>
+    <interface name="validatePath" kind="function" signature="(relativePath: string, baseDir: string) => string" path="lib/files/security.ts (existing)">
+      Validates and resolves file paths to prevent directory traversal.
+      Returns absolute path if valid, throws Error if security violation.
+      Must be called before any file system operations.
+    </interface>
+    <interface name="env.AGENTS_PATH" kind="getter" signature="string" path="lib/utils/env.ts (existing)">
+      Returns path to agents directory (default: './agents').
+      Used as base directory for agent discovery.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with TypeScript support via ts-jest
+      Test location: __tests__/ directories adjacent to source files
+      Naming convention: [module-name].test.ts
+      Coverage target: 70% for /lib modules (per tech-spec-epic-2.md)
+      Async testing: Use async/await pattern consistently
+      Mocking: Mock file system operations using jest.mock() for fs/promises
+      Performance testing: Validate < 500ms load time using performance.now()
+    </standards>
+    <locations>
+      - lib/agents/__tests__/parser.test.ts (unit tests for agent parser)
+      - lib/agents/__tests__/loader.test.ts (unit tests for agent loader)
+      - agents/test-agent/ (integration test fixture - sample agent)
+    </locations>
+    <ideas>
+      <idea ac="AC-E2-10, AC-E2-11">Test loadAgents() discovers test-agent from file system and extracts correct metadata (name, description)</idea>
+      <idea ac="AC-E2-10">Test loadAgents() returns empty array when agents folder is empty or doesn't exist</idea>
+      <idea ac="AC-E2-11">Test parseAgentFile() extracts name from first markdown heading using regex match</idea>
+      <idea ac="AC-E2-11">Test parseAgentFile() extracts description from first blockquote using regex match</idea>
+      <idea ac="AC-4">Test parseAgentFile() returns null and logs warning when agent.md is missing</idea>
+      <idea ac="AC-4">Test loadAgents() skips agents with missing agent.md and continues scanning</idea>
+      <idea ac="AC-6">Test loadAgents() caches results - second call should not re-scan file system</idea>
+      <idea ac="AC-6">Test forceReload=true bypasses cache and re-scans file system</idea>
+      <idea ac="AC-5">Test loadAgents() completes in < 500ms for 10 agents using performance.now() measurement</idea>
+      <idea ac="AC-E2-16">Test lazy-loading: loadAgents() should NOT read workflow files, only agent.md</idea>
+      <idea ac="AC-E2-10">Test getAgentById() returns correct agent when ID matches</idea>
+      <idea ac="AC-E2-10">Test getAgentById() returns null when ID doesn't match any agent</idea>
+      <idea ac="AC-6">Test clearAgentCache() forces re-scan on next loadAgents() call</idea>
+    </ideas>
+  </tests>
+</story-context>

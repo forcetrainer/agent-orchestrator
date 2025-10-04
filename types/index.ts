@@ -16,3 +16,20 @@ export interface FileNode {
   /** Child nodes (only present for directories when recursive=true) */
   children?: FileNode[];
 }
+
+/**
+ * Agent metadata representation for discovered agents.
+ * Contains essential information about an agent without loading full instructions.
+ */
+export interface Agent {
+  /** Agent identifier (directory name) */
+  id: string;
+  /** Agent name extracted from agent.md heading */
+  name: string;
+  /** Agent description extracted from agent.md blockquote */
+  description: string;
+  /** Absolute path to agent directory */
+  path: string;
+  /** Full path to agent.md file */
+  mainFile: string;
+}
