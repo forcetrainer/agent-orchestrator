@@ -1,0 +1,131 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>6</storyId>
+    <title>Loading Indicator During Agent Processing</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>to see when the agent is thinking/processing</iWant>
+    <soThat>I know the system is working and haven't lost my message</soThat>
+    <tasks>
+- Task 1: Create LoadingIndicator component with animation (AC: 6.2, 6.5)
+- Task 2: Integrate loading indicator into ChatPanel (AC: 6.1, 6.3, 6.4)
+- Task 3: Update MessageList to render loading indicator (AC: 6.3)
+- Task 4: Test loading indicator with slow API responses (AC: 6.6)
+- Task 5: Unit tests for LoadingIndicator component
+- Task 6: Integration tests for loading state
+- Task 7: Manual validation and UX testing (HUMAN-ONLY)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+AC-6.1: Loading indicator appears after sending message
+AC-6.2: Indicator shows "Agent is thinking..." or similar message
+AC-6.3: Indicator appears in chat history where agent response will be
+AC-6.4: Indicator disappears when agent response arrives
+AC-6.5: Visual cue is clear but not distracting (subtle animation)
+AC-6.6: Works correctly even for slow API responses
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Story 3.6: Loading Indicator During Agent Processing">
+        <snippet>AC-6.1: Loading indicator appears after sending message; AC-6.2: Indicator shows "Agent is thinking..." or similar message; AC-6.3: Indicator appears in chat history where agent response will be; AC-6.4: Indicator disappears when agent response arrives; AC-6.5: Visual cue is clear but not distracting (subtle animation); AC-6.6: Works correctly even for slow API responses</snippet>
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Message Send Flow">
+        <snippet>Step 5: Frontend sets isLoading=true, displays LoadingIndicator; Step 12: Frontend sets isLoading=false, hides LoadingIndicator; MessageList auto-scrolls to show new message</snippet>
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Performance (NFR-1)">
+        <snippet>Loading indicator must appear within 200ms of send action; Smooth scroll to new message completes within 300ms</snippet>
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="State Management">
+        <snippet>React useState for local component state (messages, selected agent, loading state); Failed API calls don't leave UI in loading state (always reset isLoading)</snippet>
+      </doc>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Design Principles">
+        <snippet>Radical Familiarity approach - interface should feel instantly recognizable; Animations: smooth slide animation (300ms ease-in-out); Auto-scroll animation: 300ms ease-out; Tailwind transitions + Framer Motion for complex animations</snippet>
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="FR-4: Response Handling and Display">
+        <snippet>Loading indicators during agent processing (shows when agent is "thinking"); Stop/cancel button to halt agent mid-execution; Error messages displayed clearly when agent encounters issues</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 3.6">
+        <snippet>Loading indicator with "Agent is thinking..." message; Appears in chat history where response will be; Typing indicator animation (three animated dots); Set loading=true before API call, false after response</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="ChatPanel" lines="24-175" reason="Main component managing isLoading state (line 34) that LoadingIndicator will consume; handles message send flow">
+        <snippet>const [isLoading, setIsLoading] = useState&lt;boolean&gt;(false); // Line 34 - Loading state for indicator</snippet>
+      </artifact>
+      <artifact path="components/chat/MessageList.tsx" kind="component" symbol="MessageList" lines="20-55" reason="Component that renders messages array; LoadingIndicator will be added here when isLoading=true">
+        <snippet>export function MessageList({ messages }: { messages: Message[] }) // Needs isLoading prop added</snippet>
+      </artifact>
+      <artifact path="components/chat/MessageBubble.tsx" kind="component" symbol="MessageBubble" reason="Existing message display component; LoadingIndicator styling should match agent message style from this component"/>
+      <artifact path="components/chat/InputField.tsx" kind="component" symbol="InputField" reason="Already receives disabled prop from isLoading state (ChatPanel line 151); no changes needed for this story"/>
+      <artifact path="lib/types.ts" kind="type" symbol="Message" lines="10-14" reason="Message interface defines role: 'user' | 'assistant' | 'error'; LoadingIndicator won't use this (not a message object)"/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18">Core React library for component development</package>
+        <package name="react-dom" version="^18">React DOM rendering</package>
+        <package name="next" version="14.2.0">Next.js framework with App Router</package>
+        <package name="tailwindcss" version="^3.4.0">CSS framework for styling and animations</package>
+        <package name="typescript" version="^5">TypeScript for type safety</package>
+        <package name="@testing-library/react" version="^16.3.0">React component testing</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">Jest DOM matchers</package>
+        <package name="jest" version="^30.2.0">Testing framework</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>LoadingIndicator must appear within 200ms of send action (NFR-1 Performance)</constraint>
+    <constraint>Animation should be CSS-based, not JavaScript loops (Performance)</constraint>
+    <constraint>Must work with existing isLoading state from ChatPanel - no new state needed</constraint>
+    <constraint>Loading indicator styling must match left-aligned agent message appearance (consistency)</constraint>
+    <constraint>Must auto-scroll to show loading indicator (existing MessageList behavior)</constraint>
+    <constraint>Loading state must always be reset (isLoading=false) after API response or error</constraint>
+    <constraint>Follow "Radical Familiarity" UX principle - similar to ChatGPT/Claude.ai loading indicators</constraint>
+    <constraint>Animation duration: 1-2 second loop, subtle opacity changes (300ms transitions)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="MessageList" kind="component-props" signature="{ messages: Message[]; isLoading?: boolean }" path="components/chat/MessageList.tsx">
+      <note>Will need to add isLoading prop to conditionally render LoadingIndicator</note>
+    </interface>
+    <interface name="ChatPanel isLoading state" kind="state-hook" signature="const [isLoading, setIsLoading] = useState&lt;boolean&gt;(false)" path="components/chat/ChatPanel.tsx:34">
+      <note>Already exists; pass to MessageList as prop</note>
+    </interface>
+    <interface name="Message" kind="type" signature="{ role: 'user' | 'assistant' | 'error'; content: string; timestamp?: number }" path="lib/types.ts:10-14">
+      <note>LoadingIndicator will NOT use Message interface - renders as separate element when isLoading=true</note>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>
+Testing framework: Jest 30 + TypeScript with React Testing Library 16.3.0 and Jest DOM 6.9.1. Tests located in __tests__ directories co-located with components. Pattern: describe blocks for feature grouping, it/test for individual assertions. Use @testing-library/react render(), screen queries, and userEvent for interactions. Mock functions with jest.fn(). Test files follow ComponentName.test.tsx naming. Run tests with: npm test (all), npm test:watch (watch mode). Accessibility testing with aria-label and role queries. Unit tests for components, integration tests for workflows.
+    </standards>
+    <locations>
+components/chat/__tests__/*.test.tsx - Component unit tests
+app/api/__tests__/*.test.ts - API route tests
+lib/__tests__/*.test.ts - Utility function tests
+    </locations>
+    <ideas>
+      <test ac="AC-6.1" idea="Unit test: render LoadingIndicator and verify 'Agent is thinking...' text is present using screen.getByText()"/>
+      <test ac="AC-6.1" idea="Unit test: verify LoadingIndicator has aria-live='polite' region for screen reader support"/>
+      <test ac="AC-6.2" idea="Unit test: check LoadingIndicator renders with correct message text and structure"/>
+      <test ac="AC-6.3" idea="Integration test: render ChatPanel, send message, verify LoadingIndicator appears in MessageList"/>
+      <test ac="AC-6.4" idea="Integration test: mock API response, verify LoadingIndicator disappears when response arrives"/>
+      <test ac="AC-6.4" idea="Integration test: mock API error, verify LoadingIndicator disappears on error"/>
+      <test ac="AC-6.5" idea="Unit test: verify LoadingIndicator has animation CSS classes (snapshot test or class checking)"/>
+      <test ac="AC-6.5" idea="Visual test: LoadingIndicator styling matches agent message appearance (left-aligned, proper spacing)"/>
+      <test ac="AC-6.6" idea="Integration test: mock slow API response (5s delay), verify LoadingIndicator visible entire time"/>
+      <test ac="AC-6.6" idea="Integration test: rapid successive messages - verify LoadingIndicator behavior with multiple sends"/>
+      <test ac="All" idea="Integration test: full message send flow - user types, sends, loading appears, response arrives, loading disappears"/>
+      <test ac="All" idea="Accessibility test: verify LoadingIndicator is announced to screen readers via aria-live"/>
+    </ideas>
+  </tests>
+</story-context>

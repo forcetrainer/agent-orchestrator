@@ -2,6 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Story 3.6: Loading indicator animation delays */
+@layer utilities {
+  .animation-delay-0 {
+    animation-delay: 0s;
+  }
+  .animation-delay-200 {
+    animation-delay: 0.2s;
+  }
+  .animation-delay-400 {
+    animation-delay: 0.4s;
+  }
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;

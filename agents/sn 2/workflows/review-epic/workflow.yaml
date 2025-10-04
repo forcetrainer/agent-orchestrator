@@ -1,0 +1,28 @@
+# ServiceNow Epic Review Workflow Configuration
+name: "review-epic"
+description: "Comprehensive epic-level review of all stories. Pixel performs deep analysis of story quality, logical ordering, dependency validation, and requirements coverage to ensure the epic is development-ready."
+author: "Pixel the Story Developer"
+
+# Critical variables load from config_source
+config_source: "{project-root}/bmad/sn/config.yaml"
+output_folder: "{config_source}:output_folder"
+sn_projects_folder: "{config_source}:sn_projects_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+project_name: "{config_source}:project_name"
+date: system-generated
+
+# Module path and component files
+installed_path: "{project-root}/bmad/sn/workflows/review-epic"
+template: "{project-root}/bmad/sn/templates/story-template.md"
+instructions: "{installed_path}/instructions.md"
+
+# Input configuration
+epic_folder_path: ""
+requirements_doc_path: ""
+epic_name: ""
+project_slug: ""
+
+# Output configuration - New structure
+review_report_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/3-stories/review-epic-{{project_slug}}-{{date}}.md"
+issues_log_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/3-stories/issues-{{project_slug}}-{{date}}.md"

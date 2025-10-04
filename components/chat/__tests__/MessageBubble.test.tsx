@@ -19,6 +19,7 @@ describe('MessageBubble', () => {
   // Task 5.2: Test user message styling
   it('renders user message with right-aligned blue styling', () => {
     const userMessage: Message = {
+      id: 'user-1',
       role: 'user',
       content: 'Hello, assistant!',
     };
@@ -59,17 +60,17 @@ describe('MessageBubble', () => {
     expect(screen.getByText('This is my message content')).toBeInTheDocument();
   });
 
-  // Task 5.5: Test error role styling
-  it('renders error message with red styling', () => {
-    const errorMessage: Message = {
-      role: 'error',
+  // Task 5.5: Test system/error role styling
+  it('renders system message (error) with red styling', () => {
+    const systemMessage: Message = {
+      role: 'system',
       content: 'Something went wrong',
     };
 
-    const { container } = render(<MessageBubble message={errorMessage} />);
+    const { container } = render(<MessageBubble message={systemMessage} />);
     const bubble = container.firstChild as HTMLElement;
 
-    // Error messages left-aligned with red background
+    // System messages (errors/info) left-aligned with red background
     expect(bubble).toHaveClass('mr-auto');
     expect(bubble).toHaveClass('bg-red-500');
     expect(bubble).toHaveClass('text-white');
@@ -77,8 +78,8 @@ describe('MessageBubble', () => {
 
   // AC-2.3: Visual distinction test
   it('applies different styling classes for different roles', () => {
-    const userMessage: Message = { role: 'user', content: 'User message' };
-    const assistantMessage: Message = { role: 'assistant', content: 'Assistant message' };
+    const userMessage: Message = { id: '1', role: 'user', content: 'User message' };
+    const assistantMessage: Message = { id: '2', role: 'assistant', content: 'Assistant message' };
 
     const { container: userContainer } = render(<MessageBubble message={userMessage} />);
     const { container: assistantContainer } = render(<MessageBubble message={assistantMessage} />);
@@ -94,7 +95,7 @@ describe('MessageBubble', () => {
 
   // Design system compliance
   it('applies design system styling (rounded, padding, max-width)', () => {
-    const message: Message = { role: 'user', content: 'Test' };
+    const message: Message = { id: 'test-1', role: 'user', content: 'Test' };
     const { container } = render(<MessageBubble message={message} />);
     const bubble = container.firstChild as HTMLElement;
 
@@ -112,7 +113,7 @@ describe('MessageBubble', () => {
     // AC-3.1: Headings (h1-h6)
     it('renders markdown headings correctly', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '# H1\n## H2\n### H3\n#### H4\n##### H5\n###### H6',
       };
 
@@ -129,7 +130,7 @@ describe('MessageBubble', () => {
     // AC-3.2: Lists (bulleted and numbered)
     it('renders unordered lists correctly', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '- Item 1\n- Item 2\n- Item 3',
       };
 
@@ -142,7 +143,7 @@ describe('MessageBubble', () => {
 
     it('renders ordered lists correctly', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '1. First\n2. Second\n3. Third',
       };
 
@@ -156,7 +157,7 @@ describe('MessageBubble', () => {
     // AC-3.3: Code blocks with monospace font and background
     it('renders inline code with monospace and background', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: 'Use `npm install` to install packages',
       };
 
@@ -170,7 +171,7 @@ describe('MessageBubble', () => {
 
     it('renders code blocks with monospace and background', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '```javascript\nconst x = 42;\n```',
       };
 
@@ -184,7 +185,7 @@ describe('MessageBubble', () => {
     // AC-3.4: Links are clickable and styled appropriately
     it('renders links with correct attributes and styling', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '[Click here](https://example.com)',
       };
 
@@ -201,7 +202,7 @@ describe('MessageBubble', () => {
     // AC-3.5: Bold and italic text render correctly
     it('renders bold text correctly', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: 'This is **bold** text',
       };
 
@@ -214,7 +215,7 @@ describe('MessageBubble', () => {
 
     it('renders italic text correctly', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: 'This is *italic* text',
       };
 
@@ -228,7 +229,7 @@ describe('MessageBubble', () => {
     // AC-3.6: Line breaks and paragraphs are preserved
     it('preserves paragraphs and line breaks', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: 'First paragraph\n\nSecond paragraph',
       };
 
@@ -241,7 +242,7 @@ describe('MessageBubble', () => {
     // AC-3.7: Tables render correctly
     it('renders markdown tables with structure and styling', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '| Header 1 | Header 2 |\n|----------|----------|\n| Cell 1   | Cell 2   |',
       };
 
@@ -263,7 +264,7 @@ describe('MessageBubble', () => {
     // XSS Prevention: Script tags should be sanitized
     it('prevents XSS with script tags', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '<script>alert("xss")</script>Hello',
       };
 
@@ -279,7 +280,7 @@ describe('MessageBubble', () => {
     // XSS Prevention: Dangerous links should be sanitized
     it('sanitizes javascript: protocol in links', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '[Click](javascript:alert("xss"))',
       };
 
@@ -295,7 +296,7 @@ describe('MessageBubble', () => {
     // XSS Prevention: HTML injection
     it('prevents HTML injection with img onerror', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '<img src=x onerror=alert("xss")>Text',
       };
 
@@ -315,7 +316,7 @@ describe('MessageBubble', () => {
     // User messages should NOT render markdown
     it('does not render markdown for user messages', () => {
       const message: Message = {
-        role: 'user',
+        id: 'test', role: 'user',
         content: '**This should not be bold**',
       };
 
@@ -329,7 +330,7 @@ describe('MessageBubble', () => {
     // Error messages should NOT render markdown
     it('does not render markdown for error messages', () => {
       const message: Message = {
-        role: 'error',
+        id: 'test', role: 'system',
         content: '**This should not be bold**',
       };
 
@@ -343,7 +344,7 @@ describe('MessageBubble', () => {
     // Assistant messages SHOULD render markdown
     it('renders markdown for assistant messages', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '**This should be bold**',
       };
 
@@ -362,7 +363,7 @@ describe('MessageBubble', () => {
     // Empty content
     it('handles empty markdown content gracefully', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: '',
       };
 
@@ -373,7 +374,7 @@ describe('MessageBubble', () => {
     // Mixed plain text and markdown
     it('handles mixed plain text and markdown content', () => {
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: 'Plain text with **bold** and `code`',
       };
 
@@ -389,7 +390,7 @@ describe('MessageBubble', () => {
     it('renders large markdown content without errors', () => {
       const largeContent = '# Heading\n\n' + 'Lorem ipsum dolor sit amet. '.repeat(200);
       const message: Message = {
-        role: 'assistant',
+        id: 'test', role: 'assistant',
         content: largeContent,
       };
 

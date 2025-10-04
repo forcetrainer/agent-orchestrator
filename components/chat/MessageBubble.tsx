@@ -20,7 +20,7 @@ import { Message } from '@/lib/types';
  * Styling follows design system from Story 3.1:
  * - User: Right-aligned, blue background (#3B82F6), white text (plain text, no markdown)
  * - Assistant: Left-aligned, gray background (gray-200), dark text (markdown rendered)
- * - Error: Left-aligned, red background, white text (plain text, no markdown)
+ * - System: Left-aligned, red background, white text (plain text, no markdown - for errors/info)
  * - Max width 75% for readability
  * - Border radius: rounded-lg
  * - Padding: px-4 py-3
@@ -36,7 +36,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
   const roleStyles = {
     user: 'ml-auto bg-blue-500 text-white',
     assistant: 'mr-auto bg-gray-200 text-gray-900',
-    error: 'mr-auto bg-red-500 text-white',
+    system: 'mr-auto bg-red-500 text-white', // System messages (errors/info)
   };
 
   // Render markdown for assistant messages only
@@ -105,7 +105,7 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
       );
     }
 
-    // User and error messages: plain text only (no markdown)
+    // User and system messages: plain text only (no markdown)
     return message.content;
   };
 

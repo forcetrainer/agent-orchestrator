@@ -165,7 +165,8 @@ export function ChatPanel() {
         onAgentSelect={handleAgentSelect}
       />
       {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
-      <MessageList messages={messages} />
+      {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
+      <MessageList messages={messages} isLoading={isLoading} />
 
       {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
       {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}

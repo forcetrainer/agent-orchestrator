@@ -1,6 +1,6 @@
 # Story 3.5: Basic Message Send Functionality
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

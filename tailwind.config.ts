@@ -26,6 +26,27 @@ const config: Config = {
       maxWidth: {
         'chat': '1200px', // Optimal reading width per architecture
       },
+      // Story 3.6: Loading indicator animations
+      keyframes: {
+        'bounce-dot': {
+          '0%, 80%, 100%': {
+            transform: 'translateY(0)',
+            opacity: '1',
+          },
+          '40%': {
+            transform: 'translateY(-4px)',
+            opacity: '0.7',
+          },
+        },
+      },
+      animation: {
+        'bounce-dot': 'bounce-dot 1.4s infinite ease-in-out',
+      },
+      animationDelay: {
+        '0': '0s',
+        '200': '0.2s',
+        '400': '0.4s',
+      },
     },
   },
   plugins: [],
