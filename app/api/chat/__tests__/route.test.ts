@@ -310,7 +310,7 @@ describe('POST /api/chat', () => {
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
       expect(data.error).toBe(
-        'Agent ID must be lowercase alphanumeric with hyphens only'
+        'Agent ID must be lowercase alphanumeric and may include hyphens, slashes, or dots'
       );
     });
 

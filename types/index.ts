@@ -22,15 +22,19 @@ export interface FileNode {
  * Contains essential information about an agent without loading full instructions.
  */
 export interface Agent {
-  /** Agent identifier (directory name) */
+  /** Agent identifier extracted from <agent id="..."> XML attribute */
   id: string;
-  /** Agent name extracted from agent.md heading */
+  /** Agent name extracted from <agent name="..."> XML attribute */
   name: string;
-  /** Agent description extracted from agent.md blockquote */
-  description: string;
+  /** Agent title/role extracted from <agent title="..."> XML attribute */
+  title: string;
+  /** Optional agent description extracted from <persona><role> content */
+  description?: string;
+  /** Optional emoji icon extracted from <agent icon="..."> XML attribute */
+  icon?: string;
   /** Absolute path to agent directory */
   path: string;
-  /** Full path to agent.md file */
+  /** Full path to agent markdown file */
   mainFile: string;
 }
 

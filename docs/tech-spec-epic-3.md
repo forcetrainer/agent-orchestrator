@@ -58,7 +58,8 @@ The chat interface aligns with architectural constraints including:
 | **InputField** (`components/InputField.tsx`) | Text input with send button | User text input | Message submission event | Frontend |
 | **LoadingIndicator** (`components/LoadingIndicator.tsx`) | Shows agent processing state | Loading boolean | Animated "thinking" indicator | Frontend |
 | **ErrorDisplay** (`components/ErrorDisplay.tsx`) | Shows error messages in chat | Error message string | Formatted error display | Frontend |
-| **GET /api/agents** | Scans agents folder, returns available agents | None (reads from file system) | JSON array of agent metadata | Backend |
+| **GET /api/agents** | Scans agents folder at depth 1, parses XML metadata, validates structure | None (reads from file system) | JSON array of agent metadata | Backend |
+| **AgentValidator** (`lib/agentValidator.ts`) | Validates agent file structure and XML metadata | Agent file path and content | Validation result with errors | Backend |
 | **POST /api/chat** | Processes user message via OpenAI | Agent ID, messages array | Agent response message | Backend |
 
 ### Data Models and Contracts
@@ -75,10 +76,12 @@ interface Message {
 **Agent Metadata (from /api/agents)**
 ```typescript
 interface Agent {
-  id: string;              // Unique identifier (file path hash or sanitized name)
-  name: string;            // Display name extracted from agent file
-  description?: string;    // Optional short description
-  path: string;            // Relative path within agents folder (server-side only)
+  id: string;              // Unique identifier from <agent id="..."> XML attribute
+  name: string;            // Display name from <agent name="..."> XML attribute
+  title: string;           // Role description from <agent title="..."> XML attribute
+  description?: string;    // Optional description extracted from <persona><role> content
+  icon?: string;           // Optional emoji from <agent icon="..."> XML attribute
+  path: string;            // Relative path from agents/ directory (server-side only)
 }
 ```
 
@@ -120,10 +123,20 @@ interface AgentsResponse {
     "success": true,
     "agents": [
       {
-        "id": "procurement-advisor",
-        "name": "Procurement Advisor",
-        "description": "Guides users through procurement workflows",
-        "path": "procurement/advisor.md"
+        "id": "alex",
+        "name": "Alex",
+        "title": "Requirements Facilitator",
+        "description": "Requirements Facilitator + User Advocate",
+        "icon": "🤝",
+        "path": "alex/alex-facilitator.md"
+      },
+      {
+        "id": "pixel",
+        "name": "Pixel",
+        "title": "Story Developer",
+        "description": "Agile Story Developer + Quality Advocate",
+        "icon": "📝",
+        "path": "pixel/pixel-story-developer.md"
       }
     ]
   }
@@ -176,17 +189,597 @@ interface AgentsResponse {
   ```
 - **Error Codes:** 400 (invalid request), 404 (agent not found), 500 (server/API error)
 
+### Agent File Structure Requirements
+
+**Directory Organization:**
+- Each agent must reside in its own directory under `agents/`
+- Agent directory name should be a short identifier (e.g., `alex`, `pixel`, `casey`)
+- Agent definition file must be at root of agent directory (depth 1) - **REQUIRED**
+- Workflows and templates subdirectories are **OPTIONAL**
+
+**Required vs Optional Structure:**
+
+```
+agents/
+└── {agent-directory}/           # REQUIRED: One directory per agent
+    ├── {name}-{role}.md         # REQUIRED: Agent definition file with XML metadata
+    ├── workflows/               # OPTIONAL: Agent-specific workflow definitions
+    │   └── {workflow-name}/     # Each workflow in its own subdirectory
+    │       ├── workflow.yaml    # Workflow configuration
+    │       └── instructions.md  # Workflow instructions
+    ├── templates/               # OPTIONAL: Agent-specific template files
+    │   └── {template-name}.md   # Template files for agent outputs
+    └── files/                   # OPTIONAL: Miscellaneous agent files
+        └── {any-file}           # Reference files, data, documentation, etc.
+```
+
+**File Naming Convention:**
+- **Agent definition file:** `{directory-name}-{role-descriptor}.md`
+  - Examples: `alex-facilitator.md`, `pixel-story-developer.md`, `casey-analyst.md`
+  - This ensures unique, descriptive filenames that won't conflict with other .md files
+- **Workflow directories:** Descriptive name matching the workflow purpose (e.g., `intake-app`, `build-stories`)
+- **Template files:** Descriptive name indicating template purpose (e.g., `story-template.md`, `epic-template.md`)
+
+**Minimal Agent Structure (Required Only):**
+```
+agents/
+└── simple-agent/
+    └── simple-agent-helper.md   # Only this file is required
+```
+
+**Full Agent Structure (All Optional Features):**
+```
+agents/
+└── complex-agent/
+    ├── complex-agent-expert.md  # REQUIRED
+    ├── workflows/               # OPTIONAL
+    │   ├── workflow-one/
+    │   │   ├── workflow.yaml
+    │   │   └── instructions.md
+    │   └── workflow-two/
+    │       ├── workflow.yaml
+    │       └── instructions.md
+    ├── templates/               # OPTIONAL
+    │   ├── template-a.md
+    │   └── template-b.md
+    └── files/                   # OPTIONAL
+        ├── reference-data.csv
+        ├── configuration.json
+        └── documentation.md
+```
+
+**Required XML Metadata:**
+Every agent definition file must contain an `<agent>` tag with required attributes:
+```xml
+<agent id="unique-id" name="Display Name" title="Role Title" icon="🔧">
+  <persona>
+    <role>Primary Role Description</role>
+    <!-- Additional persona elements -->
+  </persona>
+  <cmds>
+    <!-- Agent commands -->
+  </cmds>
+</agent>
+```
+
+**Metadata Validation Rules:**
+- `id` attribute: Required, must be unique across all agents
+- `name` attribute: Required, display name for UI
+- `title` attribute: Required, role description
+- `icon` attribute: Optional, emoji character for UI
+- Files without valid `<agent>` tag are ignored during discovery
+
+**Real-World Agent Examples:**
+```
+agents/
+├── alex/
+│   ├── alex-facilitator.md      # REQUIRED: Agent definition (has <agent> tag)
+│   ├── workflows/                # OPTIONAL
+│   │   ├── intake-app/
+│   │   │   ├── workflow.yaml
+│   │   │   └── instructions.md
+│   │   └── intake-workflow/
+│   │       ├── workflow.yaml
+│   │       └── instructions.md
+│   └── templates/                # OPTIONAL
+│       └── initial-requirements.md
+│
+├── pixel/
+│   ├── pixel-story-developer.md  # REQUIRED: Agent definition (has <agent> tag)
+│   └── workflows/                # OPTIONAL
+│       ├── build-stories/
+│       │   ├── workflow.yaml
+│       │   └── instructions.md
+│       └── review-epic/
+│           ├── workflow.yaml
+│           └── instructions.md
+│
+└── carson/
+    └── carson-brainstormer.md    # REQUIRED: Minimal agent (no workflows/templates)
+```
+
+**Intelligent File Upload System:**
+
+The system must automatically determine correct file placement without user intervention. Users should not manually specify paths - the system analyzes file content and structure to place files correctly.
+
+**Upload Approaches:**
+
+The system should support two upload workflows:
+
+1. **Batch Upload (Recommended):** User uploads all agent files at once, system intelligently places each file
+2. **Step-by-Step Upload:** Guided wizard walks user through uploading agent definition, then workflows, then templates, then misc files
+
+**File Upload Placement Rules:**
+
+When users upload files for agents, the system must automatically determine correct placement:
+
+1. **Agent Definition File:**
+   - Location: `agents/{agent-directory}/{agent-name}.md`
+   - Validation: Must contain `<agent id="..." name="..." title="...">` XML tag
+   - Required: Yes - cannot create agent without this file
+
+2. **Workflow Files:**
+   - Location: `agents/{agent-directory}/workflows/{workflow-name}/`
+   - Common files: `workflow.yaml`, `instructions.md`, `checklist.md`
+   - Required: No - only if agent needs workflows
+   - Validation: Directory structure must be preserved
+
+3. **Template Files:**
+   - Location: `agents/{agent-directory}/templates/{template-name}.md`
+   - Required: No - only if agent references templates
+   - Validation: File must exist if agent references it in workflows
+
+4. **Miscellaneous Files:**
+   - Location: `agents/{agent-directory}/files/{filename}`
+   - Required: No - for reference data, configs, documentation
+   - Validation: Any file that doesn't match above categories
+   - Examples: CSV data, JSON configs, additional markdown docs
+
+**Upload Validation Rules:**
+
+- ✅ **Accept:** Files uploaded to correct directory structure
+- ✅ **Accept:** Agent definition file with valid XML metadata
+- ✅ **Accept:** Workflows and templates in proper subdirectories
+- ❌ **Reject:** Agent definition file in workflows/ or templates/ subdirectory
+- ❌ **Reject:** Agent definition file missing required XML metadata
+- ❌ **Reject:** Files uploaded outside agent's own directory
+- ❌ **Reject:** Files with duplicate agent IDs
+
+**File Path Examples:**
+
+```
+✅ VALID:
+agents/alex/alex-facilitator.md                    # Agent definition at root
+agents/alex/workflows/intake-app/workflow.yaml     # Workflow in subdirectory
+agents/alex/templates/template.md                   # Template in subdirectory
+
+❌ INVALID:
+agents/alex/workflows/alex-facilitator.md          # Agent file in wrong location
+agents/alex-facilitator.md                          # Missing agent directory
+agents/alex/agent.md                                # Generic filename (should be alex-*.md)
+agents/alex/alex-facilitator.txt                   # Wrong file extension
+```
+
+**Intelligent File Placement Algorithm:**
+
+When users upload files, the system must automatically determine the correct location:
+
+```typescript
+interface FileClassification {
+  type: 'agent' | 'workflow' | 'template' | 'misc';
+  suggestedPath: string;
+  confidence: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+function classifyUploadedFile(
+  filename: string,
+  content: string,
+  agentId?: string
+): FileClassification {
+
+  // 1. Check if it's an agent definition file
+  if (content.includes('<agent id=') && content.includes('<persona>')) {
+    const id = extractAgentId(content);
+    return {
+      type: 'agent',
+      suggestedPath: `agents/${id}/${filename}`,
+      confidence: 'high',
+      reason: 'File contains <agent> tag with metadata'
+    };
+  }
+
+  // If no agentId provided, cannot classify non-agent files
+  if (!agentId) {
+    return {
+      type: 'misc',
+      suggestedPath: 'unclassified/' + filename,
+      confidence: 'low',
+      reason: 'No agent context provided for non-agent file'
+    };
+  }
+
+  // 2. Check if it's a workflow file
+  if (filename === 'workflow.yaml' || filename.endsWith('.yaml')) {
+    const workflowName = inferWorkflowName(filename, content);
+    return {
+      type: 'workflow',
+      suggestedPath: `agents/${agentId}/workflows/${workflowName}/${filename}`,
+      confidence: 'high',
+      reason: 'YAML file likely workflow configuration'
+    };
+  }
+
+  if (filename === 'instructions.md' || filename === 'checklist.md') {
+    // Need context to determine which workflow this belongs to
+    return {
+      type: 'workflow',
+      suggestedPath: `agents/${agentId}/workflows/[workflow-name]/${filename}`,
+      confidence: 'medium',
+      reason: 'Workflow instruction file, needs workflow context'
+    };
+  }
+
+  // 3. Check if it's a template file
+  if (filename.includes('template') || content.includes('{{') || content.includes('{data}')) {
+    return {
+      type: 'template',
+      suggestedPath: `agents/${agentId}/templates/${filename}`,
+      confidence: 'medium',
+      reason: 'File appears to be a template (naming or mustache syntax)'
+    };
+  }
+
+  // 4. Check file extension for common data/config files
+  const ext = filename.split('.').pop()?.toLowerCase();
+  if (['csv', 'json', 'xml', 'txt', 'pdf'].includes(ext || '')) {
+    return {
+      type: 'misc',
+      suggestedPath: `agents/${agentId}/files/${filename}`,
+      confidence: 'high',
+      reason: `Data/config file (${ext}) - placing in files directory`
+    };
+  }
+
+  // 5. Default: miscellaneous file
+  return {
+    type: 'misc',
+    suggestedPath: `agents/${agentId}/files/${filename}`,
+    confidence: 'low',
+    reason: 'Could not determine specific type, placing in files directory'
+  };
+}
+
+// Batch upload processing
+function processBatchUpload(files: File[]): UploadResult {
+  const results: FileClassification[] = [];
+  let agentId: string | undefined;
+
+  // First pass: find agent definition file to get agentId
+  for (const file of files) {
+    const content = await readFileContent(file);
+    const classification = classifyUploadedFile(file.name, content);
+
+    if (classification.type === 'agent') {
+      agentId = extractAgentId(content);
+      results.push(classification);
+      break;
+    }
+  }
+
+  if (!agentId) {
+    return {
+      success: false,
+      error: 'No agent definition file found. Upload must include a file with <agent> tag.'
+    };
+  }
+
+  // Second pass: classify remaining files with agent context
+  for (const file of files) {
+    if (results.some(r => r.suggestedPath.endsWith(file.name))) {
+      continue; // Skip already classified agent file
+    }
+
+    const content = await readFileContent(file);
+    const classification = classifyUploadedFile(file.name, content, agentId);
+    results.push(classification);
+  }
+
+  // Check for ambiguous classifications
+  const ambiguous = results.filter(r => r.confidence === 'low' || r.confidence === 'medium');
+
+  if (ambiguous.length > 0) {
+    return {
+      success: false,
+      requiresUserInput: true,
+      classifications: results,
+      message: 'Some files need clarification. Please review suggested placements.'
+    };
+  }
+
+  return {
+    success: true,
+    classifications: results,
+    message: `Successfully classified ${results.length} files`
+  };
+}
+```
+
+**Agent Validation Logic:**
+
+The system must implement validation logic for agent discovery and file uploads:
+
+```typescript
+// Pseudo-code for agent validation
+interface AgentValidationResult {
+  valid: boolean;
+  errors: string[];
+  agent?: Agent;
+}
+
+function validateAgentFile(filePath: string, content: string): AgentValidationResult {
+  const errors: string[] = [];
+
+  // 1. Check file location (must be at agents/{dir}/*.md)
+  const pathPattern = /^agents\/([^\/]+)\/([^\/]+)\.md$/;
+  if (!pathPattern.test(filePath)) {
+    errors.push('Agent file must be at agents/{directory}/{name}.md');
+  }
+
+  // 2. Check file extension
+  if (!filePath.endsWith('.md')) {
+    errors.push('Agent file must have .md extension');
+  }
+
+  // 3. Parse XML metadata
+  const agentTagMatch = content.match(/<agent\s+([^>]+)>/);
+  if (!agentTagMatch) {
+    errors.push('Agent file must contain <agent> tag with metadata');
+    return { valid: false, errors };
+  }
+
+  // 4. Extract required attributes
+  const id = extractAttribute(agentTagMatch[1], 'id');
+  const name = extractAttribute(agentTagMatch[1], 'name');
+  const title = extractAttribute(agentTagMatch[1], 'title');
+  const icon = extractAttribute(agentTagMatch[1], 'icon'); // optional
+
+  // 5. Validate required fields
+  if (!id) errors.push('Agent must have id attribute');
+  if (!name) errors.push('Agent must have name attribute');
+  if (!title) errors.push('Agent must have title attribute');
+
+  // 6. Check for duplicate IDs (compare against other agents)
+  if (isDuplicateId(id)) {
+    errors.push(`Agent ID "${id}" already exists`);
+  }
+
+  // 7. Validate persona structure
+  if (!content.includes('<persona>')) {
+    errors.push('Agent must have <persona> section');
+  }
+
+  if (errors.length > 0) {
+    return { valid: false, errors };
+  }
+
+  return {
+    valid: true,
+    errors: [],
+    agent: { id, name, title, icon, path: filePath }
+  };
+}
+
+// Discovery algorithm for GET /api/agents
+function discoverAgents(agentsDir: string): Agent[] {
+  const agents: Agent[] = [];
+
+  // 1. Scan for .md files at depth 1 (agents/*/*.md)
+  const files = glob(`${agentsDir}/*/*.md`);
+
+  // 2. Filter out workflow and template files
+  const candidateFiles = files.filter(f =>
+    !f.includes('/workflows/') &&
+    !f.includes('/templates/')
+  );
+
+  // 3. Validate each candidate file
+  for (const file of candidateFiles) {
+    const content = readFile(file);
+    const result = validateAgentFile(file, content);
+
+    if (result.valid && result.agent) {
+      agents.push(result.agent);
+    }
+    // Silently skip invalid files (logged but not returned)
+  }
+
+  return agents;
+}
+```
+
+**Validation Error Messages:**
+
+User-facing error messages should be clear and actionable:
+
+- "Agent file must be located at agents/{directory}/{name}.md"
+- "Agent file must contain `<agent id='...' name='...' title='...'>` tag"
+- "Agent ID '{id}' is already in use by another agent"
+- "Agent must have required attributes: id, name, title"
+- "Agent file must have .md extension"
+- "Agent file cannot be placed in workflows/ or templates/ subdirectory"
+
+**Multi-Step Upload Workflow (Alternative to Batch Upload):**
+
+For users who prefer guided upload process:
+
+**Step 1: Upload Agent Definition**
+```
+UI: "Upload Agent Definition File"
+- File picker (accepts .md files only)
+- Real-time validation of <agent> tag
+- Shows extracted metadata (id, name, title, icon)
+- Error if invalid or duplicate agent ID
+- Creates: agents/{agent-id}/{filename}.md
+→ Button: "Continue to Workflows" or "Skip to Templates"
+```
+
+**Step 2: Upload Workflows (Optional)**
+```
+UI: "Upload Workflows for {agent-name}"
+- Multiple file picker OR folder upload
+- Groups files by directory structure
+- User can add/remove workflow groups
+- For each workflow:
+  - Workflow name input (or inferred from folder)
+  - Files: workflow.yaml, instructions.md, checklist.md, etc.
+- Creates: agents/{agent-id}/workflows/{workflow-name}/...
+→ Button: "Continue to Templates" or "Skip to Files"
+```
+
+**Step 3: Upload Templates (Optional)**
+```
+UI: "Upload Templates for {agent-name}"
+- Multiple file picker (accepts .md files)
+- Shows list of selected templates with preview
+- User can rename templates before upload
+- Creates: agents/{agent-id}/templates/{template-name}.md
+→ Button: "Continue to Files" or "Finish"
+```
+
+**Step 4: Upload Miscellaneous Files (Optional)**
+```
+UI: "Upload Additional Files for {agent-name}"
+- Multiple file picker (accepts any file type)
+- Shows file list with size and type
+- Optional: add description/purpose for each file
+- Creates: agents/{agent-id}/files/{filename}
+→ Button: "Finish Upload"
+```
+
+**Step 5: Confirmation & Review**
+```
+UI: "Review Agent Upload"
+- Shows complete directory tree
+- File count and total size
+- Option to test agent immediately
+- Button: "Create Agent" (commits all files)
+- Button: "Back" (edit previous steps, files staged but not saved)
+```
+
+**Upload UX Considerations:**
+
+1. **Progress indication:** Show which step user is on (1/5, 2/5, etc.)
+2. **File staging:** Files aren't written to disk until final confirmation
+3. **Error recovery:** User can go back and fix issues without losing progress
+4. **Smart defaults:** System suggests names and placements, user can override
+5. **Preview:** Show file contents before committing
+6. **Drag-and-drop:** Support folder drag-and-drop for batch workflow upload
+
+**Upload System Summary:**
+
+The intelligent file upload system removes the burden of understanding directory structure from users:
+
+✅ **What Users Do:**
+- Upload files (batch or step-by-step)
+- Review suggested placements
+- Confirm or adjust if needed
+
+❌ **What Users DON'T Do:**
+- Manually specify file paths
+- Remember directory structure rules
+- Worry about placing files in wrong locations
+
+**System Responsibilities:**
+1. Analyze file content to determine type (agent, workflow, template, misc)
+2. Extract agent ID from agent definition file
+3. Suggest appropriate directory placement with confidence level
+4. Request user clarification only when confidence is low/medium
+5. Validate all files before writing to disk
+6. Provide clear error messages if validation fails
+7. Support both batch upload and guided step-by-step flow
+
+**Future Enhancements (Post-MVP):**
+- Folder structure preservation (upload entire agent folder)
+- ZIP file support (extract and intelligently place contents)
+- Agent import from GitHub/URL
+- Duplicate detection and merge options
+- Agent versioning and updates
+
+### Migration Guide for Existing Agents
+
+**Agents requiring updates:**
+
+The following agents need to be updated to comply with the new metadata requirements:
+
+1. **sample-agent** (Carson - Brainstorming Specialist)
+   - Current: `agents/sample-agent/agent.md` (missing XML metadata)
+   - Required: Rename to `carson-brainstormer.md` and add XML metadata
+
+2. **test-agent** (Test Agent)
+   - Current: `agents/test-agent/agent.md` (missing XML metadata)
+   - Required: Rename to `test-agent-core.md` and add XML metadata or remove if temporary
+
+3. **smoke-test** (Smoke Test)
+   - Current: `agents/smoke-test/test.md` (not a real agent)
+   - Required: Remove from agents folder or move to `/tests` directory
+
+**Migration Steps:**
+
+For each agent without proper metadata:
+
+1. **Rename the file** following the convention: `{directory-name}-{role-descriptor}.md`
+   ```bash
+   # Example for sample-agent
+   mv agents/sample-agent/agent.md agents/sample-agent/carson-brainstormer.md
+   ```
+
+2. **Add XML metadata** at the top of the file (after any comments):
+   ```xml
+   <agent id="unique-id" name="Agent Name" title="Role Title" icon="📝">
+     <persona>
+       <role>Primary Role Description</role>
+       <identity>Background and expertise description</identity>
+       <communication_style>Communication approach</communication_style>
+       <principles>Core operating principles</principles>
+     </persona>
+
+     <cmds>
+       <c cmd="*help">Show numbered cmd list</c>
+       <!-- Additional commands -->
+     </cmds>
+   </agent>
+   ```
+
+3. **Validate metadata** by checking:
+   - `id` is unique (doesn't conflict with other agents)
+   - `name`, `title` are present and descriptive
+   - `icon` is a single emoji character (optional)
+   - File is at root of agent directory (not in workflows/ or templates/)
+
+4. **Test discovery** by running the application and verifying the agent appears in the dropdown
+
+**Existing Agents with Correct Metadata:**
+
+The following agents already comply with the new requirements:
+- ✅ `agents/alex/alex-facilitator.md` - Has proper XML metadata
+- ✅ `agents/casey/casey-analyst.md` - Has proper XML metadata
+- ✅ `agents/pixel/pixel-story-developer.md` - Has proper XML metadata
+
 ### Workflows and Sequencing
 
 **Agent Discovery Flow:**
 1. User navigates to application root (/)
 2. ChatPage component mounts, calls GET /api/agents
-3. Backend scans agents folder recursively for .md files
-4. Backend parses agent metadata (name, description) from file headers
-5. Backend returns agents array to frontend
-6. AgentSelector populates dropdown with agent names
-7. User selects agent from dropdown
-8. Frontend stores selected agentId in state
+3. Backend scans agents folder at depth 1 (agents/*/*.md pattern)
+4. Backend filters files containing `<agent id="..." name="..." title="...">` XML tag
+5. Backend parses XML attributes (id, name, title, icon) and validates required fields
+6. Backend extracts optional description from `<persona><role>` content if present
+7. Backend validates id uniqueness across all discovered agents
+8. Backend returns agents array to frontend
+9. AgentSelector populates dropdown with agent names (and optional icons)
+10. User selects agent from dropdown
+11. Frontend stores selected agentId in state
 
 **Message Send Flow:**
 1. User types message in InputField component
@@ -403,14 +996,15 @@ interface AgentsResponse {
 
 ### Story 3.4: Agent Discovery and Selection Dropdown
 
-**AC-4.1:** Backend scans agents folder on startup and finds all .md agent files
-**AC-4.2:** `/api/agents` endpoint returns list of discovered agents
+**AC-4.1:** Backend scans agent directories at depth 1 (agents/*/*.md) and identifies agent definition files by presence of `<agent id="..." name="..." title="...">` XML tag
+**AC-4.2:** `/api/agents` endpoint returns list of discovered agents with metadata
 **AC-4.3:** Dropdown/selector displays list of agents in UI
-**AC-4.4:** Agent names extracted from file metadata or filename
+**AC-4.4:** Agent metadata (id, name, title, icon) extracted from XML `<agent>` tag attributes
 **AC-4.5:** Dropdown appears prominently in UI (top of page or sidebar)
 **AC-4.6:** Selecting an agent loads it for conversation
 **AC-4.7:** System handles empty agents folder gracefully (shows message)
-**AC-4.8:** Recursive scanning finds agents in subdirectories
+**AC-4.8:** Agent discovery excludes workflow/template .md files (only scans depth 1)
+**AC-4.9:** Agent discovery validates required XML metadata (id, name, title) and filters out files without valid agent tags
 
 ### Story 3.5: Basic Message Send Functionality
 
@@ -458,7 +1052,7 @@ interface AgentsResponse {
 | **AC-1.1 - AC-1.6** | Story 3.1, PRD FR-3 | Services and Modules: ChatInterface, MessageList, InputField | ChatPage, ChatInterface components | Visual regression test: screenshot comparison with reference design |
 | **AC-2.1 - AC-2.6** | Story 3.2, PRD FR-3, UX Principle 1 | Data Models: Message interface; Workflows: Message Send Flow | MessageList, MessageBubble components | Unit test: message rendering with role='user' vs 'assistant'; Integration test: auto-scroll behavior |
 | **AC-3.1 - AC-3.7** | Story 3.3, PRD FR-3, FR-4 | Dependencies: react-markdown; Services: MessageBubble | MessageBubble with markdown renderer | Unit test: markdown parsing for each element type; Security test: XSS prevention |
-| **AC-4.1 - AC-4.8** | Story 3.4, PRD FR-1, FR-2 | APIs: GET /api/agents; Data Models: Agent interface | AgentSelector, GET /api/agents endpoint | Integration test: scan test agents folder, verify all discovered; Edge case test: empty folder |
+| **AC-4.1 - AC-4.9** | Story 3.4, PRD FR-1, FR-2 | Agent File Structure Requirements; APIs: GET /api/agents; Data Models: Agent interface | AgentSelector, GET /api/agents endpoint | Integration test: scan agents at depth 1, parse XML metadata, validate required fields, verify uniqueness; Edge case test: empty folder, missing metadata, invalid XML |
 | **AC-5.1 - AC-5.8** | Story 3.5, PRD FR-3, FR-5 | APIs: POST /api/chat; Workflows: Message Send Flow | InputField, ChatInterface, POST /api/chat | Integration test: send message → verify API called with correct payload → response rendered |
 | **AC-6.1 - AC-6.6** | Story 3.6, PRD FR-4, NFR-1 | Services: LoadingIndicator; Workflows: Message Send Flow step 5 | LoadingIndicator component | Unit test: loading state toggles correctly; Manual test: verify UX during slow responses |
 | **AC-7.1 - AC-7.6** | Story 3.7, PRD FR-12 | Workflows: New Conversation Flow | ChatInterface reset button | Integration test: clear messages array, verify state reset, agent doesn't remember context |

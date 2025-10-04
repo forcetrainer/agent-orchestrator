@@ -2,14 +2,17 @@ import { ValidationError } from './errors';
 import { log } from './logger';
 
 // Validation patterns
-const AGENT_ID_PATTERN = /^[a-z0-9-]+$/;
+// Updated to support XML-based agent IDs with slashes, dots, and file extensions
+// Example: "bmad/sn/agents/alex-facilitator.md"
+const AGENT_ID_PATTERN = /^[a-z0-9\-/.]+$/;
 const UUID_V4_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_MESSAGE_LENGTH = 10000;
 
 /**
  * Validates agent ID format.
- * Agent IDs must be lowercase alphanumeric with hyphens only.
+ * Agent IDs must be lowercase alphanumeric and may include hyphens, slashes, and dots.
+ * This supports XML-based agent IDs like "bmad/sn/agents/alex-facilitator.md".
  *
  * @param agentId - Agent ID to validate
  * @throws ValidationError if invalid
@@ -23,10 +26,10 @@ export function validateAgentId(agentId: string): void {
   if (!AGENT_ID_PATTERN.test(agentId)) {
     log('ERROR', 'validation:agentId', {
       agentId,
-      error: 'Invalid format - must be lowercase alphanumeric with hyphens',
+      error: 'Invalid format - must be lowercase alphanumeric with hyphens, slashes, or dots',
     });
     throw new ValidationError(
-      'Agent ID must be lowercase alphanumeric with hyphens only',
+      'Agent ID must be lowercase alphanumeric and may include hyphens, slashes, or dots',
       'agentId'
     );
   }

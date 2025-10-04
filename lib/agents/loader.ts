@@ -2,9 +2,9 @@
  * Agent Loader Module
  *
  * Discovers and caches agents from the agents folder.
- * Implements lazy-loading pattern: only loads metadata, not full instructions.
+ * Scans *.md files at depth 1 and validates XML metadata.
  *
- * Performance: Targets < 500ms for 10 agents using async/await and fs/promises.
+ * Performance: Targets under 500ms for 50 agents using async/await and fs/promises.
  * Caching: In-memory Map prevents redundant file system scans.
  */
 
@@ -21,13 +21,21 @@ import { parseAgentFile } from './parser';
 let agentCache: Agent[] | null = null;
 
 /**
+ * Subdirectories to exclude from agent discovery.
+ * These contain workflow/template files, not agent definitions.
+ */
+const EXCLUDED_SUBDIRS = ['workflows', 'templates', 'files'];
+
+/**
  * Loads all agents from the agents folder.
  *
  * Behavior:
- * - First call: Scans file system and caches results
- * - Subsequent calls: Returns cached agents unless forceReload=true
+ * - Scans *.md files at depth 1 only
+ * - Excludes workflows/, templates/, files/ subdirectories
+ * - Validates XML agent tag with required attributes (id, name, title)
+ * - Detects and rejects duplicate agent IDs
+ * - Returns cached agents unless forceReload=true
  * - Empty folder: Returns empty array
- * - Missing agent.md: Skips agent with warning, continues scanning
  *
  * @param forceReload - If true, bypass cache and re-scan file system
  * @returns Array of discovered agents
@@ -42,6 +50,8 @@ export async function loadAgents(forceReload = false): Promise<Agent[]> {
   }
 
   const agents: Agent[] = [];
+  const seenIds = new Set<string>();
+
   // Resolve to absolute path for consistent security validation
   const agentsPath = resolve(env.AGENTS_PATH);
 
@@ -49,19 +59,48 @@ export async function loadAgents(forceReload = false): Promise<Agent[]> {
     // Read all entries in agents directory
     const entries = await readdir(agentsPath, { withFileTypes: true });
 
-    // Filter to directories only (each directory = potential agent)
-    const agentDirs = entries.filter((entry) => entry.isDirectory());
+    // Filter to directories only, excluding workflows/templates/files
+    const agentDirs = entries.filter(
+      (entry) => entry.isDirectory() && !EXCLUDED_SUBDIRS.includes(entry.name)
+    );
 
-    // Parse each agent directory
+    // Scan each directory for *.md files at depth 1
     for (const dir of agentDirs) {
-      const agentId = dir.name;
-      const agentPath = join(agentsPath, agentId);
+      const dirPath = join(agentsPath, dir.name);
 
-      const agent = await parseAgentFile(agentPath, agentId);
+      try {
+        const files = await readdir(dirPath, { withFileTypes: true });
 
-      // Skip agents with missing agent.md (parser returns null)
-      if (agent) {
-        agents.push(agent);
+        // Find all .md files in this directory (depth 1 only)
+        const mdFiles = files.filter(
+          (file) => file.isFile() && file.name.endsWith('.md')
+        );
+
+        // Parse each markdown file
+        for (const file of mdFiles) {
+          const filePath = join(dirPath, file.name);
+
+          const agent = await parseAgentFile(filePath);
+
+          // Skip files without valid <agent> tag (parser returns null)
+          if (!agent) {
+            continue;
+          }
+
+          // Check for duplicate agent IDs
+          if (seenIds.has(agent.id)) {
+            console.warn(
+              `[agent_loader] Duplicate agent ID "${agent.id}" found in ${filePath}, skipping`
+            );
+            continue;
+          }
+
+          seenIds.add(agent.id);
+          agents.push(agent);
+        }
+      } catch (dirError: any) {
+        console.warn(`[agent_loader] Error scanning directory ${dir.name}: ${dirError.message}`);
+        continue;
       }
     }
 

@@ -1,0 +1,113 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.4</storyId>
+    <title>Agent Discovery and Selection Dropdown</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>agent builder</asA>
+    <iWant>the system to automatically discover agents in my agents folder</iWant>
+    <soThat>I don't have to manually configure which agents are available</soThat>
+    <tasks>
+      <task id="1" critical="true">REFACTOR backend agent folder scanning (AC: 4.1, 4.2, 4.4, 4.8, 4.9) - Changes from agent.md lookup to *.md scanning at depth 1 with XML parsing</task>
+      <task id="2">Update GET /api/agents endpoint (AC: 4.2)</task>
+      <task id="3">Create AgentSelector component (AC: 4.3, 4.5, 4.6, 4.7)</task>
+      <task id="4">Integrate AgentSelector into ChatPage (AC: 4.5, 4.6)</task>
+      <task id="5">Implement agent validation utility (AC: 4.9)</task>
+      <task id="6">UPDATE unit tests for refactored agent discovery</task>
+      <task id="7">Integration testing for agent selection flow (AC: All)</task>
+      <task id="8" manual="true">Manual validation and edge case testing - HUMAN VERIFICATION REQUIRED</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="4.1">Backend scans agent directories at depth 1 (agents/*/*.md) and identifies agent definition files by presence of &lt;agent id="..." name="..." title="..."&gt; XML tag</criterion>
+    <criterion id="4.2">/api/agents endpoint returns list of discovered agents with metadata</criterion>
+    <criterion id="4.3">Dropdown/selector displays list of agents in UI</criterion>
+    <criterion id="4.4">Agent metadata (id, name, title, icon) extracted from XML &lt;agent&gt; tag attributes</criterion>
+    <criterion id="4.5">Dropdown appears prominently in UI (top of page or sidebar)</criterion>
+    <criterion id="4.6">Selecting an agent loads it for conversation</criterion>
+    <criterion id="4.7">System handles empty agents folder gracefully (shows message)</criterion>
+    <criterion id="4.8">Agent discovery excludes workflow/template .md files (only scans depth 1)</criterion>
+    <criterion id="4.9">Agent discovery validates required XML metadata (id, name, title) and filters out files without valid agent tags</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" section="Story 3.4: Agent Discovery and Selection Dropdown" snippet="AC-4.1 through AC-4.9 define requirements for depth-1 scanning, XML metadata extraction, validation, and dropdown display" />
+      <doc path="docs/tech-spec-epic-3.md" section="Agent File Structure Requirements" snippet="Agents at agents/{dir}/*.md with XML metadata in &lt;agent id name title icon&gt; tag. Workflows/templates in subdirectories excluded from discovery" />
+      <doc path="docs/tech-spec-epic-3.md" section="Agent Validation Logic" snippet="validateAgentFile() checks path pattern, XML structure, required attributes (id, name, title), uniqueness, and sanitizes metadata for XSS" />
+      <doc path="docs/tech-spec-epic-3.md" section="Services and Modules" snippet="AgentSelector component responsibility: Dropdown for agent discovery/selection; GET /api/agents scans at depth 1, parses XML, validates, returns metadata" />
+      <doc path="docs/tech-spec-epic-3.md" section="Workflows and Sequencing - Agent Discovery Flow" snippet="10-step flow: ChatPage mounts → GET /api/agents → scan depth 1 → filter by XML tag → parse metadata → validate → return array → populate dropdown → user selects → store agentId" />
+      <doc path="docs/prd.md" section="FR-1: Agent Discovery and Selection" snippet="System automatically scans agents folder (recursive .md files), dropdown displays available agents, no manual configuration, list updates when agents added" />
+      <doc path="docs/prd.md" section="FR-2: Agent Loading and Initialization" snippet="Selected agent loads on demand, supports BMAD lazy-loading pattern, preserves directory structure" />
+      <doc path="docs/prd.md" section="NFR-4: Security" snippet="File read operations restricted to agents folder only, prevent path traversal attacks" />
+    </docs>
+    <code>
+      <artifact path="lib/agents/loader.ts" kind="module" symbol="loadAgents()" lines="35-88" reason="REFACTOR REQUIRED: Currently looks for agent.md in directories. Must change to scan *.md at depth 1 with XML parsing" />
+      <artifact path="lib/agents/parser.ts" kind="module" symbol="parseAgentFile()" lines="28-68" reason="REFACTOR REQUIRED: Currently extracts name from # heading and description from blockquote. Must change to XML &lt;agent&gt; tag parsing" />
+      <artifact path="types/index.ts" kind="interface" symbol="Agent" lines="24-35" reason="UPDATE REQUIRED: Add title: string (required) and icon?: string (optional) fields to Agent interface" />
+      <artifact path="app/api/agents/route.ts" kind="api-route" symbol="GET" lines="17-32" reason="Uses loadAgents() - will automatically benefit from refactored loader/parser without direct changes" />
+      <artifact path="lib/files/security.ts" kind="module" symbol="validatePath()" lines="unknown" reason="Path validation utility for preventing directory traversal - reuse for agent file validation" />
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="typescript" version="^5" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1" critical="true">REFACTORING REQUIRED: This story modifies existing Epic 2 code (Stories 2.7, 2.10). Do NOT create new implementations - REFACTOR existing loader.ts and parser.ts files</constraint>
+    <constraint id="2">Breaking change: Replaces markdown parsing (# heading, &gt; blockquote) with XML tag parsing (&lt;agent&gt; attributes)</constraint>
+    <constraint id="3">Breaking change: Replaces agent.md filename lookup with *.md scanning at depth 1 (agents/*/*.md pattern)</constraint>
+    <constraint id="4">All existing agents have been migrated to new XML format (alex, casey, pixel, carson, test-agent) - no production data affected</constraint>
+    <constraint id="5">Security: Reuse validatePath() from lib/files/security.ts for path validation</constraint>
+    <constraint id="6">Performance target: Agent discovery must complete in &lt; 500ms for up to 50 agents (per NFR-1)</constraint>
+    <constraint id="7">Caching: Maintain existing in-memory cache in loader.ts for performance</constraint>
+    <constraint id="8">Exclusion pattern: Filter out workflows/, templates/, files/ subdirectories during scan</constraint>
+    <constraint id="9">Component location: New AgentSelector component must go in components/chat/ directory (not components/)</constraint>
+    <constraint id="10" critical="true">Task 8 manual validation: Agent CANNOT mark manual validation tasks complete. Human must verify and report completion.</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="Agent" kind="TypeScript interface" signature="{ id: string; name: string; title: string; description?: string; icon?: string; path: string; mainFile: string; }" path="types/index.ts" note="UPDATE REQUIRED: Add title (required) and icon (optional) fields" />
+    <interface name="loadAgents" kind="function" signature="async function loadAgents(forceReload?: boolean): Promise&lt;Agent[]&gt;" path="lib/agents/loader.ts" note="REFACTOR: Change from agent.md lookup to *.md scanning at depth 1" />
+    <interface name="parseAgentFile" kind="function" signature="async function parseAgentFile(agentPath: string, agentId: string): Promise&lt;Agent | null&gt;" path="lib/agents/parser.ts" note="REFACTOR: Change from markdown parsing to XML tag parsing. Return null for files without &lt;agent&gt; tag" />
+    <interface name="GET /api/agents" kind="API endpoint" signature="GET /api/agents → ApiResponse&lt;Agent[]&gt;" path="app/api/agents/route.ts" note="No changes needed - uses loadAgents() which will be refactored" />
+    <interface name="validatePath" kind="security function" signature="function validatePath(inputPath: string, baseDir: string): string" path="lib/files/security.ts" note="Reuse for agent file path validation to prevent directory traversal" />
+  </interfaces>
+  <tests>
+    <standards>Testing uses Jest with React Testing Library for frontend components and ts-jest for backend modules. Unit tests verify individual functions, integration tests verify API endpoints and data flows, manual tests verify UI/UX. All tests must maintain backward compatibility during refactoring. UPDATE existing tests in lib/agents/__tests__/ to reflect new XML parsing behavior.</standards>
+    <locations>
+      <location path="lib/agents/__tests__/loader.test.ts" note="UPDATE for depth-1 scanning and XML parsing" />
+      <location path="lib/agents/__tests__/parser.test.ts" note="UPDATE for XML tag extraction instead of markdown" />
+      <location path="components/chat/__tests__/AgentSelector.test.tsx" note="NEW component test for dropdown" />
+      <location path="app/api/agents/__tests__/route.test.ts" note="UPDATE if needed to verify new Agent interface" />
+      <location path="lib/agents/__tests__/validator.test.ts" note="NEW validation utility tests" />
+    </locations>
+    <ideas>
+      <test ac="4.1" desc="Unit test: scanner finds agents at depth 1 only (agents/*/*.md), excludes deeper nesting" />
+      <test ac="4.1" desc="Unit test: scanner filters files by presence of &lt;agent id name title&gt; XML tag" />
+      <test ac="4.2" desc="Integration test: GET /api/agents returns array with new title and icon fields" />
+      <test ac="4.4" desc="Unit test: parser extracts id, name, title, icon from XML attributes correctly" />
+      <test ac="4.4" desc="Unit test: parser extracts description from &lt;persona&gt;&lt;role&gt; content if present" />
+      <test ac="4.7" desc="Integration test: empty agents folder returns empty array with proper response" />
+      <test ac="4.8" desc="Unit test: scanner excludes workflows/, templates/, files/ subdirectories" />
+      <test ac="4.9" desc="Unit test: validation rejects files missing required attributes (id, name, title)" />
+      <test ac="4.9" desc="Unit test: validation detects and rejects duplicate agent IDs" />
+      <test ac="4.9" desc="Unit test: validation returns null for files without &lt;agent&gt; tag" />
+      <test ac="4.3,4.5,4.6" desc="Component test: AgentSelector renders dropdown, handles selection, updates parent state" />
+      <test ac="4.6" desc="Integration test: selecting agent updates ChatPage state with correct agentId" />
+      <test manual="true" ac="All" desc="Manual test: Verify real BMAD agents display correctly in dropdown" />
+      <test manual="true" ac="All" desc="Manual test: Test agent selection and conversation flow with real agents" />
+    </ideas>
+  </tests>
+</story-context>

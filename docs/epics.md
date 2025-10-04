@@ -569,21 +569,32 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 **Prerequisites:** Epic 1 (API routes), Story 3.1 (Basic UI)
 
 **Acceptance Criteria:**
-1. Backend scans agents folder on startup and finds all .md agent files
-2. `/api/agents` endpoint returns list of discovered agents
+1. Backend scans agent directories at depth 1 (agents/*/*.md) and identifies agent definition files by presence of `<agent id="..." name="..." title="...">` XML tag
+2. `/api/agents` endpoint returns list of discovered agents with metadata
 3. Dropdown/selector displays list of agents in UI
-4. Agent names extracted from file metadata or filename
+4. Agent metadata (id, name, title, icon) extracted from XML `<agent>` tag attributes
 5. Dropdown appears prominently in UI (top of page or sidebar)
 6. Selecting an agent loads it for conversation
 7. System handles empty agents folder gracefully (shows message)
-8. Recursive scanning finds agents in subdirectories
+8. Agent discovery excludes workflow/template .md files (only scans depth 1)
+9. Agent discovery validates required XML metadata (id, name, title) and filters out files without valid agent tags
 
 **Technical Notes:**
-- Update `/api/agents/route.ts` to scan file system
-- Use fs module to read directory structure recursively
-- Filter for .md files and parse agent metadata (name, description)
-- Return agent list as JSON: [{id, name, description, path}]
+- Create `lib/agents/scanner.ts` for agent discovery logic
+- Create `lib/agents/validator.ts` for agent validation logic
+- Scan at depth 1 only (agents/*/*.md), not recursive through workflows/templates
+- Parse XML `<agent>` tag using regex to extract id, name, title, icon attributes
+- Extract optional description from `<persona><role>` element content
+- Validate required fields (id, name, title) and check for duplicate IDs
+- Filter out files in workflows/ and templates/ subdirectories
+- Filter out files without valid `<agent>` tag
+- Return agent list as JSON: [{id, name, title, description?, icon?, path}]
 - Frontend calls API on mount and populates dropdown
+- **Agent File Structure:** Each agent must have:
+  - `agents/{agent-dir}/{name}-{role}.md` (REQUIRED - agent definition with XML metadata)
+  - `agents/{agent-dir}/workflows/` (OPTIONAL - workflow definitions)
+  - `agents/{agent-dir}/templates/` (OPTIONAL - template files)
+  - `agents/{agent-dir}/files/` (OPTIONAL - misc files)
 
 ---
 

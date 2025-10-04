@@ -3,21 +3,26 @@
 import { useState } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
+import { AgentSelector } from './AgentSelector';
 import { Message } from '@/lib/types';
 
 /**
  * ChatPanel Component
  *
- * Main chat container with message history above and input below
+ * Main chat container with agent selector, message history, and input
  * Full-screen flex layout following architecture Section 7.1
  *
  * AC-1.1, AC-1.2, AC-1.3, AC-1.4: Chat interface layout
  * AC-2.1, AC-2.2, AC-2.3, AC-2.4: Message display and state management
+ * AC-4.5, AC-4.6: Agent selection integration
  *
  * UX Enhancement: Centers input when no messages (like ChatGPT/Claude.ai),
  * expands to full layout when conversation starts
  */
 export function ChatPanel() {
+  // Agent selection state - Story 3.4 Task 4.2
+  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
+
   // Message state management - Story 3.2 Task 1.2, 1.3
   const [messages] = useState<Message[]>([
     // Demo messages for testing UI rendering and scrolling (10+ messages for Task 7.2)
@@ -39,12 +44,25 @@ export function ChatPanel() {
     { role: 'assistant', content: 'You\'re welcome! Feel free to explore the interface. Message sending functionality will be added in the next story, so stay tuned!' },
   ]);
 
+  // Handler for agent selection - Story 3.4 Task 4.3
+  const handleAgentSelect = (agentId: string) => {
+    setSelectedAgentId(agentId);
+    // TODO Story 3.5: Reset conversation when agent changes (optional per AC-4.6)
+    console.log('[ChatPanel] Agent selected:', agentId);
+  };
+
   // Centered layout before first message (ChatGPT/Claude.ai style)
   if (messages.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-50">
-        <div className="w-full max-w-3xl px-4">
-          <MessageInput centered />
+      <div className="flex flex-col h-screen bg-gray-50">
+        <AgentSelector
+          selectedAgentId={selectedAgentId}
+          onAgentSelect={handleAgentSelect}
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-3xl px-4">
+            <MessageInput centered />
+          </div>
         </div>
       </div>
     );
@@ -53,6 +71,10 @@ export function ChatPanel() {
   // Full layout after conversation starts - Story 3.2 Task 1.4
   return (
     <div className="flex flex-col h-screen">
+      <AgentSelector
+        selectedAgentId={selectedAgentId}
+        onAgentSelect={handleAgentSelect}
+      />
       <MessageList messages={messages} />
       <MessageInput />
     </div>

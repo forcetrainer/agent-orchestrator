@@ -49,8 +49,10 @@ describe('API Integration Tests', () => {
         const agent = data.data[0];
         expect(agent).toHaveProperty('id');
         expect(agent).toHaveProperty('name');
-        expect(agent).toHaveProperty('description');
+        expect(agent).toHaveProperty('title'); // Required in XML-based discovery
         expect(agent).toHaveProperty('path');
+        expect(agent).toHaveProperty('mainFile');
+        // description and icon are optional
       }
     });
   });
@@ -69,13 +71,18 @@ describe('API Integration Tests', () => {
 
   describe('POST /api/chat', () => {
     it('should return 200 OK with chat response when valid data provided', async () => {
+      // First, get a valid agent ID
+      const agentsResponse = await fetch(`${BASE_URL}/api/agents`);
+      const agentsData = await agentsResponse.json();
+      const testAgentId = agentsData.data[0]?.id || 'carson';
+
       const response = await fetch(`${BASE_URL}/api/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          agentId: 'test-agent',
+          agentId: testAgentId,
           message: 'Hello, world!',
         }),
       });

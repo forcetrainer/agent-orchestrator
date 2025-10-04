@@ -18,14 +18,19 @@ describe('Input Validation', () => {
       expect(() => validateAgentId('my-test-agent-1')).not.toThrow();
     });
 
+    it('accepts agent IDs with slashes and dots for XML-based format', () => {
+      expect(() => validateAgentId('bmad/sn/agents/alex-facilitator.md')).not.toThrow();
+      expect(() => validateAgentId('test.agent')).not.toThrow();
+      expect(() => validateAgentId('path/to/agent.md')).not.toThrow();
+    });
+
     it('rejects agent IDs with uppercase letters', () => {
       expect(() => validateAgentId('Test-Agent')).toThrow(ValidationError);
       expect(() => validateAgentId('TEST')).toThrow(ValidationError);
     });
 
-    it('rejects agent IDs with special characters', () => {
+    it('rejects agent IDs with disallowed special characters', () => {
       expect(() => validateAgentId('test_agent')).toThrow(ValidationError);
-      expect(() => validateAgentId('test.agent')).toThrow(ValidationError);
       expect(() => validateAgentId('test@agent')).toThrow(ValidationError);
       expect(() => validateAgentId('test agent')).toThrow(ValidationError);
     });
