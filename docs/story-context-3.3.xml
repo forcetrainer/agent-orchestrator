@@ -1,0 +1,321 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.3</storyId>
+    <title>Markdown Rendering for Agent Responses</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>agent responses to render properly with formatting</iWant>
+    <soThat>I can read structured information (headings, lists, code blocks)</soThat>
+    <tasks>
+      <task id="1" ac="3.1-3.7">Evaluate and install markdown rendering library</task>
+      <task id="2" ac="3.1-3.7">Integrate markdown rendering in MessageBubble</task>
+      <task id="3" ac="3.1-3.7">Style markdown elements per design system</task>
+      <task id="4" ac="Security NFR-4">Implement security controls for markdown</task>
+      <task id="5" ac="3.6">Handle edge cases and fallbacks</task>
+      <task id="6" ac="Testing Strategy">Write unit tests for markdown rendering</task>
+      <task id="7" ac="NFR-7, Story 6.3">Cross-browser compatibility testing</task>
+      <task id="8" ac="All">Manual validation and visual testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="3.1">Markdown headings render correctly (h1-h6)</ac>
+    <ac id="3.2">Lists (bulleted and numbered) display properly</ac>
+    <ac id="3.3">Code blocks appear with monospace font and background</ac>
+    <ac id="3.4">Links are clickable and styled appropriately</ac>
+    <ac id="3.5">Bold and italic text render correctly</ac>
+    <ac id="3.6">Line breaks and paragraphs are preserved</ac>
+    <ac id="3.7">Tables render if agent uses markdown tables</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Story 3.3: Markdown Rendering for Agent Responses</section>
+        <snippet>
+**AC-3.1:** Markdown headings render correctly (h1-h6)
+**AC-3.2:** Lists (bulleted and numbered) display properly
+**AC-3.3:** Code blocks appear with monospace font and background
+**AC-3.4:** Links are clickable and styled appropriately
+**AC-3.5:** Bold and italic text render correctly
+**AC-3.6:** Line breaks and paragraphs are preserved
+**AC-3.7:** Tables render if agent uses markdown tables
+
+**Dependencies:** react-markdown@^9.x (or similar) - Markdown rendering library with XSS protection
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Security - Content Security</section>
+        <snippet>
+**Content Security:**
+- Markdown renderer configured to prevent script injection
+- External links from agent responses open in new tab with `rel="noopener noreferrer"`
+- No `dangerouslySetInnerHTML` usage in React components
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Services and Modules - MessageBubble</section>
+        <snippet>
+**MessageBubble** (`components/MessageBubble.tsx`)
+- Responsibility: Individual message display with markdown
+- Inputs: Message object (role, content)
+- Outputs: Styled message with markdown rendering
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>NFR: Performance</section>
+        <snippet>
+**Target Metrics:**
+- Message rendering: Markdown content renders within 100ms of receiving response
+- No pagination for message history in MVP (assume conversations &lt; 100 messages)
+- Markdown rendering library must not block UI thread for typical agent responses (&lt; 5000 characters)
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>RISK-2: Markdown rendering library selection</section>
+        <snippet>
+**Description:** Wrong markdown library choice could introduce XSS vulnerabilities or performance issues
+**Impact:** Medium - security risk or poor user experience
+**Mitigation:**
+- Evaluate react-markdown (most popular, well-maintained)
+- Verify XSS protection built-in or add sanitization layer
+- Test with large markdown content (5000+ characters)
+- Fallback plan: use `marked` + `DOMPurify` if react-markdown has issues
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 3.3: Markdown Rendering for Agent Responses</section>
+        <snippet>
+**Technical Notes:**
+- Install `react-markdown`: `npm install react-markdown`
+- Configure syntax highlighting for code blocks (optional for MVP)
+- Test with various markdown formats from sample agent responses
+- Only render markdown for agent messages, not user messages
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-3.2.md</path>
+        <title>Story 3.2: Display User and Agent Messages</title>
+        <section>Dev Agent Record - Lessons Learned</section>
+        <snippet>
+**Design Decisions:**
+- React.memo on MessageBubble to meet NFR-1 performance target (&lt; 100ms rendering)
+- Message interface supports role-based rendering (user vs assistant)
+- Design system: Primary blue #3B82F6, gray scale, 4px spacing base
+- Tailwind CSS utility-first approach (no custom CSS)
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>UX Design Principles - Trust Through Transparency</section>
+        <snippet>
+**4. Trust Through Transparency**
+- Loading indicators show when agent is processing
+- Clear error messages explain what went wrong and suggest recovery paths
+- File viewer lets users verify agent outputs and build confidence
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>components/chat/MessageBubble.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageBubble</symbol>
+        <lines>1-42</lines>
+        <reason>Main component to modify - add markdown rendering for assistant messages while keeping user messages as plain text</reason>
+      </artifact>
+      <artifact>
+        <path>lib/types.ts</path>
+        <kind>interface</kind>
+        <symbol>Message</symbol>
+        <lines>10-14</lines>
+        <reason>Message interface defines role and content properties - content will be rendered as markdown for assistant role</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/__tests__/MessageBubble.test.tsx</path>
+        <kind>test</kind>
+        <symbol>MessageBubble tests</symbol>
+        <lines>1-103</lines>
+        <reason>Existing test suite to extend with markdown rendering tests (headings, lists, code blocks, security)</reason>
+      </artifact>
+      <artifact>
+        <path>tailwind.config.ts</path>
+        <kind>config</kind>
+        <symbol>Tailwind Config</symbol>
+        <lines>1-34</lines>
+        <reason>May need to add @tailwindcss/typography plugin for prose styling or configure custom markdown element styles</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="next" version="14.2.0" />
+        <package name="tailwindcss" version="^3.4.0" />
+        <package name="@testing-library/react" version="^16.3.0" dev="true" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" dev="true" />
+        <package name="jest" version="^30.2.0" dev="true" />
+        <package name="typescript" version="^5" dev="true" />
+      </node>
+      <toInstall>
+        <package name="react-markdown" version="^9.x" reason="Primary markdown renderer - well-maintained, built-in XSS protection, GitHub Flavored Markdown support" />
+        <package name="remark-gfm" version="latest" reason="GitHub Flavored Markdown plugin for react-markdown - enables tables, strikethrough, task lists" />
+        <package name="@tailwindcss/typography" version="latest" dev="true" optional="true" reason="Optional: Pre-styled markdown prose classes for easier styling" />
+      </toInstall>
+      <alternatives>
+        <package name="marked" reason="Fallback markdown parser if react-markdown has issues" />
+        <package name="dompurify" reason="HTML sanitization library if using marked instead of react-markdown" />
+        <package name="@types/dompurify" dev="true" reason="TypeScript types for dompurify" />
+      </alternatives>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1" source="Tech Spec NFR-4">
+      **Security - XSS Prevention:**
+      - Markdown renderer MUST sanitize HTML and prevent script injection
+      - Disable dangerousHtml in react-markdown (default: disabled)
+      - External links MUST use rel="noopener noreferrer"
+      - NO dangerouslySetInnerHTML usage anywhere
+      - Test with malicious inputs: `&lt;script&gt;alert('xss')&lt;/script&gt;`, `[link](javascript:alert('xss'))`
+    </constraint>
+    <constraint id="2" source="Tech Spec NFR-1">
+      **Performance:**
+      - Markdown rendering MUST complete within 100ms for typical responses (&lt; 5000 characters)
+      - React.memo already on MessageBubble (from Story 3.2) - maintain this
+      - Consider useMemo for markdown component configuration if re-renders become issue
+      - NO UI blocking on large markdown content (5000+ characters)
+    </constraint>
+    <constraint id="3" source="Story 3.2 Dev Notes">
+      **Design System Consistency:**
+      - Follow Tailwind design system: Primary #3B82F6, gray scale, 4px spacing
+      - Maintain existing MessageBubble styling (rounded-lg, px-4 py-3, max-w-[75%])
+      - User messages remain plain text (no markdown rendering)
+      - Assistant messages get markdown rendering
+      - Error messages remain plain text (no markdown)
+    </constraint>
+    <constraint id="4" source="Tech Spec Architecture">
+      **Component Pattern:**
+      - Build on existing MessageBubble component (Story 3.2)
+      - NO new components required - extend MessageBubble only
+      - Conditional rendering: markdown for assistant, plain text for user/error
+      - Keep React.memo wrapper for performance
+    </constraint>
+    <constraint id="5" source="Tech Spec Testing">
+      **Testing Requirements:**
+      - 80%+ test coverage target
+      - Unit tests for each markdown element (h1-h6, lists, code, links, bold, italic, tables)
+      - Security tests for XSS prevention (script tags, malicious links, HTML injection)
+      - Performance test with 5000+ character markdown
+      - Cross-browser testing (Chrome, Firefox, Safari)
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Message</name>
+      <kind>TypeScript Interface</kind>
+      <signature>
+interface Message {
+  role: 'user' | 'assistant' | 'error';
+  content: string;  // Will be rendered as markdown for assistant role
+  timestamp?: number;
+}
+      </signature>
+      <path>lib/types.ts</path>
+    </interface>
+    <interface>
+      <name>ReactMarkdown Component</name>
+      <kind>React Component (react-markdown)</kind>
+      <signature>
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+&lt;ReactMarkdown
+  remarkPlugins={[remarkGfm]}
+  components={{
+    // Optional: custom component renderers for styling
+    h1: ({children}) =&gt; &lt;h1 className="..."&gt;{children}&lt;/h1&gt;,
+    // ...
+  }}
+&gt;
+  {content}
+&lt;/ReactMarkdown&gt;
+      </signature>
+      <path>External package</path>
+    </interface>
+    <interface>
+      <name>Tailwind Typography (Optional)</name>
+      <kind>Tailwind Plugin</kind>
+      <signature>
+// tailwind.config.ts
+plugins: [require('@tailwindcss/typography')]
+
+// Usage in component:
+&lt;div className="prose prose-sm max-w-none"&gt;
+  &lt;ReactMarkdown&gt;{content}&lt;/ReactMarkdown&gt;
+&lt;/div&gt;
+      </signature>
+      <path>tailwind.config.ts</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      **Testing Framework:** Jest 30.x + React Testing Library 16.x
+      **Test Location:** `components/chat/__tests__/MessageBubble.test.tsx`
+      **Coverage Target:** 80%+ statement coverage
+      **Test Types:**
+      - Unit tests: Each markdown element type, role-based rendering, security
+      - Integration tests: MessageBubble with various markdown content
+      - Security tests: XSS prevention, malicious input sanitization
+      - Performance tests: Large markdown content (5000+ chars)
+      - Manual tests: Cross-browser compatibility, visual validation
+    </standards>
+
+    <locations>
+      <location>components/chat/__tests__/MessageBubble.test.tsx</location>
+      <location>components/chat/__tests__/*.test.tsx</location>
+    </locations>
+
+    <ideas>
+      <idea ac="3.1">Test markdown headings: Render h1-h6 with sample markdown, verify heading elements and styling</idea>
+      <idea ac="3.2">Test lists: Render ul/ol with nested items, verify structure and indentation</idea>
+      <idea ac="3.3">Test code blocks: Render pre/code with monospace and background, verify styling</idea>
+      <idea ac="3.4">Test links: Render anchor tags, verify href, target="_blank", rel="noopener noreferrer"</idea>
+      <idea ac="3.5">Test bold/italic: Render strong/em tags, verify font weights and styles</idea>
+      <idea ac="3.6">Test line breaks: Render markdown with \n and paragraphs, verify spacing preserved</idea>
+      <idea ac="3.7">Test tables: Render markdown table, verify table/thead/tbody/tr/td structure and borders</idea>
+      <idea ac="Security">Test XSS prevention: Attempt to render `&lt;script&gt;alert('xss')&lt;/script&gt;`, verify blocked</idea>
+      <idea ac="Security">Test dangerous links: Render `[link](javascript:alert('xss'))`, verify sanitized</idea>
+      <idea ac="Security">Test HTML injection: Render `&lt;img src=x onerror=alert('xss')&gt;`, verify blocked</idea>
+      <idea ac="Performance">Test large content: Render 5000+ character markdown, verify &lt; 100ms and no UI freeze</idea>
+      <idea ac="Role-based">Test user message: Verify user role renders plain text, no markdown parsing</idea>
+      <idea ac="Role-based">Test assistant message: Verify assistant role renders markdown correctly</idea>
+      <idea ac="Edge-cases">Test empty content: Render empty string, verify graceful handling</idea>
+      <idea ac="Edge-cases">Test mixed content: Render plain text mixed with markdown, verify correct parsing</idea>
+    </ideas>
+  </tests>
+</story-context>
