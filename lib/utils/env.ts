@@ -78,4 +78,12 @@ export const env = {
   get NODE_ENV(): string {
     return process.env.NODE_ENV || 'development';
   },
+
+  /**
+   * OpenAI model to use for chat completions
+   * Default: gpt-4
+   */
+  get OPENAI_MODEL(): string {
+    return process.env.OPENAI_MODEL || 'gpt-4';
+  },
 } as const;

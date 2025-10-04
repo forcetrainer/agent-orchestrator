@@ -1,0 +1,297 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>2</epicId>
+    <storyId>5</storyId>
+    <title>Chat API Route with Function Calling Loop</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-03</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-2.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>to send messages to an agent and receive responses through the chat API</iWant>
+    <soThat>I can have interactive conversations with BMAD agents via OpenAI</soThat>
+    <tasks>
+      - Create Chat Service (AC: 1, 2, 3, 6)
+        - Create `lib/openai/chat.ts`
+        - Implement `executeChatCompletion()` function
+        - Build OpenAI messages array with system prompt from agent
+        - Implement function calling loop with MAX_ITERATIONS limit
+        - Execute function calls (read_file, write_file, list_files)
+        - Send function results back to OpenAI as tool messages
+        - Handle OpenAI API errors with clear error messages
+        - Add iteration logging for debugging
+      - Update Chat API Route (AC: 4, 5)
+        - Update `app/api/chat/route.ts`
+        - Load agent by ID using `getAgentById()`
+        - Return 404 if agent not found
+        - Get or create conversation from conversation manager
+        - Add user message to conversation
+        - Execute chat completion with agent and messages
+        - Add assistant message to conversation
+        - Return response in correct format
+      - Update Types (AC: 4)
+        - Add `ChatRequest` interface to `types/index.ts`
+        - Add `ChatResponse` interface to `types/index.ts`
+        - Add FunctionCall interface if not already present
+        - Ensure Message interface supports functionCalls field
+      - Testing and Validation (AC: 1-6)
+        - Test chat with function calling (agent reads files)
+        - Test multiple function calls in sequence
+        - Test OpenAI API error handling
+        - Test invalid agent ID returns 404
+        - Test conversation state maintained
+        - Verify function results sent to OpenAI correctly
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-E2-03">Chat service executes OpenAI API calls with function tools</criterion>
+    <criterion id="AC-E2-13">Function calling loop handles multiple tool calls iteratively</criterion>
+    <criterion id="AC-E2-14">OpenAI API errors handled gracefully</criterion>
+    <criterion id="AC-E2-17">Chat API route returns correct response format</criterion>
+    <criterion id="AC-E2-18">Invalid agent ID returns 404</criterion>
+    <criterion id="6">Function execution results sent back to OpenAI as tool messages</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-2.md</path>
+        <title>Tech Spec: Epic 2 - OpenAI Integration with File Operations</title>
+        <section>Story 2.5: Chat API Route with Function Calling Loop (lines 999-1219)</section>
+        <snippet>
+          Implements the complete chat API route with OpenAI function calling loop.
+
+          **Key Implementation Points:**
+          - Model: Use process.env.OPENAI_MODEL or default to 'gpt-4'
+          - MAX_ITERATIONS: Set to 10 to prevent infinite loops
+          - System Message: Include agent name, description, and available tools context
+          - Tool Message Format: Use role: 'tool', tool_call_id, and content with JSON result
+          - Function Calling Loop:
+            while (iterations &lt; MAX_ITERATIONS):
+              1. Call OpenAI API with messages and tools
+              2. If response has tool_calls:
+                 - Execute each tool call
+                 - Add tool results to messages
+                 - Continue loop
+              3. If no tool_calls:
+                 - Return final response
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Epic 2 Story 2.5 (Basic Message Send Functionality)</section>
+        <snippet>
+          Prerequisites: Story 3.2 (Display Messages), Story 3.4 (Agent Selection), **Epic 2 COMPLETE (all stories 2.1-2.10)** - requires full OpenAI integration with function calling, file operations, and agent loading working
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document (PRD)</title>
+        <section>Epic 2: OpenAI Integration with File Operations</section>
+        <snippet>
+          **FR-5: OpenAI API with Function Calling**
+          - Integration with OpenAI API using function calling pattern
+          - LLM receives user message → generates tool call → backend executes → result returns to LLM → LLM continues
+          - Support for multiple function calls in sequence as agent works through tasks
+          - Proper error handling for API failures and rate limits
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>15-53</lines>
+        <reason>Current implementation is a placeholder echo response. Must be updated to integrate with OpenAI chat service and agent loading.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/client.ts</path>
+        <kind>service</kind>
+        <symbol>getOpenAIClient</symbol>
+        <lines>27-34</lines>
+        <reason>Provides OpenAI client singleton to be used by chat service for API calls.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/openai/function-tools.ts</path>
+        <kind>constant</kind>
+        <symbol>FUNCTION_TOOLS</symbol>
+        <lines>85-89</lines>
+        <reason>Array of function tool definitions (read_file, write_file, list_files) to pass to OpenAI API.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>service</kind>
+        <symbol>readFileContent</symbol>
+        <lines>1-30</lines>
+        <reason>Implementation of read_file function that will be called when OpenAI requests the read_file tool.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/writer.ts</path>
+        <kind>service</kind>
+        <symbol>writeFileContent</symbol>
+        <lines>1-30</lines>
+        <reason>Implementation of write_file function that will be called when OpenAI requests the write_file tool.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/lister.ts</path>
+        <kind>service</kind>
+        <symbol>listFiles</symbol>
+        <lines>1-50</lines>
+        <reason>Implementation of list_files function that will be called when OpenAI requests the list_files tool.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/loader.ts</path>
+        <kind>service</kind>
+        <symbol>getAgentById</symbol>
+        <lines>91-94</lines>
+        <reason>Loads agent metadata by ID, returns null if not found (used to implement AC-E2-18 - return 404 for invalid agent).</reason>
+      </artifact>
+      <artifact>
+        <path>types/api.ts</path>
+        <kind>type-definition</kind>
+        <symbol>ChatRequest, ChatResponse</symbol>
+        <lines>18-35</lines>
+        <reason>Current API types for chat request/response. May need to add functionCalls field to message type.</reason>
+      </artifact>
+      <artifact>
+        <path>types/index.ts</path>
+        <kind>type-definition</kind>
+        <symbol>Agent</symbol>
+        <lines>24-35</lines>
+        <reason>Agent interface for use in chat service to build system prompts.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/errors.ts</path>
+        <kind>utility</kind>
+        <symbol>handleApiError, NotFoundError, ValidationError</symbol>
+        <lines>1-50</lines>
+        <reason>Error handling utilities for API routes - use NotFoundError when agent not found.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <nodejs>
+        <package name="openai" version="^4.104.0" />
+        <package name="next" version="14.2.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+      </nodejs>
+      <devDependencies>
+        <package name="typescript" version="^5" />
+        <package name="@types/node" version="^20" />
+        <package name="jest" version="^30.2.0" />
+        <package name="ts-jest" version="^29.4.4" />
+        <package name="tsx" version="^4.20.6" />
+      </devDependencies>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1">Use Next.js App Router API route pattern (app/api/chat/route.ts)</constraint>
+    <constraint id="2">Follow existing error handling pattern using handleApiError and custom error classes</constraint>
+    <constraint id="3">Maintain existing API response format with ApiResponse wrapper (success, data, error)</constraint>
+    <constraint id="4">Function calling loop must have MAX_ITERATIONS limit (set to 10) to prevent infinite loops</constraint>
+    <constraint id="5">All file operations must use existing implementations (readFileContent, writeFileContent, listFiles)</constraint>
+    <constraint id="6">Agent loading must use existing getAgentById() from lib/agents/loader.ts</constraint>
+    <constraint id="7">System message must include agent name, description, and tool context</constraint>
+    <constraint id="8">Tool messages must use correct OpenAI format: role='tool', tool_call_id, content</constraint>
+    <constraint id="9">Environment variables: Use process.env.OPENAI_MODEL or default to 'gpt-4'</constraint>
+    <constraint id="10">Return 404 with NotFoundError when agent ID is invalid</constraint>
+    <constraint id="11">Return ValidationError when required fields (agentId, message) are missing</constraint>
+    <constraint id="12">Conversation state management will be implemented in Story 2.6 (may need placeholder)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>getOpenAIClient</name>
+      <kind>function</kind>
+      <signature>getOpenAIClient(): OpenAI</signature>
+      <path>lib/openai/client.ts</path>
+      <description>Returns singleton OpenAI client instance. Validates OPENAI_API_KEY is set.</description>
+    </interface>
+    <interface>
+      <name>FUNCTION_TOOLS</name>
+      <kind>constant</kind>
+      <signature>FUNCTION_TOOLS: ChatCompletionTool[]</signature>
+      <path>lib/openai/function-tools.ts</path>
+      <description>Array of function tool definitions to pass to OpenAI API (read_file, write_file, list_files)</description>
+    </interface>
+    <interface>
+      <name>readFileContent</name>
+      <kind>function</kind>
+      <signature>readFileContent(relativePath: string): Promise&lt;string&gt;</signature>
+      <path>lib/files/reader.ts</path>
+      <description>Reads file from agents folder (priority) or output folder. Throws on ENOENT, EACCES.</description>
+    </interface>
+    <interface>
+      <name>writeFileContent</name>
+      <kind>function</kind>
+      <signature>writeFileContent(relativePath: string, content: string): Promise&lt;void&gt;</signature>
+      <path>lib/files/writer.ts</path>
+      <description>Writes file to output folder. Auto-creates parent directories. Throws on EACCES, ENOSPC.</description>
+    </interface>
+    <interface>
+      <name>listFiles</name>
+      <kind>function</kind>
+      <signature>listFiles(relativePath: string, recursive?: boolean): Promise&lt;FileNode[]&gt;</signature>
+      <path>lib/files/lister.ts</path>
+      <description>Lists files in directory. Returns FileNode array with name, path, type, size, children.</description>
+    </interface>
+    <interface>
+      <name>getAgentById</name>
+      <kind>function</kind>
+      <signature>getAgentById(agentId: string): Promise&lt;Agent | null&gt;</signature>
+      <path>lib/agents/loader.ts</path>
+      <description>Loads agent metadata by ID. Returns null if not found. Uses in-memory cache.</description>
+    </interface>
+    <interface>
+      <name>handleApiError</name>
+      <kind>function</kind>
+      <signature>handleApiError(error: unknown): NextResponse</signature>
+      <path>lib/utils/errors.ts</path>
+      <description>Centralized error handler for API routes. Returns NextResponse with appropriate status code and error message.</description>
+    </interface>
+    <interface>
+      <name>ValidationError</name>
+      <kind>class</kind>
+      <signature>new ValidationError(message: string)</signature>
+      <path>lib/utils/errors.ts</path>
+      <description>Custom error class for validation errors (400 status). Used when required fields are missing.</description>
+    </interface>
+    <interface>
+      <name>NotFoundError</name>
+      <kind>class</kind>
+      <signature>new NotFoundError(message: string)</signature>
+      <path>lib/utils/errors.ts</path>
+      <description>Custom error class for not found errors (404 status). Use when agent ID is invalid.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      The project uses Jest with ts-jest for unit testing. Tests are located in __tests__ directories alongside source files. Test files follow the pattern *.test.ts. The project has comprehensive unit test coverage for lib/ modules. Integration testing can be done via manual curl commands or automated tests hitting the API routes directly.
+    </standards>
+    <locations>
+      <location>lib/**/__tests__/*.test.ts</location>
+      <location>app/api/**/__tests__/*.test.ts (if needed)</location>
+      <location>scripts/test-openai-smoke.ts (for smoke testing)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-E2-03">Test executeChatCompletion() successfully calls OpenAI API with function tools and returns assistant message</idea>
+      <idea ac="AC-E2-13">Test function calling loop executes multiple iterations when OpenAI requests multiple tool calls in sequence</idea>
+      <idea ac="AC-E2-13">Test function calling loop stops after MAX_ITERATIONS (10) and throws appropriate error</idea>
+      <idea ac="AC-E2-14">Test OpenAI API errors are caught and wrapped in clear error messages (e.g., "OpenAI API error: {message}")</idea>
+      <idea ac="AC-E2-17">Test POST /api/chat returns correct response format: {success: true, data: {conversationId, message}}</idea>
+      <idea ac="AC-E2-18">Test POST /api/chat with invalid agentId returns 404 NotFoundError</idea>
+      <idea ac="6">Test that function execution results are correctly formatted as tool messages and sent back to OpenAI</idea>
+      <idea ac="all">Test each function type (read_file, write_file, list_files) executes correctly when called by OpenAI</idea>
+      <idea ac="all">Integration test: Full conversation flow with agent that reads, writes, and lists files</idea>
+      <idea ac="all">Test error handling when file operations fail (ENOENT, EACCES, etc.) during function execution</idea>
+    </ideas>
+  </tests>
+</story-context>

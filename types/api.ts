@@ -31,6 +31,12 @@ export interface ChatResponse {
     role: 'user' | 'assistant';
     content: string;
     timestamp: string;
+    functionCalls?: Array<{
+      name: string;
+      arguments: Record<string, any>;
+      result?: any;
+      error?: string;
+    }>;
   };
 }
 
