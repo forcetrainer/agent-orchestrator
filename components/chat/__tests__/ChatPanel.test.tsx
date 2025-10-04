@@ -1,33 +1,70 @@
+/**
+ * ChatPanel Component Tests
+ * Story 3.1, Story 3.2 - Task 6.5
+ *
+ * Tests layout, state management, and component integration
+ * AC-1.1 through AC-1.4: Layout tests
+ * AC-2.1 through AC-2.4: Message state management
+ */
+
 import { render, screen } from '@testing-library/react';
 import { ChatPanel } from '../ChatPanel';
 
+// Mock scrollTo for JSDOM environment
+beforeAll(() => {
+  Element.prototype.scrollTo = jest.fn();
+});
+
 describe('ChatPanel', () => {
-  it('renders centered MessageInput when no messages (initial state)', () => {
+  // Story 3.2 - Task 6.5: State management test
+  it('renders full layout with MessageList when messages exist', () => {
     render(<ChatPanel />);
 
-    // Should show centered input
-    const sendButton = screen.getByRole('button', { name: /send message/i });
-    expect(sendButton).toBeInTheDocument();
+    // Should show MessageList with demo messages
+    expect(screen.getByText(/Hello! Can you help me understand/i)).toBeInTheDocument();
+    expect(screen.getByText(/Of course! I'd be happy to help/i)).toBeInTheDocument();
 
-    // Should have centered container
+    // Should show full layout (not centered)
     const { container } = render(<ChatPanel />);
     const chatPanel = container.firstChild as HTMLElement;
-    expect(chatPanel).toHaveClass('flex', 'items-center', 'justify-center');
+    expect(chatPanel).toHaveClass('flex', 'flex-col', 'h-screen');
   });
 
-  it('applies full-screen height to centered layout', () => {
+  // Story 3.2 - Task 6.5: Verify messages array structure
+  it('initializes with demo messages for testing', () => {
+    render(<ChatPanel />);
+
+    // Verify user and assistant messages alternate
+    expect(screen.getByText(/How do I select which agent to use/i)).toBeInTheDocument();
+    expect(screen.getByText(/Great question! Agent selection/i)).toBeInTheDocument();
+  });
+
+  // Story 3.1 - Original tests (would work if messages array was empty)
+  it('applies full-screen height to layout', () => {
     const { container } = render(<ChatPanel />);
     const chatPanel = container.firstChild as HTMLElement;
     expect(chatPanel).toHaveClass('h-screen');
   });
 
-  it('shows input with shadow and rounded styling when centered', () => {
+  it('renders MessageInput component', () => {
     render(<ChatPanel />);
 
-    // Find the input container (should have rounded and shadow classes)
-    const textarea = screen.getByPlaceholderText('Send a message...');
-    const inputContainer = textarea.parentElement?.parentElement as HTMLElement;
+    const sendButton = screen.getByRole('button', { name: /send message/i });
+    expect(sendButton).toBeInTheDocument();
 
-    expect(inputContainer).toHaveClass('rounded-2xl', 'shadow-lg');
+    const textarea = screen.getByPlaceholderText(/type your message/i);
+    expect(textarea).toBeInTheDocument();
+  });
+
+  // Story 3.2 - Task 6.5: Verify MessageList receives messages prop
+  it('passes messages array to MessageList component', () => {
+    render(<ChatPanel />);
+
+    // MessageList should render the demo messages
+    const messageHistory = screen.getByRole('log', { name: /message history/i });
+    expect(messageHistory).toBeInTheDocument();
+
+    // Verify messages are displayed (proves messages prop was passed)
+    expect(screen.getByText(/Hello! Can you help me/i)).toBeInTheDocument();
   });
 });

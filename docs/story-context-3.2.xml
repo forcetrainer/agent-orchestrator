@@ -1,0 +1,289 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.2</storyId>
+    <title>Display User and Agent Messages</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>to see my messages and agent responses displayed clearly</iWant>
+    <soThat>I can follow the conversation flow</soThat>
+    <tasks>
+      <task id="1" ac="2.1,2.2,2.3,2.4">
+        <name>Create Message interface and state management</name>
+        <subtasks>
+          <subtask id="1.1">Define Message TypeScript interface with role ('user' | 'assistant' | 'error') and content properties</subtask>
+          <subtask id="1.2">Add messages state array to ChatPanel component using useState</subtask>
+          <subtask id="1.3">Add demo/mock messages for testing UI rendering</subtask>
+          <subtask id="1.4">Pass messages array to MessageList component via props</subtask>
+        </subtasks>
+      </task>
+      <task id="2" ac="2.1,2.2,2.3">
+        <name>Implement MessageBubble component</name>
+        <subtasks>
+          <subtask id="2.1">Create components/chat/MessageBubble.tsx component file</subtask>
+          <subtask id="2.2">Accept message prop with role and content</subtask>
+          <subtask id="2.3">Implement conditional styling based on role (user: right-aligned blue, assistant: left-aligned gray)</subtask>
+          <subtask id="2.4">Add appropriate padding, border-radius, and spacing per design system</subtask>
+          <subtask id="2.5">Render message content as plain text (markdown rendering deferred to Story 3.3)</subtask>
+        </subtasks>
+      </task>
+      <task id="3" ac="2.1,2.2,2.3,2.4,2.5">
+        <name>Update MessageList to render messages</name>
+        <subtasks>
+          <subtask id="3.1">Update MessageList to accept messages prop (Message[] array)</subtask>
+          <subtask id="3.2">Map over messages array and render MessageBubble for each</subtask>
+          <subtask id="3.3">Ensure chronological order (oldest at top, newest at bottom)</subtask>
+          <subtask id="3.4">Verify scrollable overflow behavior works with multiple messages</subtask>
+          <subtask id="3.5">Add empty state placeholder when messages array is empty</subtask>
+        </subtasks>
+      </task>
+      <task id="4" ac="2.6">
+        <name>Implement auto-scroll behavior</name>
+        <subtasks>
+          <subtask id="4.1">Add ref to MessageList scrollable container using useRef</subtask>
+          <subtask id="4.2">Implement useEffect hook to watch messages array changes</subtask>
+          <subtask id="4.3">Scroll to bottom when messages array updates (scrollIntoView or scrollTop)</subtask>
+          <subtask id="4.4">Add smooth scroll behavior for better UX</subtask>
+          <subtask id="4.5">Test auto-scroll with rapidly added messages</subtask>
+        </subtasks>
+      </task>
+      <task id="5" ac="Testing">
+        <name>Write unit tests for MessageBubble</name>
+        <subtasks>
+          <subtask id="5.1">Create components/chat/__tests__/MessageBubble.test.tsx</subtask>
+          <subtask id="5.2">Test user message renders with right-aligned styling</subtask>
+          <subtask id="5.3">Test assistant message renders with left-aligned styling</subtask>
+          <subtask id="5.4">Test content text displays correctly</subtask>
+          <subtask id="5.5">Test error role styling (if applicable)</subtask>
+        </subtasks>
+      </task>
+      <task id="6" ac="Testing">
+        <name>Write integration tests for message display</name>
+        <subtasks>
+          <subtask id="6.1">Update MessageList tests to handle messages prop</subtask>
+          <subtask id="6.2">Test multiple messages render in correct order</subtask>
+          <subtask id="6.3">Test empty messages array shows placeholder</subtask>
+          <subtask id="6.4">Test scrollable container with long message lists</subtask>
+          <subtask id="6.5">Update ChatPanel tests to verify state management integration</subtask>
+        </subtasks>
+      </task>
+      <task id="7" ac="All">
+        <name>Manual validation and cross-browser testing</name>
+        <subtasks>
+          <subtask id="7.1">Test visual distinction between user and agent messages in browser</subtask>
+          <subtask id="7.2">Verify scrolling behavior with 10+ messages</subtask>
+          <subtask id="7.3">Test auto-scroll on Chrome and Firefox</subtask>
+          <subtask id="7.4">Validate styling matches design system (colors, spacing, alignment)</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="2.1">User messages appear right-aligned with distinct styling</ac>
+    <ac id="2.2">Agent messages appear left-aligned with different styling</ac>
+    <ac id="2.3">Clear visual distinction between user and agent messages</ac>
+    <ac id="2.4">Messages display in chronological order (oldest to newest)</ac>
+    <ac id="2.5">Message history scrolls when conversation grows long</ac>
+    <ac id="2.6">Auto-scroll to latest message when new message arrives</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>Story 3.2: Display User and Agent Messages</section>
+        <snippet>Acceptance criteria AC-2.1 through AC-2.6 define message display requirements. Message rendering must complete within 100ms per NFR-1 performance targets. Auto-scroll must complete within 300ms.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Message Object interface: { role: 'user' | 'assistant' | 'error'; content: string; timestamp?: number; }</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>Services and Modules</section>
+        <snippet>MessageBubble component: Renders individual message with role-based styling. Inputs: Message object (role, content). Outputs: Styled message with markdown rendering (Story 3.3).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>NFR: Performance</section>
+        <snippet>Message rendering < 100ms. Auto-scroll < 300ms. Use React.memo on MessageBubble to prevent unnecessary re-renders. No pagination for MVP (assume < 100 messages).</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>NFR: Security</section>
+        <snippet>User messages sanitized before display (XSS prevention). React's default XSS protection sufficient for plain text. No dangerouslySetInnerHTML usage.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection (Epic 3)</title>
+        <section>Test Strategy Summary</section>
+        <snippet>Unit Tests: MessageBubble renders user vs assistant styling, displays content, applies correct Tailwind classes. Target 80%+ coverage. Integration Tests: ChatPanel state management, messages array updates, auto-scroll behavior. Manual Testing Priority 1: Visual distinction, scrolling with long conversations, auto-scroll smoothness, cross-browser (Chrome, Firefox).</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-3.1.md</path>
+        <title>Story 3.1: Basic Chat UI Layout</title>
+        <section>Dev Agent Record - Completion Notes</section>
+        <snippet>Component naming: ChatPanel (not ChatInterface), MessageInput (not InputField). Tailwind design system: Primary blue #3B82F6, gray scale, 4px spacing base. Jest configuration: Supports .tsx tests with jsdom environment. Accessibility: Consider adding aria-live="polite" to MessageList when messages become dynamic.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-3.1.md</path>
+        <title>Story 3.1: Basic Chat UI Layout</title>
+        <section>Senior Developer Review - Architectural Alignment</section>
+        <snippet>Tailwind utility-first exclusively. Design system colors: primary blue #3B82F6 (blue-500), hover #2563EB (blue-600). Gray scale: gray-50, gray-200, gray-300, gray-400, gray-900. Base spacing: 4px increments (p-4, px-4, py-3, py-6, gap-2). Custom max-width 'chat' (1200px) in tailwind.config.ts.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 3.2: Display User and Agent Messages</section>
+        <snippet>Prerequisites: Story 3.1 (Basic Chat UI). Technical Notes: Create message state management (useState for MVP). Style user vs agent messages differently (color, alignment, avatar). Store messages as array of {role: 'user'|'assistant', content: string}.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>ChatPanel</symbol>
+        <lines>1-40</lines>
+        <reason>Main chat container that needs messages state added (Task 1.2). Currently has hasMessages boolean state that will be replaced with actual messages array. Conditionally renders MessageList which needs messages prop (Task 1.4).</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/MessageList.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageList</symbol>
+        <lines>1-24</lines>
+        <reason>Needs to accept messages prop (Task 3.1) and render MessageBubble for each message (Task 3.2). Currently shows placeholder. Has scrollable container (overflow-y-auto) ready for message rendering. Will need ref for auto-scroll (Task 4.1).</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/MessageInput.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageInput</symbol>
+        <lines>1-60</lines>
+        <reason>Reference for design system styling patterns. Shows blue-500/blue-600 colors, rounded-lg borders, px-4 py-3 spacing that should be consistent with MessageBubble styling (Task 2.3, 2.4).</reason>
+      </artifact>
+      <artifact>
+        <path>tailwind.config.ts</path>
+        <kind>config</kind>
+        <symbol>tailwind config</symbol>
+        <lines>1-33</lines>
+        <reason>Design system definition. Primary color #3B82F6 (blue-500), hover #2563EB (blue-600). Max-width 'chat' (1200px). Use these values for MessageBubble styling (Task 2.3, 2.4).</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/__tests__/ChatPanel.test.tsx</path>
+        <kind>test</kind>
+        <symbol>ChatPanel tests</symbol>
+        <lines>1-33</lines>
+        <reason>Testing pattern reference. Uses @testing-library/react, screen.getByRole, toBeInTheDocument, toHaveClass. Follow this pattern for MessageBubble tests (Task 5) and updated ChatPanel tests (Task 6.5).</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18"/>
+        <package name="react-dom" version="^18"/>
+        <package name="next" version="14.2.0"/>
+        <package name="typescript" version="^5"/>
+        <package name="tailwindcss" version="^3.4.0"/>
+        <package name="@testing-library/react" version="^16.3.0"/>
+        <package name="@testing-library/jest-dom" version="^6.9.1"/>
+        <package name="jest" version="^30.2.0"/>
+        <package name="jest-environment-jsdom" version="^30.2.0"/>
+        <package name="ts-jest" version="^29.4.4"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="1">Use React hooks (useState, useEffect, useRef) for state and side effects - no class components</constraint>
+    <constraint id="2">All components must use 'use client' directive (client-side interactivity required)</constraint>
+    <constraint id="3">Tailwind utility-first styling exclusively - no CSS modules, styled-components, or custom CSS files</constraint>
+    <constraint id="4">Message rendering must complete within 100ms per NFR-1 performance targets - use React.memo on MessageBubble</constraint>
+    <constraint id="5">Auto-scroll behavior must complete within 300ms for smooth UX per NFR-1</constraint>
+    <constraint id="6">Component files use PascalCase naming (MessageBubble.tsx), folder uses kebab-case (components/chat/)</constraint>
+    <constraint id="7">Named exports for components: export function MessageBubble() {...}</constraint>
+    <constraint id="8">TypeScript strict mode - all props and state must have explicit types</constraint>
+    <constraint id="9">Accessibility: MessageList uses role="log" and aria-label. Consider adding aria-live="polite" for dynamic updates</constraint>
+    <constraint id="10">XSS prevention: Use React's default text rendering (no dangerouslySetInnerHTML). Markdown rendering deferred to Story 3.3</constraint>
+    <constraint id="11">Design system adherence: Primary blue #3B82F6, hover #2563EB, gray scale (gray-50 to gray-900), 4px base spacing</constraint>
+    <constraint id="12">Message styling: User messages right-aligned with blue background, agent messages left-aligned with gray background, max-w-[75%] for readability</constraint>
+    <constraint id="13">Test coverage target: 80%+ for components and utilities using Jest + React Testing Library</constraint>
+    <constraint id="14">Testing pattern: Query by role/label (not test IDs or class names), test user-facing behavior, meaningful assertions</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Message</name>
+      <kind>TypeScript interface</kind>
+      <signature>interface Message { role: 'user' | 'assistant' | 'error'; content: string; timestamp?: number; }</signature>
+      <path>To be created in lib/types.ts or types/chat.ts</path>
+      <usage>Define this interface (Task 1.1), import in ChatPanel, MessageList, MessageBubble components</usage>
+    </interface>
+    <interface>
+      <name>useState</name>
+      <kind>React hook</kind>
+      <signature>const [messages, setMessages] = useState&lt;Message[]&gt;([])</signature>
+      <path>react</path>
+      <usage>Add messages state to ChatPanel (Task 1.2). Initialize with demo messages for testing (Task 1.3)</usage>
+    </interface>
+    <interface>
+      <name>useRef</name>
+      <kind>React hook</kind>
+      <signature>const scrollRef = useRef&lt;HTMLDivElement&gt;(null)</signature>
+      <path>react</path>
+      <usage>Add ref to MessageList scrollable container (Task 4.1) for auto-scroll control</usage>
+    </interface>
+    <interface>
+      <name>useEffect</name>
+      <kind>React hook</kind>
+      <signature>useEffect(() => { /* scroll logic */ }, [messages])</signature>
+      <path>react</path>
+      <usage>Implement auto-scroll when messages array changes (Task 4.2, 4.3)</usage>
+    </interface>
+    <interface>
+      <name>MessageList props</name>
+      <kind>Component props</kind>
+      <signature>function MessageList({ messages }: { messages: Message[] })</signature>
+      <path>components/chat/MessageList.tsx</path>
+      <usage>Update MessageList to accept messages prop (Task 3.1). Pass from ChatPanel (Task 1.4)</usage>
+    </interface>
+    <interface>
+      <name>MessageBubble props</name>
+      <kind>Component props</kind>
+      <signature>function MessageBubble({ message }: { message: Message })</signature>
+      <path>components/chat/MessageBubble.tsx (NEW)</path>
+      <usage>Create MessageBubble component accepting message prop (Task 2.2). Render in MessageList.map() (Task 3.2)</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Use Jest + React Testing Library for component tests. Test environment: jsdom (configured in jest.config.js). Query by role/label using screen.getByRole(), not test IDs or class names. Test user-facing behavior, not implementation details. Use meaningful assertions: toBeInTheDocument, toHaveClass, toHaveTextContent. Follow pattern from existing ChatPanel.test.tsx. Target 80%+ code coverage for components. Run tests with 'npm test'.</standards>
+    <locations>
+      <location>components/chat/__tests__/MessageBubble.test.tsx (NEW)</location>
+      <location>components/chat/__tests__/MessageList.test.tsx (MODIFY - add messages prop tests)</location>
+      <location>components/chat/__tests__/ChatPanel.test.tsx (MODIFY - add state management tests)</location>
+    </locations>
+    <ideas>
+      <test ac="2.1">MessageBubble: Test user message has ml-auto class (right-aligned) and blue background (bg-blue-500 or bg-primary)</test>
+      <test ac="2.2">MessageBubble: Test assistant message has mr-auto class (left-aligned) and gray background (bg-gray-100 or bg-gray-200)</test>
+      <test ac="2.3">MessageBubble: Visual regression test comparing user vs assistant rendered output (snapshot or class assertions)</test>
+      <test ac="2.4">MessageList: Test messages array [msg1, msg2, msg3] renders in same order (getByText assertions in sequence)</test>
+      <test ac="2.5">MessageList: Test container has overflow-y-auto class for scrolling</test>
+      <test ac="2.6">MessageList: Test useEffect calls scrollIntoView or sets scrollTop when messages change (mock ref.current)</test>
+      <test ac="All">ChatPanel: Test messages state initializes as empty array, setMessages updates state correctly</test>
+      <test ac="All">ChatPanel: Test hasMessages boolean replaced with messages.length check (if messages.length === 0 show centered)</test>
+      <test ac="All">MessageList: Test empty messages array shows placeholder "No messages yet"</test>
+      <test ac="All">MessageBubble: Test message.content renders as plain text (no HTML parsing)</test>
+    </ideas>
+  </tests>
+</story-context>
