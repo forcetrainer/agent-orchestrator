@@ -1,0 +1,273 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.5</storyId>
+    <title>Refactor File Operation Tools for Agentic Loop</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to refactor existing read_file, write_file, list_files tools</iWant>
+    <soThat>they work correctly within the agentic execution loop and support path variables</soThat>
+    <tasks>
+      - Task 1: Create File Operation Tools Module (lib/tools/fileOperations.ts)
+      - Task 2: Implement read_file Tool with Path Resolution
+      - Task 3: Implement save_output Tool with Path Resolution
+      - Task 4: Implement execute_workflow Tool (new)
+      - Task 5: Tool Result Format for Agentic Loop
+      - Task 6: Path Security with Resolved Paths
+      - Task 7: Bundle Structure Support
+      - Task 8: Define Tool Schemas for OpenAI
+      - Task 9-11: Unit Testing (read_file, save_output, execute_workflow)
+      - Task 12: Integration Testing - Tool Execution in Agentic Loop
+      - Task 13: Integration Testing - Bundled Agent Workflow
+      - Task 14: Refactor Epic 2 Tests
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.5.1">Update read_file to resolve path variables before reading</criterion>
+    <criterion id="AC-4.5.2">Update save_output (replaces write_file) to resolve path variables before writing</criterion>
+    <criterion id="AC-4.5.3">Update list_files to resolve path variables before listing (optional - consider deprecating if not used)</criterion>
+    <criterion id="AC-4.5.4">Tools return results in format compatible with agentic loop context injection</criterion>
+    <criterion id="AC-4.5.5">Tool results include resolved paths for debugging</criterion>
+    <criterion id="AC-4.5.6">Path security validation works with resolved paths (no traversal attacks)</criterion>
+    <criterion id="AC-4.5.7">Tools work with bundle structure ({bundle-root}/workflows/*, {core-root}/tasks/*)</criterion>
+    <criterion id="AC-4.5.8">Add execute_workflow tool for loading workflow configurations</criterion>
+    <criterion id="AC-4.5.9">Existing Epic 2 tool tests refactored to test with path variables</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/EPIC4-TECH-SPEC.md" title="Epic 4 Technical Specification" section="Story 4.5: File Operation Tools Refactor">
+        Technical implementation details for refactoring file operation tools. Lines 594-721 specify:
+        - Tool schema definitions for OpenAI function calling
+        - executeReadFile implementation pattern with path resolution
+        - executeSaveOutput implementation pattern with directory creation
+        - executeWorkflow implementation with YAML parsing and variable resolution
+        - Tool result structure for agentic loop injection: {success, path, content/size, error}
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="Agent Execution Architecture Specification" section="Section 2: Tool Definitions">
+        Complete tool definition schemas for OpenAI function calling. Lines 84-223 define:
+        - read_file tool: Read files from bundle or core BMAD system
+        - save_output tool: Save generated content to file
+        - execute_workflow tool: Execute workflow by loading config, instructions, and template
+        - Parameter specifications and tool descriptions that guide LLM usage
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="Agent Execution Architecture Specification" section="Section 7: Tool Execution Handlers">
+        Tool execution handler implementations. Lines 482-564 show:
+        - executeToolCall router function that dispatches to specific tool handlers
+        - executeReadFile implementation with try/catch error handling
+        - executeSaveOutput implementation with directory creation
+        - Tool result format: {success: boolean, path: string, content/size, error?: string}
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="BMAD Agent Bundle Specification" section="Section 3: Path Variables">
+        Path variable system for portable agent workflows. Lines 268-316 define:
+        - {bundle-root}: bmad/custom/bundles/{bundle-name}/
+        - {core-root}: bmad/core/
+        - {project-root}: application root
+        - {config_source}:variable_name: references from bundle config.yaml
+        - Variable resolution order and security constraints
+      </doc>
+      <doc path="docs/epics.md" title="Agent Orchestrator Epic Breakdown" section="Epic 4 Story 4.5">
+        Story acceptance criteria and context. Lines 925-951 specify:
+        - Refactor read_file, write_file, list_files tools for path variables
+        - Add execute_workflow tool for loading workflow configurations
+        - Tool results must be compatible with agentic loop context injection
+        - Path security validation with resolved paths
+        - Bundle structure support ({bundle-root}, {core-root})
+        - Epic 2 test refactoring requirements
+      </doc>
+      <doc path="docs/prd.md" title="Agent Orchestrator Product Requirements Document" section="FR-6: File Operation Tools">
+        Functional requirements for file operations. Lines 158-171 specify:
+        - read_file(path): Load instruction/workflow files on-demand
+        - write_file(path, content): Create output files preserving directory structure
+        - list_files(directory): Browse available files and directories
+        - Path variable resolution system for {bundle-root}, {core-root}, {project-root}, {config_source}:variable
+        - Auto-create parent directories for file writes
+        - Security: restrict operations to authorized paths
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath" lines="115-285" reason="Core path variable resolution function that all file operations must use. Resolves {bundle-root}, {core-root}, {config_source}:var and validates security. This is the foundation for AC-4.5.1, AC-4.5.2, AC-4.5.6, AC-4.5.7.">
+        /**
+         * Resolves path variables and validates security
+         * Usage: const resolvedPath = resolvePath('{bundle-root}/workflows/intake.yaml', context);
+         */
+        export async function resolvePath(pathTemplate: string, context: PathContext): Promise&lt;string&gt;
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="interface" symbol="PathContext" lines="31-40" reason="Context object required by all file operation tools. Contains bundleRoot, coreRoot, projectRoot, and optional bundleConfig. Tools must accept this as a parameter.">
+        export interface PathContext {
+          bundleRoot: string;
+          coreRoot: string;
+          projectRoot: string;
+          bundleConfig?: Record&lt;string, any&gt;;
+        }
+      </artifact>
+      <artifact path="lib/agents/criticalActions.ts" kind="module" symbol="processCriticalActions" lines="50-150" reason="Example of file loading pattern during initialization. Shows how to use resolvePath and readFile to load config.yaml. Pattern to reuse for execute_workflow tool implementation.">
+        /**
+         * Processes critical actions from agent definition
+         * Example of loading files during initialization
+         */
+        export async function processCriticalActions(agent: Agent, bundleRoot: string): Promise&lt;CriticalContext&gt;
+      </artifact>
+      <artifact path="lib/agents/bundleScanner.ts" kind="module" symbol="discoverBundles" lines="120-200" reason="Shows pattern for directory scanning and error handling. Useful reference for implementing list_files tool if needed (AC-4.5.3).">
+        /**
+         * Scans bundles directory and discovers agents
+         * Good pattern for error handling and directory traversal
+         */
+        export async function discoverBundles(bundlesRoot: string): Promise&lt;Array&lt;AgentMetadata&gt;&gt;
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="fs/promises" version="built-in" usage="File system operations (readFile, writeFile, mkdir)" required="true" />
+        <package name="path" version="built-in" usage="Path manipulation (resolve, normalize, dirname, join)" required="true" />
+        <package name="js-yaml" version="^4.1.0" usage="Parse workflow.yaml files in execute_workflow tool" required="true" />
+        <package name="openai" version="^4.104.0" usage="OpenAI types for ChatCompletionMessageParam" required="true" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="agentic-loop-integration">
+      All file operation tools must work within the agentic execution loop (Story 4.1). This means:
+      - Tools are called via OpenAI function calling, not directly by backend
+      - Tool results must be JSON-serializable for injection into conversation messages
+      - Execution pauses at tool call, waits for result, then continues
+      - Tool results injected as {role: 'tool', tool_call_id, content: JSON.stringify(result)}
+    </constraint>
+    <constraint id="path-resolution-required">
+      All file paths MUST resolve variables BEFORE execution using resolvePath from lib/pathResolver.ts:
+      - {bundle-root} → bmad/custom/bundles/{bundle-name}/
+      - {core-root} → bmad/core/
+      - {project-root} → application root
+      - {config_source}:variable → loaded from bundle config.yaml
+      - Path resolution includes security validation (no traversal attacks)
+    </constraint>
+    <constraint id="tool-result-format">
+      All tools must return consistent result structure:
+      - Success: {success: true, path: resolvedPath, content/size: ..., ...other data}
+      - Failure: {success: false, error: message, path: attemptedPath}
+      - All results must be JSON-serializable
+      - Include resolved path in all results for debugging visibility
+    </constraint>
+    <constraint id="security-validation">
+      Path security validation is built into resolvePath function (Story 4.2):
+      - Blocks path traversal attempts (../)
+      - Blocks access outside {bundle-root} and {core-root}
+      - Validates symbolic links don't escape allowed directories
+      - Error messages don't leak sensitive path information in production
+    </constraint>
+    <constraint id="bundle-structure-support">
+      Tools must work with bundle directory structure:
+      - Read from: {bundle-root}/workflows/*, {bundle-root}/templates/*, {core-root}/tasks/*
+      - Write to: {output_folder}/* (resolved from bundle config.yaml)
+      - execute_workflow must load workflow.yaml, instructions.md, optional template.md
+      - All paths use bundle-relative references, not absolute paths
+    </constraint>
+    <constraint id="epic2-test-migration">
+      Refactor existing Epic 2 file operation tests:
+      - Migrate security tests to new path resolution system
+      - Update tests to use PathContext parameter
+      - Add path variable resolution test cases
+      - Delete obsolete tests that don't apply to new architecture
+      - Ensure all Epic 2 security tests still pass with path resolution
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="resolvePath" kind="function" signature="async function resolvePath(pathTemplate: string, context: PathContext): Promise&lt;string&gt;" path="lib/pathResolver.ts">
+      Core path variable resolution function. All file operation tools MUST use this to resolve paths before accessing files.
+      Throws error if path is invalid or violates security constraints.
+    </interface>
+    <interface name="PathContext" kind="interface" signature="interface PathContext { bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig?: Record&lt;string, any&gt;; }" path="lib/pathResolver.ts">
+      Context object required by all file operation tools. Contains paths and optional bundle config for variable resolution.
+    </interface>
+    <interface name="loadBundleConfig" kind="function" signature="async function loadBundleConfig(bundleRoot: string): Promise&lt;Record&lt;string, any&gt;&gt;" path="lib/pathResolver.ts">
+      Loads and parses config.yaml from bundle directory. Returns empty object if config doesn't exist. Used by execute_workflow tool.
+    </interface>
+    <interface name="ChatCompletionMessageParam" kind="type" signature="type from 'openai/resources/chat/completions'" path="node_modules/openai">
+      OpenAI message type for conversation context. Tool results injected as {role: 'tool', tool_call_id: string, content: string}.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest 30.x with ts-jest for TypeScript support.
+      Test file naming: {module-name}.test.ts for unit tests, {module-name}.integration.test.ts for integration tests.
+      Test location: Co-located with source files in __tests__ directories (lib/__tests__/, lib/tools/__tests__/).
+      Assertion style: Jest assertions (expect(...).toBe(...), expect(...).toEqual(...), etc.).
+      Async testing: Use async/await for all file operations and async tool functions.
+      Mocking: Use jest.mock() for external dependencies (fs/promises, OpenAI API calls).
+      Test isolation: Clear mocks and caches in beforeEach/afterEach hooks.
+      Test data: Use temporary directories for file operation tests, clean up in afterEach.
+      Coverage: Unit tests for all public functions, integration tests for end-to-end tool execution flow.
+    </standards>
+
+    <locations>
+      - lib/tools/__tests__/fileOperations.test.ts (unit tests for read_file, save_output, execute_workflow)
+      - lib/tools/__tests__/fileOperations.integration.test.ts (integration tests with real bundle structure)
+      - lib/tools/__tests__/toolDefinitions.test.ts (unit tests for OpenAI tool schemas)
+    </locations>
+
+    <ideas>
+      <test-idea ac="AC-4.5.1" description="Test read_file resolves {bundle-root} path variable correctly">
+        1. Create mock PathContext with bundleRoot set to test bundle directory
+        2. Call executeReadFile with file_path='{bundle-root}/config.yaml'
+        3. Verify resolvePath called with correct parameters
+        4. Verify file read from resolved path
+        5. Verify result: {success: true, path: resolvedPath, content: fileContent, size: length}
+      </test-idea>
+      <test-idea ac="AC-4.5.2" description="Test save_output creates parent directories automatically">
+        1. Create mock PathContext with bundleRoot
+        2. Call executeSaveOutput with file_path='{bundle-root}/output/nested/dir/file.md'
+        3. Verify fs.mkdir called with {recursive: true}
+        4. Verify file written to resolved path
+        5. Verify result: {success: true, path: resolvedPath, size: content.length}
+      </test-idea>
+      <test-idea ac="AC-4.5.6" description="Test path security blocks traversal attacks">
+        1. Call executeReadFile with file_path='../../etc/passwd'
+        2. Verify resolvePath throws security error
+        3. Verify result: {success: false, error: 'Access denied', path: attemptedPath}
+        4. Verify no file access occurred
+      </test-idea>
+      <test-idea ac="AC-4.5.8" description="Test execute_workflow loads complete workflow context">
+        1. Create test bundle with workflow.yaml, instructions.md, template.md
+        2. Create PathContext with bundleRoot pointing to test bundle
+        3. Call executeWorkflow with workflow_path='{bundle-root}/workflows/test/workflow.yaml'
+        4. Verify workflow.yaml parsed correctly
+        5. Verify instructions.md loaded
+        6. Verify template.md loaded (if specified)
+        7. Verify result: {success: true, workflow_name, description, instructions, template, config}
+      </test-idea>
+      <test-idea ac="AC-4.5.4" description="Test tool results inject correctly into agentic loop">
+        1. Mock OpenAI response with read_file tool call
+        2. Execute tool and get result
+        3. Create tool message: {role: 'tool', tool_call_id, content: JSON.stringify(result)}
+        4. Verify message structure matches OpenAI format
+        5. Verify LLM can parse result from JSON.stringify
+      </test-idea>
+      <test-idea ac="AC-4.5.7" description="Test tools work with bundle structure">
+        1. Use requirements-workflow bundle for testing
+        2. Test read_file loads {bundle-root}/workflows/intake/workflow.yaml
+        3. Test read_file loads {core-root}/tasks/workflow.md
+        4. Test save_output writes to {output_folder}/test.md (from bundle config)
+        5. Verify all paths resolve correctly and files accessed/written successfully
+      </test-idea>
+      <test-idea ac="AC-4.5.9" description="Refactor Epic 2 security tests for new architecture">
+        1. Review Epic 2 file operation tests (if they exist)
+        2. Identify security-related tests (path traversal, access control)
+        3. Update tests to use PathContext parameter instead of old approach
+        4. Add path variable resolution to test scenarios
+        5. Verify all security constraints still enforced with new architecture
+      </test-idea>
+    </ideas>
+  </tests>
+</story-context>

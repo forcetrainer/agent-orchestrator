@@ -1,0 +1,351 @@
+/**
+ * File Operation Tools for Agentic Execution
+ *
+ * Provides file operation tools that work within the agentic execution loop.
+ * All tools resolve path variables before execution and return results
+ * compatible with OpenAI tool calling format.
+ *
+ * Tools:
+ * - read_file: Read files from bundle or core BMAD system
+ * - save_output: Save generated content to file
+ * - execute_workflow: Load workflow configuration, instructions, and template
+ */
+
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { dirname, resolve } from 'path';
+import { load as parseYaml } from 'js-yaml';
+import { resolvePath, PathContext, loadBundleConfig } from '@/lib/pathResolver';
+
+/**
+ * Standard result format for all file operation tools
+ * Compatible with agentic loop context injection
+ */
+export interface ToolResult {
+  /** Whether the operation succeeded */
+  success: boolean;
+  /** Resolved file path (for debugging and visibility) */
+  path?: string;
+  /** File content (for read operations) */
+  content?: string;
+  /** Content/file size in characters/bytes */
+  size?: number;
+  /** Error message (if success: false) */
+  error?: string;
+  /** Additional tool-specific data */
+  [key: string]: any;
+}
+
+/**
+ * Parameters for read_file tool
+ */
+export interface ReadFileParams {
+  /** Path to file. Can use variables: {bundle-root}, {core-root}, {project-root}, {config_source}:var */
+  file_path: string;
+}
+
+/**
+ * Parameters for save_output tool
+ */
+export interface SaveOutputParams {
+  /** Path to save file. Can use variables: {bundle-root}, {core-root}, {project-root}, {config_source}:var */
+  file_path: string;
+  /** Content to write to file */
+  content: string;
+}
+
+/**
+ * Parameters for execute_workflow tool
+ */
+export interface ExecuteWorkflowParams {
+  /** Path to workflow.yaml file */
+  workflow_path: string;
+  /** Optional user input data to pass to workflow */
+  user_input?: Record<string, any>;
+}
+
+/**
+ * Read File Tool
+ *
+ * Reads a file from the bundle or core BMAD system. Resolves path variables
+ * before reading. Returns file content and metadata.
+ *
+ * @param params - File path (can contain variables)
+ * @param context - PathContext with bundleRoot, coreRoot, projectRoot, bundleConfig
+ * @returns ToolResult with success, path, content, size, or error
+ */
+export async function executeReadFile(
+  params: ReadFileParams,
+  context: PathContext
+): Promise<ToolResult> {
+  let resolvedPath: string;
+
+  try {
+    // Resolve path variables (includes security validation)
+    resolvedPath = resolvePath(params.file_path, context);
+
+    // Read file content
+    const content = await readFile(resolvedPath, 'utf-8');
+
+    return {
+      success: true,
+      path: resolvedPath,
+      content: content,
+      size: content.length,
+    };
+  } catch (error: any) {
+    // Distinguish between file not found and other errors
+    if (error.code === 'ENOENT') {
+      return {
+        success: false,
+        error: `File not found: ${params.file_path}`,
+        path: resolvedPath!,
+      };
+    } else if (error.code === 'EACCES' || error.code === 'EPERM') {
+      return {
+        success: false,
+        error: `Permission denied: ${params.file_path}`,
+        path: resolvedPath!,
+      };
+    } else if (error.message?.includes('Security violation')) {
+      // Security violations from path resolution
+      return {
+        success: false,
+        error: error.message,
+        path: params.file_path,
+      };
+    } else {
+      return {
+        success: false,
+        error: `Failed to read file: ${error.message}`,
+        path: resolvedPath || params.file_path,
+      };
+    }
+  }
+}
+
+/**
+ * Save Output Tool
+ *
+ * Saves generated content to a file. Resolves path variables before writing.
+ * Automatically creates parent directories if they don't exist.
+ *
+ * @param params - File path and content
+ * @param context - PathContext with bundleRoot, coreRoot, projectRoot, bundleConfig
+ * @returns ToolResult with success, path, size, or error
+ */
+export async function executeSaveOutput(
+  params: SaveOutputParams,
+  context: PathContext
+): Promise<ToolResult> {
+  let resolvedPath: string;
+
+  try {
+    // Resolve path variables (includes security validation)
+    resolvedPath = resolvePath(params.file_path, context);
+
+    // Extract directory and create if doesn't exist
+    const dir = dirname(resolvedPath);
+    await mkdir(dir, { recursive: true });
+
+    // Write file content
+    await writeFile(resolvedPath, params.content, 'utf-8');
+
+    return {
+      success: true,
+      path: resolvedPath,
+      size: params.content.length,
+    };
+  } catch (error: any) {
+    // Handle write errors
+    if (error.code === 'EACCES' || error.code === 'EPERM') {
+      return {
+        success: false,
+        error: `Permission denied: ${params.file_path}`,
+        path: resolvedPath!,
+      };
+    } else if (error.message?.includes('Security violation')) {
+      // Security violations from path resolution
+      return {
+        success: false,
+        error: error.message,
+        path: params.file_path,
+      };
+    } else {
+      return {
+        success: false,
+        error: `Failed to write file: ${error.message}`,
+        path: resolvedPath || params.file_path,
+      };
+    }
+  }
+}
+
+/**
+ * Execute Workflow Tool
+ *
+ * Loads a workflow configuration, instructions, and optional template.
+ * Resolves all path variables in the workflow configuration.
+ *
+ * @param params - Workflow path and optional user input
+ * @param context - PathContext with bundleRoot, coreRoot, projectRoot, bundleConfig
+ * @returns ToolResult with workflow data: name, description, instructions, template, config, user_input
+ */
+export async function executeWorkflow(
+  params: ExecuteWorkflowParams,
+  context: PathContext
+): Promise<ToolResult> {
+  let resolvedWorkflowPath: string;
+
+  try {
+    // Resolve workflow path (includes security validation)
+    resolvedWorkflowPath = resolvePath(params.workflow_path, context);
+
+    // Read and parse workflow.yaml
+    const workflowContent = await readFile(resolvedWorkflowPath, 'utf-8');
+    const workflowConfig = parseYaml(workflowContent) as Record<string, any>;
+
+    // Extract workflow metadata
+    const workflowName = workflowConfig.name || 'Unnamed Workflow';
+    const description = workflowConfig.description || '';
+
+    // Load bundle config if config_source is specified
+    let bundleConfig = context.bundleConfig;
+    if (workflowConfig.config_source) {
+      const configSourcePath = resolvePath(
+        workflowConfig.config_source,
+        context
+      );
+      const configContent = await readFile(configSourcePath, 'utf-8');
+      bundleConfig = parseYaml(configContent) as Record<string, any>;
+    }
+
+    // Create enhanced context with loaded config
+    const enhancedContext: PathContext = {
+      ...context,
+      bundleConfig,
+    };
+
+    // Resolve workflow config variables using enhanced context
+    const resolvedConfig = await resolveWorkflowVariables(
+      workflowConfig,
+      enhancedContext
+    );
+
+    // Load instructions if specified
+    let instructions = '';
+    if (resolvedConfig.instructions) {
+      const instructionsPath = resolvePath(
+        resolvedConfig.instructions,
+        enhancedContext
+      );
+      instructions = await readFile(instructionsPath, 'utf-8');
+    }
+
+    // Load template if specified
+    let template = '';
+    if (resolvedConfig.template && typeof resolvedConfig.template === 'string') {
+      const templatePath = resolvePath(
+        resolvedConfig.template,
+        enhancedContext
+      );
+      template = await readFile(templatePath, 'utf-8');
+    }
+
+    return {
+      success: true,
+      path: resolvedWorkflowPath,
+      workflow_name: workflowName,
+      description: description,
+      instructions: instructions,
+      template: template,
+      config: resolvedConfig,
+      user_input: params.user_input || {},
+    };
+  } catch (error: any) {
+    // Handle various error types
+    if (error.code === 'ENOENT') {
+      return {
+        success: false,
+        error: `Workflow file not found: ${params.workflow_path}`,
+        path: resolvedWorkflowPath!,
+      };
+    } else if (error.message?.includes('Security violation')) {
+      return {
+        success: false,
+        error: error.message,
+        path: params.workflow_path,
+      };
+    } else if (error.name === 'YAMLException') {
+      return {
+        success: false,
+        error: `Invalid YAML in workflow file: ${error.message}`,
+        path: resolvedWorkflowPath || params.workflow_path,
+      };
+    } else {
+      return {
+        success: false,
+        error: `Failed to load workflow: ${error.message}`,
+        path: resolvedWorkflowPath || params.workflow_path,
+      };
+    }
+  }
+}
+
+/**
+ * Resolves variables in workflow configuration
+ *
+ * Recursively processes workflow config object and resolves path variables
+ * in string values. Handles nested objects and arrays.
+ *
+ * @param config - Workflow configuration object
+ * @param context - PathContext with resolved variables
+ * @returns Configuration with all path variables resolved
+ */
+async function resolveWorkflowVariables(
+  config: Record<string, any>,
+  context: PathContext
+): Promise<Record<string, any>> {
+  const resolved: Record<string, any> = {};
+
+  for (const [key, value] of Object.entries(config)) {
+    if (typeof value === 'string') {
+      // Attempt to resolve path variables in strings
+      // Only resolve if the string contains variable syntax
+      if (value.includes('{')) {
+        try {
+          resolved[key] = resolvePath(value, context);
+        } catch {
+          // If resolution fails (not a valid path), keep original value
+          resolved[key] = value;
+        }
+      } else {
+        resolved[key] = value;
+      }
+    } else if (Array.isArray(value)) {
+      // Recursively resolve arrays
+      resolved[key] = await Promise.all(
+        value.map(async (item) => {
+          if (typeof item === 'string' && item.includes('{')) {
+            try {
+              return resolvePath(item, context);
+            } catch {
+              return item;
+            }
+          } else if (typeof item === 'object' && item !== null) {
+            return resolveWorkflowVariables(item, context);
+          } else {
+            return item;
+          }
+        })
+      );
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively resolve nested objects
+      resolved[key] = await resolveWorkflowVariables(value, context);
+    } else {
+      // Keep primitive values as-is
+      resolved[key] = value;
+    }
+  }
+
+  return resolved;
+}
