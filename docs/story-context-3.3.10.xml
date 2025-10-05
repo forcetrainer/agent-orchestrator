@@ -1,0 +1,235 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.10</storyId>
+    <title>Agent Initialization on Selection</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.10.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>the agent to initialize and greet me when I select it</iWant>
+    <soThat>I understand the agent's capabilities before sending my first message</soThat>
+    <tasks>
+      <task id="1" acs="10.1,10.2,10.3">Create Agent Initialization API
+        - Subtask 1.1: Create POST /api/agent/initialize endpoint
+        - Subtask 1.2: Load agent definition file from disk using existing agent loader
+        - Subtask 1.3: Send complete agent file content to LLM as system context
+        - Subtask 1.4: Include prompt: "You are this agent. Follow all instructions in this file exactly as written."
+        - Subtask 1.5: Use existing Epic 2 function calling infrastructure for file lazy-loading
+        - Subtask 1.6: Return LLM's initialization response (greeting, commands, etc.)
+        - Subtask 1.7: Handle errors gracefully (agent not found, LLM errors)
+      </task>
+      <task id="2" acs="10.4,10.5,10.6,10.7">Integrate Initialization into Chat Flow
+        - Subtask 2.1: Modify ChatPanel.tsx handleAgentSelect to call initialization API
+        - Subtask 2.2: Show loading state during initialization
+        - Subtask 2.3: Display LLM's initialization response as first message (system role)
+        - Subtask 2.4: Block user input until initialization completes
+        - Subtask 2.5: Clear any previous conversation when new agent selected
+      </task>
+      <task id="3" acs="10.4,10.5">System Message Display
+        - Subtask 3.1: Verify "system" message role exists in Message type (already implemented)
+        - Subtask 3.2: Update MessageBubble to style system messages distinctly (if needed)
+        - Subtask 3.3: Ensure system messages render markdown (greeting may include formatting)
+      </task>
+      <task id="4" acs="10.8">Error Handling
+        - Subtask 4.1: Catch initialization errors gracefully
+        - Subtask 4.2: Display initialization errors as error messages in chat
+        - Subtask 4.3: Allow user to try selecting agent again after error
+        - Subtask 4.4: Log detailed error information for debugging
+      </task>
+      <task id="5" acs="all">Testing
+        - Subtask 5.1: Test initialization with alex-facilitator agent
+        - Subtask 5.2: Test initialization with casey-analyst agent
+        - Subtask 5.3: Test initialization with pixel-story-developer agent
+        - Subtask 5.4: Verify LLM receives complete agent file
+        - Subtask 5.5: Verify LLM can request files via function calling
+        - Subtask 5.6: Verify greeting and commands display correctly
+        - Subtask 5.7: Test error scenarios (agent not found, LLM errors, missing files)
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="10.1">When agent is selected, system loads agent definition file</ac>
+    <ac id="10.2">Agent file is sent to LLM with instruction to follow all instructions exactly as written</ac>
+    <ac id="10.3">LLM can request additional files via function calling (lazy-loading pattern)</ac>
+    <ac id="10.4">Agent greeting/welcome message displays automatically before user input</ac>
+    <ac id="10.5">Agent command list displays if defined in agent instructions</ac>
+    <ac id="10.6">Initialization completes before user can send first message</ac>
+    <ac id="10.7">Loading indicator shows during initialization process</ac>
+    <ac id="10.8">Initialization errors display clearly without crashing interface</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-2: Agent Loading and Initialization</section>
+        <snippet>Selected agent's instruction files load into system on demand. Support for BMAD's lazy-loading pattern. Handle agent metadata and configuration from agent definition files (lines 112-116)</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-2: Reliability</section>
+        <snippet>Agent errors/failures allow user to recover and continue or restart conversation (line 200)</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-8: Observability</section>
+        <snippet>Console logging for key operations (agent loading, file operations, API calls). Clear visibility into agent processing status for end users (lines 235-237)</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification Epic 3</title>
+        <section>Story 3.10: Agent Initialization on Selection</section>
+        <snippet>Objective: Initialize agent when selected, executing critical actions and displaying greeting before user input (lines 1081-1135)</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification Epic 3</title>
+        <section>Implementation Approach</section>
+        <snippet>LLM-driven initialization: Send complete agent file to LLM without parsing, LLM follows all instructions, uses function calling for lazy-loading (lines 1096-1107)</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification Epic 3</title>
+        <section>Traceability Matrix</section>
+        <snippet>AC-10.1 - AC-10.8 map to PRD FR-2 (Agent Loading and Initialization), User Journey 2 (Agent greets Marcus), UX Principle #1 (Radical Familiarity) (line 1151)</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>handleAgentSelect</symbol>
+        <lines>44-48</lines>
+        <reason>Current agent selection handler - needs to be extended to trigger initialization</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>ChatPanel state</symbol>
+        <lines>27-41</lines>
+        <reason>State management for selected agent, messages array, loading state, conversationId - need to integrate initialization flow</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/AgentSelector.tsx</path>
+        <kind>component</kind>
+        <symbol>onAgentSelect callback</symbol>
+        <lines>69</lines>
+        <reason>Callback triggered when user selects agent - this is the entry point for initialization</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/loader.ts</path>
+        <kind>service</kind>
+        <symbol>loadAgents, getAgentById</symbol>
+        <lines>43-141</lines>
+        <reason>Existing agent loading service - will be reused to get agent file path for initialization API</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api</kind>
+        <symbol>POST /api/chat</symbol>
+        <lines>1-200</lines>
+        <reason>Existing chat API with OpenAI integration and function calling - pattern to follow for initialization API</reason>
+      </artifact>
+      <artifact>
+        <path>lib/types.ts</path>
+        <kind>type</kind>
+        <symbol>Message interface</symbol>
+        <lines>13-19</lines>
+        <reason>Message type already supports 'system' role (line 15) - can be used for initialization greeting messages</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="react-markdown" version="^10.1.0" />
+        <package name="openai" version="^4.104.0" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>NO XML parsing in application code - LLM interprets agent files (LLM-driven approach)</constraint>
+    <constraint>NO config file parsing in application code - LLM requests files via function calling</constraint>
+    <constraint>NO variable substitution in application code - LLM handles all logic</constraint>
+    <constraint>Send complete agent file to LLM without modification (AC-10.2)</constraint>
+    <constraint>Initialization must complete before user can send first message (AC-10.6)</constraint>
+    <constraint>Loading indicator must be shown during initialization (AC-10.7)</constraint>
+    <constraint>Errors must be handled gracefully without crashing the interface (AC-10.8, NFR-2)</constraint>
+    <constraint>System message role already exists in Message interface - use for greeting display (lib/types.ts:15)</constraint>
+    <constraint>Reuse Epic 2 function calling infrastructure for file lazy-loading (AC-10.3)</constraint>
+    <constraint>Follow existing API patterns from /api/chat (OpenAI integration)</constraint>
+    <constraint>Follow existing error handling patterns from ChatPanel.tsx (Story 3.8)</constraint>
+    <constraint>Maintain existing state management patterns in ChatPanel (messages array, isLoading, etc.)</constraint>
+  </constraints>
+  <interfaces>
+    <interface>
+      <name>POST /api/agent/initialize</name>
+      <kind>api</kind>
+      <signature>POST { agentId: string } → { success: boolean; greeting?: string; error?: string }</signature>
+      <path>app/api/agent/initialize/route.ts (NEW)</path>
+      <description>Initialization API endpoint - loads agent file, sends to LLM, returns greeting response</description>
+    </interface>
+    <interface>
+      <name>getAgentById</name>
+      <kind>function</kind>
+      <signature>async function getAgentById(agentId: string): Promise&lt;Agent | null&gt;</signature>
+      <path>lib/agents/loader.ts (EXISTING)</path>
+      <description>Existing function to retrieve agent metadata and file path - reuse in initialization API</description>
+    </interface>
+    <interface>
+      <name>Message</name>
+      <kind>type</kind>
+      <signature>{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp?: Date; functionCalls?: any[] }</signature>
+      <path>lib/types.ts (EXISTING)</path>
+      <description>Existing message type with system role support - use for initialization greeting</description>
+    </interface>
+    <interface>
+      <name>handleAgentSelect</name>
+      <kind>function</kind>
+      <signature>(agentId: string) =&gt; void</signature>
+      <path>components/chat/ChatPanel.tsx:44 (UPDATE)</path>
+      <description>Must be converted to async and call /api/agent/initialize, show loading, display greeting message</description>
+    </interface>
+    <interface>
+      <name>OpenAI Chat Completion</name>
+      <kind>api</kind>
+      <signature>openai.chat.completions.create({ messages, tools })</signature>
+      <path>Epic 2 (EXISTING)</path>
+      <description>Existing OpenAI integration with function calling - use same pattern for initialization</description>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Use Jest and React Testing Library following existing test patterns in Epic 3. API route tests in __tests__ directories. Integration tests for LLM-driven initialization flow. Console logging for key operations per NFR-8.</standards>
+    <locations>
+      <location>app/api/agent/initialize/__tests__/route.test.ts (NEW)</location>
+      <location>components/chat/__tests__/ChatPanel.test.tsx (UPDATE)</location>
+    </locations>
+    <ideas>
+      <idea ac="10.1">Test API loads agent file from disk using getAgentById</idea>
+      <idea ac="10.2">Test API sends complete agent file to OpenAI (mock OpenAI call, verify request body)</idea>
+      <idea ac="10.2">Test prompt includes "Follow all instructions in this file exactly as written"</idea>
+      <idea ac="10.3">Test LLM can request files via function calling (mock read_file tool call)</idea>
+      <idea ac="10.4">Test LLM greeting response returned from API</idea>
+      <idea ac="10.4">Test ChatPanel displays greeting as first system message</idea>
+      <idea ac="10.5">Test command list displays if LLM includes it in greeting</idea>
+      <idea ac="10.6">Test user input blocked until initialization completes (isLoading state)</idea>
+      <idea ac="10.7">Test loading indicator shows during initialization</idea>
+      <idea ac="10.8">Test agent not found error handled gracefully</idea>
+      <idea ac="10.8">Test OpenAI API error handled gracefully</idea>
+      <idea ac="all">Integration test: POST /api/agent/initialize with alex-facilitator → verify greeting</idea>
+      <idea ac="all">Integration test: select casey-analyst → verify LLM receives full file</idea>
+      <idea ac="all">Integration test: select pixel-story-developer → verify function calling works</idea>
+    </ideas>
+  </tests>
+</story-context>

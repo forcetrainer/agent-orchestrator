@@ -13,17 +13,20 @@ import { ErrorMessage } from './ErrorMessage';
  * Story 3.2 - Task 2: Role-based message rendering
  * Story 3.3 - Task 2: Markdown rendering for assistant messages
  * Story 3.8 - Task 1: Error message rendering
+ * Story 3.10 - Task 3: System message display for agent greetings
  *
  * AC-2.1: User messages appear right-aligned with distinct styling
  * AC-2.2: Agent messages appear left-aligned with different styling
  * AC-2.3: Clear visual distinction between user and agent messages
  * AC-3.1 to AC-3.7: Markdown rendering for assistant messages (headings, lists, code, links, bold, italic, tables)
  * AC-8.2: Error messages are clearly styled (red/warning color)
+ * AC-10.4: Agent greeting/welcome message displays automatically
+ * AC-10.5: Agent command list displays if defined in agent instructions
  *
  * Styling follows design system from Story 3.1:
  * - User: Right-aligned, blue background (#3B82F6), white text (plain text, no markdown)
  * - Assistant: Left-aligned, gray background (gray-200), dark text (markdown rendered)
- * - System: Left-aligned, red background, white text (plain text, no markdown - for errors/info)
+ * - System: Left-aligned, blue-gray background (blue-50), dark text, blue border (markdown rendered - for agent greetings)
  * - Error: Left-aligned, red border, light red background, warning icon (plain text, no markdown)
  * - Max width 75% for readability
  * - Border radius: rounded-lg
@@ -41,15 +44,19 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
   const baseStyles = 'max-w-[75%] px-4 py-3 rounded-lg';
 
   // Role-specific styling
-  const roleStyles = {
+  const roleStyles: Record<string, string> = {
     user: 'ml-auto bg-blue-500 text-white',
     assistant: 'mr-auto bg-gray-200 text-gray-900',
-    system: 'mr-auto bg-red-500 text-white', // System messages (errors/info)
+    // Story 3.10 Task 3.2: System messages styled for agent greetings (AC-10.4, AC-10.5)
+    system: 'mr-auto bg-blue-50 text-gray-900 border-2 border-blue-200', // System messages (agent greetings)
+    // Tool messages should not be rendered (filtered in MessageList), but add style for safety
+    tool: 'hidden',
   };
 
-  // Render markdown for assistant messages only
+  // Render markdown for assistant and system messages
+  // Story 3.10 Task 3.3: System messages render markdown (AC-10.5 - command lists may use markdown)
   const renderContent = () => {
-    if (message.role === 'assistant') {
+    if (message.role === 'assistant' || message.role === 'system') {
       return (
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}

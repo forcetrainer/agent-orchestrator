@@ -51,9 +51,12 @@ export function MessageList({ messages, isLoading }: { messages: Message[]; isLo
           </div>
         ) : (
           /* Task 3.2, 3.3: Map messages in chronological order */
-          messages.map((message, index) => (
-            <MessageBubble key={index} message={message} />
-          ))
+          /* Filter out tool messages - they're for OpenAI context persistence, not user display */
+          messages
+            .filter((message) => message.role !== 'tool')
+            .map((message, index) => (
+              <MessageBubble key={index} message={message} />
+            ))
         )}
         {/* Story 3.6 Task 3.3: Render LoadingIndicator when isLoading=true */}
         {/* AC-6.3: Loading indicator appears in chat history where agent response will be */}

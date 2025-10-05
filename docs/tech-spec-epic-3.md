@@ -1076,6 +1076,65 @@ The following agents already comply with the new requirements:
 **AC-9.7:** Agent behavior matches expected BMAD agent patterns
 **AC-9.8:** Document any OpenAI compatibility issues discovered during testing
 
+---
+
+### Story 3.10: Agent Initialization on Selection
+
+**Objective:** Initialize agent when selected, executing critical actions and displaying greeting before user input
+
+**Acceptance Criteria:**
+- **AC-10.1:** When agent is selected, system loads agent definition file and parses XML structure
+- **AC-10.2:** System executes agent `<critical-actions>` section in order
+- **AC-10.3:** Critical actions can load config files, set variables, and prepare agent context
+- **AC-10.4:** Agent greeting/welcome message displays automatically before user input
+- **AC-10.5:** Agent command list displays if defined in agent instructions
+- **AC-10.6:** Initialization completes before user can send first message
+- **AC-10.7:** Loading indicator shows during initialization process
+- **AC-10.8:** Initialization errors display clearly without crashing interface
+
+**Implementation Approach:**
+
+1. **Agent Initializer Service** (`lib/agents/initializer.ts`)
+   - Parse agent XML to extract `<critical-actions>` section
+   - Execute actions sequentially (load config, set variables, prepare context)
+   - Return initialization result with greeting message
+   - Handle errors gracefully without crashing
+
+2. **Chat Flow Integration** (Update `ChatPanel.tsx`)
+   - Trigger `initializeAgent(agentId)` when agent selected
+   - Show loading state during initialization
+   - Display agent greeting as first "system" message
+   - Block user input until initialization completes
+
+3. **Critical Actions Support**
+   - Load config files (`<i>Load into memory {path}/config.yaml</i>`)
+   - Variable substitution (`{user_name}`, `{project_name}`, etc.)
+   - Execute greeting/instruction display actions
+   - Support BMAD agent patterns from examples (alex, casey, pixel)
+
+4. **UI Updates**
+   - New message role: "system" for agent greetings/initialization
+   - Distinct styling for system messages
+   - Initialization progress indicator
+   - Error display for initialization failures
+
+**Dependencies:**
+- Stories 3.1-3.8 (chat interface foundation)
+- Agent XML structure from Epic 2
+- Config file support (config.yaml parsing)
+
+**Testing:**
+- Verify initialization with alex, casey, pixel agents
+- Test critical-actions execution
+- Verify greeting displays before user input
+- Test error handling for malformed agents
+
+**Traceability:**
+- Maps to PRD FR-2: "Agent Loading and Initialization"
+- Maps to PRD User Journey 2: "Agent greets Marcus"
+- Maps to UX Principle #1: "Radical Familiarity" (ChatGPT-style greeting)
+- Unblocks Story 3.9 manual validation testing
+
 ## Traceability Mapping
 
 | AC ID | Requirement Source | Spec Section(s) | Component(s)/API(s) | Test Idea |
@@ -1089,6 +1148,7 @@ The following agents already comply with the new requirements:
 | **AC-7.1 - AC-7.6** | Story 3.7, PRD FR-12 | Workflows: New Conversation Flow | ChatInterface reset button | Integration test: clear messages array, verify state reset, agent doesn't remember context |
 | **AC-8.1 - AC-8.7** | Story 3.8, PRD FR-4, NFR-2, UX Principle 4 | Services: ErrorDisplay; Workflows: Error Handling Flow; NFR: Security (error sanitization) | ErrorDisplay component, error handling in ChatInterface | Unit test: error display styling; Integration test: API failure → error message shown → user can retry |
 | **AC-9.1 - AC-9.8** | Story 3.9, PRD Goal #1, FR-2, FR-6 | Epic 2 file operations; APIs: POST /api/chat with read_file function calling | Chat interface with complex BMAD agent, backend read_file implementation | Integration test: complex agent workflow → verify multiple read_file calls in logs → workflow completes successfully; Validation: document OpenAI compatibility findings |
+| **AC-10.1 - AC-10.8** | Story 3.10, PRD FR-2, User Journey 2, UX Principle 1 | Services: Agent Initializer; Workflows: Agent Initialization Flow; Data Models: system message role | lib/agents/initializer.ts, ChatPanel.tsx, MessageBubble (system styling) | Integration test: select agent → verify critical-actions execute → greeting displays → config loaded → user input blocked until complete; Error test: malformed agent → graceful error display |
 
 ## Risks, Assumptions, Open Questions
 

@@ -13,15 +13,16 @@ import { validatePath } from './security';
 import { env } from '@/lib/utils/env';
 
 /**
- * Reads file content from agents or output folder.
+ * Reads file content from agents, bmad, or output folder.
  *
  * Search order:
  * 1. Try AGENTS_PATH first (read-only templates, workflows, etc.)
- * 2. Fallback to OUTPUT_PATH if not found in agents
+ * 2. Try BMAD_PATH second (BMAD framework files)
+ * 3. Fallback to OUTPUT_PATH if not found in agents or bmad
  *
  * @param relativePath - Relative path to file (e.g., "templates/agent.md")
  * @returns File contents as UTF-8 string
- * @throws Error if file not found in both locations or access denied
+ * @throws Error if file not found in all locations or access denied
  */
 export async function readFileContent(relativePath: string): Promise<string> {
   const startTime = performance.now();
@@ -33,6 +34,20 @@ export async function readFileContent(relativePath: string): Promise<string> {
       const content = await readFile(agentsPath, 'utf-8');
       const duration = performance.now() - startTime;
       console.log(`[read_file] Read from agents: ${relativePath} (${duration.toFixed(2)}ms)`);
+      return content;
+    } catch (error: any) {
+      // Only catch ENOENT (file not found), re-throw other errors
+      if (error.code !== 'ENOENT') {
+        throw error;
+      }
+    }
+
+    // Try BMAD folder second (BMAD framework files)
+    const bmadPath = validatePath(relativePath, env.BMAD_PATH);
+    try {
+      const content = await readFile(bmadPath, 'utf-8');
+      const duration = performance.now() - startTime;
+      console.log(`[read_file] Read from bmad: ${relativePath} (${duration.toFixed(2)}ms)`);
       return content;
     } catch (error: any) {
       // Only catch ENOENT (file not found), re-throw other errors

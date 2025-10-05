@@ -1,6 +1,6 @@
 # Build Stories - Transform Requirements into User Stories
 
-<critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.md</critical>
+<critical>IMMEDIATELY load and read the COMPLETE file: bmad/core/tasks/workflow.md - This file contains the execution engine rules you MUST follow</critical>
 <critical>You MUST have already loaded and processed: {project_root}/bmad/sn/workflows/build-stories/workflow.yaml</critical>
 
 <workflow>
@@ -63,7 +63,7 @@ Consider these story sizing principles:
   - Rationale for story number assignment
 </action>
 
-<critical>Load COMPLETE epic template: {project-root}/bmad/sn/templates/epic-template.md</critical>
+<critical>Load COMPLETE epic template: pixel/templates/epic-template.md</critical>
 
 <action>Populate epic template with all variables:
 
@@ -149,7 +149,7 @@ Display epic overview for approval:
 </step>
 
 <step n="4" goal="Write stories using template" for-each="story in story_breakdown">
-<critical>Load COMPLETE template file: {project-root}/bmad/sn/templates/story-template.md</critical>
+<critical>Load COMPLETE template file: pixel/templates/story-template.md</critical>
 <critical>Use this template as the EXACT structure for every story - all sections must be populated</critical>
 
 For each approved story, populate the story template:

@@ -46,19 +46,21 @@ export function validatePath(relativePath: string, baseDir: string): string {
   if (isAbsolute(relativePath)) {
     const normalizedInput = resolve(relativePath);
 
-    // Check if absolute path is within AGENTS_PATH or OUTPUT_PATH
+    // Check if absolute path is within AGENTS_PATH, OUTPUT_PATH, or BMAD_PATH
     const agentsPath = resolve(env.AGENTS_PATH);
     const outputPath = resolve(env.OUTPUT_PATH);
+    const bmadPath = resolve(env.BMAD_PATH);
 
     const isInAgents = normalizedInput.startsWith(agentsPath + sep) || normalizedInput === agentsPath;
     const isInOutput = normalizedInput.startsWith(outputPath + sep) || normalizedInput === outputPath;
+    const isInBmad = normalizedInput.startsWith(bmadPath + sep) || normalizedInput === bmadPath;
 
-    if (!isInAgents && !isInOutput) {
+    if (!isInAgents && !isInOutput && !isInBmad) {
       console.error('[Security] Path validation failed:', {
         relativePath,
         reason: 'absolute path outside allowed directories',
         resolvedPath: normalizedInput,
-        allowedDirs: { agentsPath, outputPath }
+        allowedDirs: { agentsPath, outputPath, bmadPath }
       });
       throw new Error('Access denied');
     }

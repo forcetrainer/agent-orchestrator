@@ -484,7 +484,7 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 
 **Value:** Delivers the fundamental user experience - chat interface that feels familiar and enables agent interaction
 
-**Estimated Stories:** 8 stories
+**Estimated Stories:** 9 stories
 
 ---
 
@@ -541,7 +541,7 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 
 ---
 
-**Total Estimated Stories:** 43 stories across 6 epics
+**Total Estimated Stories:** 44 stories across 6 epics
 
 **Critical Architectural Note:** Epic 1 (Backend Foundation) must be completed first before any other epic can begin. This is the foundational infrastructure that enables both OpenAI integration and the chat interface.
 

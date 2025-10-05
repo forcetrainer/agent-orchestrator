@@ -705,7 +705,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 **I want** to validate that lazy-loading works with complex BMAD agents
 **So that** I can confirm OpenAI function calling properly loads multiple instruction files on-demand
 
-**Prerequisites:** Stories 3.5-3.8 complete (functional chat interface working), Epic 2 complete (OpenAI integration with read_file function)
+**Prerequisites:** Stories 3.5-3.10 complete (functional chat interface with agent initialization), Epic 2 complete (OpenAI integration with read_file function)
 
 **Acceptance Criteria:**
 1. Select or create a complex BMAD agent that requires loading at least 3 instruction files during execution
@@ -723,6 +723,33 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 - Test should simulate real-world agent usage (not just basic "hello world")
 - This validates PRD Goal #1: "Prove that lazy-loading instruction pattern is viable with OpenAI function calling"
 - Consider testing with agent that has `<i>Load into memory...` patterns
+
+---
+
+#### Story 3.10: Agent Initialization on Selection
+
+**As an** end user
+**I want** the agent to initialize and greet me when I select it
+**So that** I understand the agent's capabilities before sending my first message
+
+**Prerequisites:** Stories 3.1-3.8 complete (chat interface functional)
+
+**Acceptance Criteria:**
+1. When agent is selected, system loads agent definition file and parses XML structure
+2. System executes agent `<critical-actions>` section in order
+3. Critical actions can load config files, set variables, and prepare agent context
+4. Agent greeting/welcome message displays automatically before user input
+5. Agent command list displays if defined in agent instructions
+6. Initialization completes before user can send first message
+7. Loading indicator shows during initialization process
+8. Initialization errors display clearly without crashing interface
+
+**Technical Notes:**
+- Implement `lib/agents/initializer.ts` for initialization logic
+- Parse agent XML to extract and execute `<critical-actions>`
+- Support loading config files like `bmad/bmm/config.yaml`
+- Agent greeting displays as "system" message role
+- Fulfills PRD FR-2: "Agent Loading and Initialization"
 
 ---
 

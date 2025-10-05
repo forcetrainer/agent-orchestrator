@@ -1,8 +1,8 @@
 # Review Epic - Comprehensive Quality Assurance for Story Sets
 
-<critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.md</critical>
+<critical>IMMEDIATELY load and read the COMPLETE file: bmad/core/tasks/workflow.md - This file contains the execution engine rules you MUST follow</critical>
 <critical>You MUST have already loaded and processed: {project_root}/bmad/sn/workflows/review-epic/workflow.yaml</critical>
-<critical>Load template reference: {project-root}/bmad/sn/templates/story-template.md for validation</critical>
+<critical>Load template reference: pixel/templates/story-template.md for validation</critical>
 
 <workflow>
 

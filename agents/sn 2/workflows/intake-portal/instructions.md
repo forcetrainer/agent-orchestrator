@@ -1,6 +1,6 @@
 # Portal/UI Customization Intake Instructions
 
-<critical>The workflow execution engine is governed by: {project_root}/bmad/core/tasks/workflow.md</critical>
+<critical>IMMEDIATELY load and read the COMPLETE file: bmad/core/tasks/workflow.md - This file contains the execution engine rules you MUST follow</critical>
 <critical>You MUST have already loaded and processed: {project_root}/bmad/sn/workflows/intake-portal/workflow.yaml</critical>
 
 <workflow>

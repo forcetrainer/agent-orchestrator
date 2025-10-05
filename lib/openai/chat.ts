@@ -41,6 +41,7 @@ export interface ExecutedFunctionCall {
 export interface ChatCompletionResult {
   content: string;
   functionCalls: ExecutedFunctionCall[];
+  allMessages: ChatCompletionMessageParam[];
 }
 
 /**
@@ -83,6 +84,11 @@ You have access to the following tools:
 - read_file: Read files from your instruction folder or output directory
 - write_file: Write content to files in the output directory
 - list_files: List files and directories in a given path
+
+CRITICAL EFFICIENCY RULE:
+- Once you have loaded a file (workflow.yaml, instructions.md, templates, etc.) in this conversation, that content is ALREADY in your context
+- DO NOT re-load files you have already read in previous messages unless the file has been modified
+- Check the conversation history before calling read_file - if you already loaded the file, use the cached content from your context
 
 Use these tools to help users accomplish their tasks effectively.
 When you see {project-root} or {project_root} in workflow paths or config files, replace it with: ${env.PROJECT_ROOT}
@@ -204,6 +210,7 @@ When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_
       return {
         content,
         functionCalls,
+        allMessages, // Return full conversation including tool messages
       };
 
     } catch (err: any) {

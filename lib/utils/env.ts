@@ -95,4 +95,12 @@ export const env = {
   get PROJECT_ROOT(): string {
     return process.env.PROJECT_ROOT || process.cwd();
   },
+
+  /**
+   * Path to BMAD framework directory (core, bmm, workflows, etc.)
+   * Default: ./bmad
+   */
+  get BMAD_PATH(): string {
+    return process.env.BMAD_PATH || './bmad';
+  },
 } as const;

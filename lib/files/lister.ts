@@ -19,12 +19,13 @@ import type { FileNode } from '@/types';
  *
  * Search order:
  * 1. Try AGENTS_PATH first
- * 2. Fallback to OUTPUT_PATH if not found in agents
+ * 2. Try BMAD_PATH second
+ * 3. Fallback to OUTPUT_PATH if not found in agents or bmad
  *
  * @param relativePath - Relative path to directory (e.g., "templates")
  * @param recursive - If true, recursively list subdirectories (default: false)
  * @returns Array of FileNode objects with metadata
- * @throws Error if directory not found in both locations or access denied
+ * @throws Error if directory not found in all locations or access denied
  */
 export async function listFiles(
   relativePath: string = '',
@@ -34,7 +35,7 @@ export async function listFiles(
 
   try {
     let basePath: string;
-    let location: 'agents' | 'output';
+    let location: 'agents' | 'bmad' | 'output';
 
     // Try agents folder first
     try {
@@ -44,9 +45,20 @@ export async function listFiles(
       location = 'agents';
     } catch (error: any) {
       if (error.code === 'ENOENT') {
-        // Try output folder as fallback
-        basePath = validatePath(relativePath, env.OUTPUT_PATH);
-        location = 'output';
+        // Try BMAD folder second
+        try {
+          basePath = validatePath(relativePath, env.BMAD_PATH);
+          await stat(basePath);
+          location = 'bmad';
+        } catch (bmadError: any) {
+          if (bmadError.code === 'ENOENT') {
+            // Try output folder as last fallback
+            basePath = validatePath(relativePath, env.OUTPUT_PATH);
+            location = 'output';
+          } else {
+            throw bmadError;
+          }
+        }
       } else {
         throw error;
       }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse, ChatRequest, ChatResponse } from '@/types/api';
+import { Message } from '@/lib/types';
 import { handleApiError, NotFoundError } from '@/lib/utils/errors';
 import { getAgentById } from '@/lib/agents/loader';
 import { executeChatCompletion } from '@/lib/openai/chat';
@@ -56,22 +57,63 @@ export async function POST(request: NextRequest) {
     });
 
     // Build messages array for OpenAI (convert to ChatCompletionMessageParam format)
-    const messages: ChatCompletionMessageParam[] = conversation.messages.map(
-      (msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })
-    );
+    // Filter out 'error' and 'system' messages (system is added by executeChatCompletion)
+    // Preserve function calls and tool responses to avoid re-loading files
+    const messages: ChatCompletionMessageParam[] = conversation.messages
+      .filter((msg) => msg.role !== 'error' && msg.role !== 'system')
+      .map((msg) => {
+        if (msg.role === 'user') {
+          return {
+            role: 'user' as const,
+            content: msg.content,
+          };
+        } else if (msg.role === 'assistant') {
+          const assistantMessage: any = {
+            role: 'assistant' as const,
+            content: msg.content,
+          };
+          // Preserve function calls (tool_calls)
+          if (msg.functionCalls && msg.functionCalls.length > 0) {
+            assistantMessage.tool_calls = msg.functionCalls;
+          }
+          return assistantMessage;
+        } else {
+          // msg.role === 'tool'
+          return {
+            role: 'tool' as const,
+            content: msg.content,
+            tool_call_id: (msg as any).toolCallId || '',
+          };
+        }
+      });
 
     // Execute chat completion with full conversation history
     const result = await executeChatCompletion(agent, messages);
 
-    // Add assistant message to conversation
-    const assistantMessage = addMessage(conversation.id, {
-      role: 'assistant',
-      content: result.content,
-      functionCalls: result.functionCalls.length > 0 ? result.functionCalls : undefined,
-    });
+    // Store all new messages from the completion (assistant messages and tool messages)
+    // Skip the system message (first message) and any messages we already have
+    const existingMessageCount = conversation.messages.length;
+    const newMessages = result.allMessages.slice(1 + existingMessageCount); // Skip system message + existing messages
+
+    // Add all new messages to conversation
+    for (const msg of newMessages) {
+      if (msg.role === 'assistant') {
+        addMessage(conversation.id, {
+          role: 'assistant',
+          content: typeof msg.content === 'string' ? msg.content : '',
+          functionCalls: 'tool_calls' in msg ? (msg.tool_calls as any) : undefined,
+        });
+      } else if (msg.role === 'tool' && 'tool_call_id' in msg) {
+        addMessage(conversation.id, {
+          role: 'tool' as any,
+          content: typeof msg.content === 'string' ? msg.content : '',
+          toolCallId: msg.tool_call_id as string,
+        } as any);
+      }
+    }
+
+    // Get the final assistant message for the response
+    const assistantMessage = conversation.messages[conversation.messages.length - 1];
 
     // Build response
     const response: ChatResponse = {

@@ -41,10 +41,76 @@ export function ChatPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   // Handler for agent selection - Story 3.4 Task 4.3
-  const handleAgentSelect = (agentId: string) => {
+  // Story 3.10 Task 2: Integrate Initialization into Chat Flow
+  // AC-10.4: Agent greeting/welcome message displays automatically before user input
+  // AC-10.6: Initialization completes before user can send first message
+  // AC-10.7: Loading indicator shows during initialization process
+  const handleAgentSelect = async (agentId: string) => {
     setSelectedAgentId(agentId);
-    // TODO Story 3.5: Reset conversation when agent changes (optional per AC-4.6)
-    console.log('[ChatPanel] Agent selected:', agentId);
+
+    // Task 2.5: Clear any previous conversation when new agent selected
+    setMessages([]);
+    setConversationId(undefined);
+
+    // Task 2.2: Show loading state during initialization (AC-10.7)
+    setIsLoading(true);
+
+    console.log('[ChatPanel] Agent selected, initializing:', agentId);
+
+    try {
+      // Task 2.1: Call initialization API
+      const response = await fetch('/api/agent/initialize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ agentId }),
+      });
+
+      if (!response.ok) {
+        // Task 4 (Error Handling): Display initialization errors gracefully
+        console.error('[ChatPanel] Agent initialization failed:', response.status);
+
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          role: 'error',
+          content: errorData.error || 'Failed to initialize agent. Please try selecting the agent again.',
+          timestamp: new Date(),
+        };
+        setMessages([errorMessage]);
+        setIsLoading(false);
+        return;
+      }
+
+      const data = await response.json();
+
+      // Task 2.3: Display LLM's initialization response as first message (system role)
+      // AC-10.4: Agent greeting/welcome message displays automatically
+      // AC-10.5: Agent command list displays if defined in agent instructions
+      if (data.success && data.data?.greeting) {
+        const greetingMessage: Message = {
+          id: `system-${Date.now()}`,
+          role: 'system',
+          content: data.data.greeting,
+          timestamp: new Date(),
+        };
+        setMessages([greetingMessage]);
+      }
+    } catch (error) {
+      // Task 4 (Error Handling): Handle network errors during initialization
+      console.error('[ChatPanel] Error initializing agent:', error);
+
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'error',
+        content: 'Connection failed while initializing agent. Please try selecting the agent again.',
+        timestamp: new Date(),
+      };
+      setMessages([errorMessage]);
+    } finally {
+      // Task 2.4: Block user input until initialization completes (AC-10.6)
+      // Release loading state after initialization completes or fails
+      setIsLoading(false);
+    }
   };
 
   // Story 3.7 Task 2.1: Create handleNewConversation function

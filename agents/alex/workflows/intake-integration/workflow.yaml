@@ -3,18 +3,11 @@ name: "intake-integration"
 description: "Initial requirements gathering for ServiceNow system integration requests. Quick user-facing session (3-5 minutes) to capture problem statement, business impact, and initial requirements."
 author: "Alex the Facilitator"
 
-# Critical variables load from config_source
-config_source: "{project-root}/bmad/sn/config.yaml"
-output_folder: "{config_source}:output_folder"
-sn_projects_folder: "{config_source}:sn_projects_folder"
-user_name: "{config_source}:user_name"
-communication_language: "{config_source}:communication_language"
-project_name: "{config_source}:project_name"
 date: system-generated
 
 # Module path and component files
-installed_path: "{project-root}/bmad/sn/workflows/intake-integration"
-template: "{project-root}/bmad/sn/templates/initial-requirements.md"
+installed_path: "alex/workflows/intake-integration"
+template: "alex/templates/initial-requirements.md"
 instructions: "{installed_path}/instructions.md"
 
 # Category specific
@@ -25,4 +18,4 @@ request_type: "integration"
 project_slug: ""
 
 # Output configuration - New structure
-default_output_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/1-intake/initial-{{project_slug}}-{{date}}.md"
+default_output_file: "{{project_slug}}/1-intake/initial-{{project_slug}}-{{date}}.md"
