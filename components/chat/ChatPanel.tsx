@@ -37,6 +37,9 @@ export function ChatPanel() {
   // AC-5.5: Input is disabled while waiting for agent response
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
+  // Story 4.7: Loading message state for different loading contexts
+  const [loadingMessage, setLoadingMessage] = useState<string | undefined>(undefined);
+
   // Conversation ID for maintaining conversation state across messages
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 
@@ -59,8 +62,9 @@ export function ChatPanel() {
 
     // Task 2.2: Show loading state during initialization (AC-10.7)
     setIsLoading(true);
+    setLoadingMessage("Agent is loading...");
 
-    console.log('[ChatPanel] Agent selected, initializing:', agent.id);
+    console.log('[ChatPanel] Agent selected, initializing:', agent.id, 'isLoading:', true, 'messages:', messages.length);
 
     try {
       // Task 2.1: Call initialization API
@@ -120,6 +124,7 @@ export function ChatPanel() {
       // Task 2.4: Block user input until initialization completes (AC-10.6)
       // Release loading state after initialization completes or fails
       setIsLoading(false);
+      setLoadingMessage(undefined);
     }
   };
 
@@ -314,7 +319,8 @@ export function ChatPanel() {
 
   // Centered layout before first message (ChatGPT/Claude.ai style)
   // Story 3.5 Task 3.1-3.5: Integrate InputField component
-  if (messages.length === 0) {
+  // Story 4.7: Show full layout during initialization to display loading indicator (AC-4.7.6)
+  if (messages.length === 0 && !isLoading) {
     return (
       <div className="flex flex-col h-screen bg-gray-50">
         <AgentSelector
@@ -346,7 +352,8 @@ export function ChatPanel() {
       />
       {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
       {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
-      <MessageList messages={messages} isLoading={isLoading} />
+      {/* Story 4.7: Pass loadingMessage to show context-specific loading text */}
+      <MessageList messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
 
       {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
       {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}

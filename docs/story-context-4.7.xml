@@ -1,0 +1,151 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.7</storyId>
+    <title>Re-implement Agent Initialization with Critical Actions</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to execute agent initialization using critical actions processor</iWant>
+    <soThat>agents load config and greet users correctly on selection</soThat>
+    <tasks>
+      <task id="1" ac="4.7.1,4.7.2,4.7.3,4.7.4">Refactor /api/agent/initialize Endpoint</task>
+      <task id="2" ac="4.7.5,4.7.6,4.7.8">Update Frontend for Initialization Flow</task>
+      <task id="3" ac="4.7.7">Error Handling and User Feedback</task>
+      <task id="4" ac="all">Integration Testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="4.7.1">When agent selected, load agent.md from bundle</ac>
+    <ac id="4.7.2">Parse and execute &lt;critical-actions&gt; section</ac>
+    <ac id="4.7.3">Load bundle config.yaml if specified in critical actions</ac>
+    <ac id="4.7.4">Execute file loads via agentic loop (if agent requests files during initialization)</ac>
+    <ac id="4.7.5">Display agent greeting message after initialization completes</ac>
+    <ac id="4.7.6">Loading indicator shows during initialization</ac>
+    <ac id="4.7.7">Initialization errors display clearly without crashing UI</ac>
+    <ac id="4.7.8">User can send first message after initialization completes</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/EPIC4-TECH-SPEC.md" section="Story 4.7 Implementation">
+        Technical specification for agent initialization with critical actions.
+        - Initialization flow diagram (Section 3.2)
+        - Critical actions processor implementation pattern
+        - Integration with agentic loop from Story 4.1
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" section="Section 4: Critical Actions Processor">
+        Core specification for critical actions execution pattern.
+        - File load instruction parsing: "Load into memory {path} and set variables: var1, var2"
+        - Config.yaml loading and variable storage
+        - System message injection pattern
+        - Execution order: critical actions BEFORE agentic loop starts
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" section="Config Loading">
+        Bundle config.yaml format and variable schema.
+        - Config file location: {bundle-root}/config.yaml
+        - Variable resolution for {config_source}:variable_name references
+        - Path resolution for bundle-local resources
+      </doc>
+      <doc path="docs/epics.md" section="Story 4.7 (lines 976-998)">
+        Epic-level acceptance criteria and story definition.
+        - Prerequisites: Story 4.1, 4.2, 4.3, 4.6
+        - Replaces Epic 3 Story 3.10 implementation
+        - Technical notes on critical actions + agentic loop integration
+      </doc>
+      <doc path="docs/stories/story-4.3.md" section="Full Story">
+        Story 4.3 implementation details for critical actions processor.
+        - processCriticalActions() function specification
+        - PathContext initialization with bundleRoot
+        - Error handling patterns for initialization failures
+      </doc>
+      <doc path="docs/stories/story-4.6.md" section="Bundle Discovery Integration">
+        Story 4.6 provides bundlePath from AgentSelector.
+        - AgentSelector passes full agent object with bundlePath
+        - ChatPanel updated to receive agent object (lines 28-30)
+        - Initialization API called with bundlePath and filePath (lines 68-76)
+      </doc>
+    </docs>
+    <code>
+      <artifact path="app/api/agent/initialize/route.ts" kind="api-route" symbol="POST" lines="39-86" reason="Current initialization endpoint - needs refactoring to use processCriticalActions. Lines 15-18 show bundlePath/filePath params accepted but unused. Lines 58-65 use simple prompt instead of critical actions processing." />
+      <artifact path="lib/agents/criticalActions.ts" kind="module" symbol="processCriticalActions" lines="50-150" reason="Critical actions processor from Story 4.3. Main function to integrate into initialization endpoint. Loads config.yaml, resolves paths, injects system messages." />
+      <artifact path="lib/agents/agenticLoop.ts" kind="module" symbol="executeAgent" lines="1-100" reason="Agentic execution loop from Story 4.1. If agent needs files during initialization, uses this loop for blocking file loads." />
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath" lines="1-100" reason="Path variable resolution from Story 4.2. Used by critical actions to resolve {bundle-root} in file load instructions." />
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="handleAgentSelect" lines="52-124" reason="Frontend agent selection handler. Already calls /api/agent/initialize with bundlePath (lines 68-76). Displays greeting message (lines 96-107). Shows loading state (lines 61, 122)." />
+      <artifact path="components/chat/AgentSelector.tsx" kind="component" symbol="AgentSelector" lines="1-200" reason="Agent selection component from Story 4.6. Passes full AgentSummary object with bundlePath to parent ChatPanel." />
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" />
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="openai" version="^4.104.0" />
+        <package name="js-yaml" version="^4.1.0" />
+      </node>
+      <node-dev>
+        <package name="@testing-library/react" version="^16.3.0" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+        <package name="@types/jest" version="^30.0.0" />
+        <package name="@types/js-yaml" version="^4.0.9" />
+      </node-dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Critical actions execute BEFORE agentic execution loop starts (AGENT-EXECUTION-SPEC.md Section 4)</constraint>
+    <constraint>Initialization errors MUST halt gracefully without crashing UI (AC-4.7.7)</constraint>
+    <constraint>Loading indicator MUST display during initialization (AC-4.7.6)</constraint>
+    <constraint>User input disabled until initialization completes (AC-4.7.8, ChatPanel.tsx line 122)</constraint>
+    <constraint>Frontend already passes bundlePath from Story 4.6 - backend must use it (ChatPanel.tsx lines 71-74)</constraint>
+    <constraint>Replace existing executeChatCompletion pattern with processCriticalActions + agenticLoop (route.ts line 65)</constraint>
+    <constraint>Bundle config.yaml loaded during critical actions becomes available for path resolution (criticalActions.ts lines 105-116)</constraint>
+    <constraint>System messages from critical actions injected before user input (criticalActions.ts lines 99-102)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="processCriticalActions" kind="function" signature="async function processCriticalActions(agent: Agent, bundleRoot: string): Promise&lt;CriticalContext&gt;" path="lib/agents/criticalActions.ts" />
+    <interface name="CriticalContext" kind="type" signature="{ messages: Array&lt;ChatCompletionMessageParam&gt;; config: Record&lt;string, any&gt; | null }" path="lib/agents/criticalActions.ts" />
+    <interface name="executeAgent" kind="function" signature="async function executeAgent(agentId: string, userMessage: string, conversationHistory: Array&lt;ChatMessage&gt;): Promise&lt;ExecutionResult&gt;" path="lib/agents/agenticLoop.ts" />
+    <interface name="resolvePath" kind="function" signature="function resolvePath(pathTemplate: string, context: PathContext): string" path="lib/pathResolver.ts" />
+    <interface name="PathContext" kind="type" signature="{ bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig?: any }" path="lib/pathResolver.ts" />
+    <interface name="AgentSummary" kind="type" signature="{ id: string; name: string; title: string; description?: string; icon?: string; bundleName: string; bundlePath: string; filePath: string }" path="types/api.ts" />
+    <interface name="InitializeRequest" kind="type" signature="{ agentId: string; bundlePath?: string; filePath?: string }" path="app/api/agent/initialize/route.ts" />
+    <interface name="InitializeResponse" kind="type" signature="{ greeting: string }" path="app/api/agent/initialize/route.ts" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest 30.x with React Testing Library 16.x
+      Test location pattern: **/__tests__/**/*.test.ts(x)
+      Backend testing: Unit tests for API routes, integration tests for multi-component flows
+      Frontend testing: Component tests with user interaction simulation
+      Critical actions testing: Integration tests with real bundle structure (criticalActions.integration.test.ts)
+      Coverage requirements: All acceptance criteria must have corresponding test coverage
+    </standards>
+    <locations>
+      <location>app/api/agent/initialize/__tests__/route.test.ts</location>
+      <location>lib/agents/__tests__/criticalActions.test.ts</location>
+      <location>lib/agents/__tests__/criticalActions.integration.test.ts</location>
+      <location>components/chat/__tests__/ChatPanel.test.tsx</location>
+    </locations>
+    <ideas>
+      <test ac="4.7.1" idea="Test /api/agent/initialize loads agent.md from bundlePath" />
+      <test ac="4.7.2" idea="Test critical actions parsed and executed from agent XML" />
+      <test ac="4.7.3" idea="Test bundle config.yaml loaded when specified in critical-actions" />
+      <test ac="4.7.4" idea="Test file loads during initialization execute via agentic loop (mock OpenAI)" />
+      <test ac="4.7.5" idea="Test greeting message returned from initialization API and displayed in chat" />
+      <test ac="4.7.6" idea="Test loading indicator shows while initialization pending" />
+      <test ac="4.7.7" idea="Test initialization errors display user-friendly message without crashing UI" />
+      <test ac="4.7.8" idea="Test user input enabled only after initialization completes" />
+      <test ac="all" idea="Integration test: Select agent with critical-actions → Config loads → Greeting displays" />
+      <test ac="all" idea="Integration test: Agent without critical-actions initializes normally" />
+      <test ac="all" idea="Test with real bundled agent (alex-facilitator from requirements-workflow bundle)" />
+    </ideas>
+  </tests>
+</story-context>

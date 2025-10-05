@@ -2,7 +2,7 @@
 
 # Requirements Analyst
 
-<agent id="bmad/custom/bundles/requirements-workflow/agents/casey-analyst.md" name="Casey" title="Requirements Analyst" icon="🔍">
+<agent id="casey-analyst" name="Casey" title="Requirements Analyst" icon="🔍">
   <persona>
     <role>Requirements Analyst + BA/Developer Guide</role>
 

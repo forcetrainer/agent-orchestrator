@@ -20,9 +20,20 @@ import { LoadingIndicator } from './LoadingIndicator';
  *
  * Performance: Auto-scroll completes within 300ms per NFR-1
  */
-export function MessageList({ messages, isLoading }: { messages: Message[]; isLoading?: boolean }) {
+export function MessageList({
+  messages,
+  isLoading,
+  loadingMessage
+}: {
+  messages: Message[];
+  isLoading?: boolean;
+  loadingMessage?: string;
+}) {
   // Task 4.1: Ref for auto-scroll control
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Debug logging for Story 4.7 AC-4.7.6
+  console.log('[MessageList] Rendering with:', { messageCount: messages.length, isLoading });
 
   // Task 4.2, 4.3, 4.4: Auto-scroll when messages change
   // Story 3.6: Also auto-scroll when loading indicator appears
@@ -44,8 +55,8 @@ export function MessageList({ messages, isLoading }: { messages: Message[]; isLo
       aria-live="polite"
     >
       <div className="max-w-3xl mx-auto flex flex-col gap-3">
-        {/* Task 3.5: Empty state */}
-        {messages.length === 0 ? (
+        {/* Task 3.5: Empty state - only show when not loading */}
+        {messages.length === 0 && !isLoading ? (
           <div className="text-gray-400 text-center py-8">
             <p className="text-sm">No messages yet. Start a conversation below.</p>
           </div>
@@ -60,7 +71,8 @@ export function MessageList({ messages, isLoading }: { messages: Message[]; isLo
         )}
         {/* Story 3.6 Task 3.3: Render LoadingIndicator when isLoading=true */}
         {/* AC-6.3: Loading indicator appears in chat history where agent response will be */}
-        {isLoading && <LoadingIndicator />}
+        {/* Story 4.7 AC-4.7.6: Show loading indicator during agent initialization */}
+        {isLoading && <LoadingIndicator message={loadingMessage} />}
       </div>
     </div>
   );

@@ -127,17 +127,35 @@ export async function loadAgents(forceReload = false): Promise<Agent[]> {
 }
 
 /**
- * Looks up agent by ID from cached agent list.
+ * Looks up agent by ID using bundle-based discovery.
+ *
+ * Story 4.7: Updated to use bundle scanner (Story 4.6) instead of old agents folder.
+ * This ensures agents are discovered from bundle manifests.
  *
  * @param agentId - Agent identifier to search for
- * @returns Agent object if found, null otherwise
+ * @returns Agent object with full content if found, null otherwise
  */
 export async function getAgentById(agentId: string): Promise<Agent | null> {
-  // Ensure agents are loaded
-  const agents = await loadAgents();
+  // Use bundle scanner to discover agents (Story 4.6)
+  const { discoverBundles } = require('./bundleScanner');
 
-  // Find agent by ID
-  return agents.find((agent) => agent.id === agentId) || null;
+  // Get bundles root from environment or use default
+  const bundlesRoot = process.env.BUNDLES_ROOT || 'bmad/custom/bundles';
+  const bundlesPath = join(process.cwd(), bundlesRoot);
+
+  const agentMetadata = await discoverBundles(bundlesPath);
+
+  // Find agent metadata by ID
+  const metadata = agentMetadata.find((agent: any) => agent.id === agentId);
+
+  if (!metadata) {
+    return null;
+  }
+
+  // Load full agent content from file
+  const agent = await parseAgentFile(metadata.filePath);
+
+  return agent;
 }
 
 /**

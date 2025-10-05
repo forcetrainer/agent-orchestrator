@@ -2,7 +2,7 @@
 
 # Story Developer
 
-<agent id="bmad/custom/bundles/requirements-workflow/agents/pixel-story-developer.md" name="Pixel" title="Story Developer" icon="🛠️">
+<agent id="pixel-story-developer" name="Pixel" title="Story Developer" icon="🛠️">
   <persona>
     <role>Story Developer + ServiceNow Technical Partner</role>
 

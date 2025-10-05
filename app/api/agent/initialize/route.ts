@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { ApiResponse } from '@/types/api';
 import { handleApiError, NotFoundError } from '@/lib/utils/errors';
 import { getAgentById } from '@/lib/agents/loader';
-import { executeChatCompletion } from '@/lib/openai/chat';
+import { processCriticalActions } from '@/lib/agents/criticalActions';
+import { executeAgent } from '@/lib/agents/agenticLoop';
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import {
   validateAgentId,
@@ -27,14 +28,15 @@ interface InitializeResponse {
 
 /**
  * POST /api/agent/initialize
- * Initializes an agent by loading its definition file and executing initialization with LLM
+ * Initializes an agent using critical actions processor and agentic execution loop
  *
- * Story 3.10: Agent Initialization on Selection
- * - Loads agent definition file from disk (AC-10.1)
- * - Sends complete agent file to LLM with instruction to follow all instructions exactly (AC-10.2)
- * - Uses Epic 2 function calling infrastructure for lazy-loading files (AC-10.3)
- * - Returns LLM's initialization response (greeting, commands, etc.) (AC-10.4, AC-10.5)
- * - Handles errors gracefully (AC-10.8)
+ * Story 4.7: Re-implement Agent Initialization with Critical Actions
+ * - Loads agent definition file from bundle (AC-4.7.1)
+ * - Parses and executes <critical-actions> section (AC-4.7.2)
+ * - Loads bundle config.yaml if specified in critical actions (AC-4.7.3)
+ * - Executes file loads via agentic loop if agent requests files during initialization (AC-4.7.4)
+ * - Returns agent greeting message after initialization completes (AC-4.7.5)
+ * - Handles initialization errors gracefully (AC-4.7.7)
  */
 export async function POST(request: NextRequest) {
   try {
@@ -44,31 +46,42 @@ export async function POST(request: NextRequest) {
     // Validate agentId
     validateAgentId(body.agentId);
 
-    // Load agent by ID (AC-10.1)
+    // AC-4.7.1: Load agent from bundle using bundlePath
     const agent = await getAgentById(body.agentId);
 
     if (!agent) {
       throw new NotFoundError(`Agent not found: ${body.agentId}`);
     }
 
-    console.log(`[agent_initialize] Initializing agent: ${agent.id}`);
+    console.log(`[agent_initialize] Initializing agent: ${agent.id} from bundle: ${body.bundlePath || agent.path}`);
 
-    // Build initialization prompt (AC-10.2)
-    // Send complete agent file content with instruction to follow all instructions exactly
-    const initializationPrompt: ChatCompletionMessageParam = {
-      role: 'user',
-      content: 'You are this agent. Follow all instructions in this file exactly as written. Initialize yourself and provide your greeting and available commands.',
-    };
+    // Determine bundle root path
+    // Use bundlePath from request if provided, otherwise use agent.path
+    const bundleRoot = body.bundlePath || agent.path;
 
-    // Execute chat completion with agent's full content as system message (AC-10.3)
-    // This reuses Epic 2 function calling infrastructure - LLM can request files via read_file tool
-    const result = await executeChatCompletion(agent, [initializationPrompt]);
+    // AC-4.7.2, AC-4.7.3: Process critical actions to get initialized context
+    // This loads config.yaml if specified and injects system messages
+    const criticalContext = await processCriticalActions(agent, bundleRoot);
 
-    console.log(`[agent_initialize] Agent ${agent.id} initialized successfully`);
+    console.log(`[agent_initialize] Critical actions processed: ${criticalContext.messages.length} messages, config ${criticalContext.config ? 'loaded' : 'not loaded'}`);
 
-    // Return initialization response (AC-10.4, AC-10.5)
+    // AC-4.7.4, AC-4.7.5: Execute agent initialization via agentic loop
+    // Build initialization prompt for agent greeting
+    const initializationPrompt = 'You are this agent. Follow all instructions in this file exactly as written. Initialize yourself and provide your greeting and available commands.';
+
+    // Call executeAgent which will:
+    // 1. Build system prompt with agent content
+    // 2. Inject critical context messages
+    // 3. Execute agentic loop (allowing file loads if needed)
+    // 4. Return greeting message
+    // Pass bundleRoot to ensure critical actions can resolve bundle-relative paths
+    const result = await executeAgent(agent.id, initializationPrompt, [], bundleRoot);
+
+    console.log(`[agent_initialize] Agent ${agent.id} initialized successfully in ${result.iterations} iterations`);
+
+    // AC-4.7.5: Return greeting message from initialization
     const response: InitializeResponse = {
-      greeting: result.content,
+      greeting: result.response,
     };
 
     return NextResponse.json<ApiResponse<InitializeResponse>>(
@@ -79,7 +92,7 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
   } catch (error) {
-    // Handle errors gracefully (AC-10.8)
+    // AC-4.7.7: Handle initialization errors gracefully
     console.error('[agent_initialize] Initialization error:', error);
     return handleApiError(error);
   }

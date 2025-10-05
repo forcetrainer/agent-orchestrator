@@ -7,6 +7,7 @@ import { memo } from 'react';
  *
  * Displays animated loading indicator when agent is processing
  * Story 3.6 - Task 1: Create LoadingIndicator component with animation
+ * Story 4.7 - AC-4.7.6: Support custom message for different loading states
  *
  * AC-6.2: Indicator shows "Agent is thinking..." or similar message
  * AC-6.5: Visual cue is clear but not distracting (subtle animation)
@@ -15,16 +16,20 @@ import { memo } from 'react';
  * Animation: CSS-based animated dots (1.4s loop) for performance
  * Accessibility: aria-live="polite" for screen reader support
  */
-export const LoadingIndicator = memo(function LoadingIndicator() {
+export const LoadingIndicator = memo(function LoadingIndicator({
+  message = "Agent is thinking"
+}: {
+  message?: string
+}) {
   return (
     <div
       className="max-w-[75%] mr-auto bg-gray-200 text-gray-900 px-4 py-3 rounded-lg"
       role="status"
       aria-live="polite"
-      aria-label="Agent is thinking"
+      aria-label={message}
     >
       <div className="flex items-center gap-2">
-        <span className="text-gray-700">Agent is thinking</span>
+        <span className="text-gray-700">{message}</span>
         <div className="flex gap-1">
           <span className="inline-block animate-bounce" style={{ animationDelay: '0s' }}>.</span>
           <span className="inline-block animate-bounce" style={{ animationDelay: '0.1s' }}>.</span>

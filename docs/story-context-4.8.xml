@@ -1,0 +1,310 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.8</storyId>
+    <title>Implement System Prompt Builder with Tool Usage Instructions</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to build system prompts that instruct OpenAI to actively use tools</iWant>
+    <soThat>file load instructions trigger actual tool calls instead of being acknowledged as text</soThat>
+    <tasks>
+      - Task 1: Create System Prompt Builder Module (AC: 4.8.1, 4.8.2, 4.8.3, 4.8.4, 4.8.5, 4.8.6)
+        - Subtask 1.1: Create /lib/agents/systemPromptBuilder.ts file
+        - Subtask 1.2: Parse agent XML to extract persona, role, identity, principles
+        - Subtask 1.3: Extract available commands from &lt;cmds&gt; section
+        - Subtask 1.4: Build tool list section with read_file, write_file, list_files descriptions
+        - Subtask 1.5: Add explicit tool usage instructions emphasizing actual calls vs acknowledgment
+        - Subtask 1.6: Add workflow execution pattern explanation
+        - Subtask 1.7: Assemble complete system prompt from all sections
+      - Task 2: Integrate with Agentic Loop (AC: 4.8.1, 4.8.7)
+        - Subtask 2.1: Import buildSystemPrompt into agenticLoop.ts
+        - Subtask 2.2: Call buildSystemPrompt() in executeAgent() before OpenAI call
+        - Subtask 2.3: Pass agent definition and available tools to builder
+        - Subtask 2.4: Use generated system prompt as first message in conversation
+        - Subtask 2.5: Update initialization route to use system prompt builder
+      - Task 3: Testing and Validation (AC: 4.8.7)
+        - Subtask 3.1: Unit test buildSystemPrompt() with sample agent definition
+        - Subtask 3.2: Verify system prompt includes all required sections
+        - Subtask 3.3: Test with agent that has critical-actions requiring file loads
+        - Subtask 3.4: Verify OpenAI calls read_file tool (not just acknowledges)
+        - Subtask 3.5: Test with different agent types (with/without commands section)
+        - Subtask 3.6: Validate prompt format is compatible with OpenAI API
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.8.1">System prompt includes agent persona, role, identity, principles</criterion>
+    <criterion id="AC-4.8.2">System prompt explicitly instructs: "When you see instructions to load files, use the read_file tool"</criterion>
+    <criterion id="AC-4.8.3">System prompt lists available tools and their purpose</criterion>
+    <criterion id="AC-4.8.4">System prompt explains workflow execution pattern</criterion>
+    <criterion id="AC-4.8.5">System prompt emphasizes: "DO NOT just acknowledge file load instructions - actually call the tools"</criterion>
+    <criterion id="AC-4.8.6">Available commands from agent's &lt;cmds&gt; section included in prompt</criterion>
+    <criterion id="AC-4.8.7">System prompt tested to verify it triggers tool calls (not just text acknowledgment)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/AGENT-EXECUTION-SPEC.md</path>
+        <title>BMAD Agent Execution Architecture Specification</title>
+        <section>Section 6: System Prompt Builder</section>
+        <snippet>
+**Purpose**: Create system prompt that instructs LLM on proper tool usage.
+
+**Critical Elements:**
+- Agent persona and role
+- Explicit instructions to USE TOOLS, not just acknowledge
+- Available commands and their descriptions
+- Tool usage patterns
+
+The prompt must be explicit and emphatic about tool usage. OpenAI's default behavior is to acknowledge instructions politely rather than execute them. The system prompt must override this tendency through clear, repeated emphasis on actual execution.
+
+Example structure:
+```
+You are ${agent.name}, ${agent.title}.
+
+${agent.persona.role}
+IDENTITY: ${agent.persona.identity}
+COMMUNICATION STYLE: ${agent.persona.communication_style}
+PRINCIPLES: ${agent.persona.principles}
+
+CRITICAL INSTRUCTIONS FOR TOOL USAGE:
+- When you encounter instructions to load files, you MUST use the read_file tool
+- When you need to execute a workflow, you MUST use the execute_workflow tool
+- DO NOT just acknowledge file load instructions in text - actually call the tools
+- ALWAYS wait for tool results before continuing with the task
+```
+        </snippet>
+        <reason>Defines the system prompt builder specification and structure required for Story 4.8</reason>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/EPIC4-TECH-SPEC.md</path>
+        <title>Epic 4: Agent Execution Architecture &amp; Bundle System - Technical Specification</title>
+        <section>Section 4.1: Story 4.8 - System Prompt Builder</section>
+        <snippet>
+**Location:** `lib/agents/systemPromptBuilder.ts`
+
+**Implementation:**
+```typescript
+function buildSystemPrompt(agent: Agent): string {
+  return `You are ${agent.name}, ${agent.title}.
+
+${agent.persona.role}
+
+IDENTITY:
+${agent.persona.identity}
+
+COMMUNICATION STYLE:
+${agent.persona.communication_style}
+
+PRINCIPLES:
+${agent.persona.principles}
+
+CRITICAL INSTRUCTIONS FOR TOOL USAGE:
+- When you encounter instructions to load files, you MUST use the read_file tool
+- When you need to execute a workflow, you MUST use the execute_workflow tool
+- DO NOT just acknowledge file load instructions in text - actually call the tools
+- ALWAYS wait for tool results before continuing with the task
+- Tool calls will pause execution and provide you with file content
+
+AVAILABLE COMMANDS:
+${agent.commands.map(cmd => {
+  let desc = `${cmd.cmd} - ${cmd.description}`;
+  if (cmd.runWorkflow) desc += `\n  Workflow: ${cmd.runWorkflow}`;
+  return desc;
+}).join('\n')}
+
+WORKFLOW EXECUTION PATTERN:
+When a user invokes a command (e.g., *workflow-request):
+1. Identify the workflow path from the command definition
+2. Call execute_workflow tool with that path
+3. Wait for the workflow configuration, instructions, and template
+4. Follow the workflow instructions step by step
+5. Use save_output tool to save generated content
+
+Remember: You have access to tools. Use them actively, not just describe them.`;
+}
+```
+
+**Testing Requirements:**
+- Unit tests: System prompt includes all required sections
+- Integration tests: System prompt leads to tool calls (not acknowledgments)
+        </snippet>
+        <reason>Provides detailed implementation specification for the system prompt builder function</reason>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document (PRD)</title>
+        <section>FR-5: OpenAI Integration</section>
+        <snippet>
+**The Core Problem:**
+Agent builders can create sophisticated BMAD agents in Claude Code, but these agents are trapped in the IDE with no way to:
+- Test OpenAI API compatibility before deployment
+- Validate that file-based agent patterns work with OpenAI function calling
+
+**The Solution:**
+Agent Orchestrator provides OpenAI Compatibility Testing - Validates that BMAD agents built in Claude Code function correctly with OpenAI's API and function calling patterns.
+
+**What Makes This Unique:**
+This is the first and only platform designed specifically for BMAD agents. It preserves BMAD's core philosophy of radical simplicity:
+- No translation layer - agents use files, platform enables file operations via OpenAI function calling
+        </snippet>
+        <reason>Establishes the business context for why system prompts must force tool execution instead of acknowledgment</reason>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/agenticLoop.ts</path>
+        <kind>module</kind>
+        <symbol>buildSystemPrompt</symbol>
+        <lines>59-90</lines>
+        <reason>Current STUB implementation of buildSystemPrompt that needs to be replaced with proper implementation from Story 4.8. Shows integration point where system prompt builder will be called.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/agenticLoop.ts</path>
+        <kind>module</kind>
+        <symbol>executeAgent</symbol>
+        <lines>198-353</lines>
+        <reason>Main agentic loop function that calls buildSystemPrompt() to create system message at lines 219-223. This is where the new system prompt builder will be integrated.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/agent/initialize/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>1-100</lines>
+        <reason>Initialization route that may need to use system prompt builder during agent setup phase (Subtask 2.5)</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/bmad/custom/bundles/requirements-workflow/agents/alex-facilitator.md</path>
+        <kind>agent-definition</kind>
+        <symbol>alex-facilitator</symbol>
+        <lines>1-59</lines>
+        <reason>Example agent XML showing the structure that system prompt builder must parse: &lt;persona&gt; with role, identity, communication_style, principles, and &lt;cmds&gt; section with available commands</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/parser.ts</path>
+        <kind>module</kind>
+        <symbol>parseAgentFile</symbol>
+        <lines>1-200</lines>
+        <reason>Agent XML parser that extracts persona and commands sections - provides pattern for extracting data needed by system prompt builder</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/loader.ts</path>
+        <kind>module</kind>
+        <symbol>getAgentById</symbol>
+        <lines>1-100</lines>
+        <reason>Agent loader that returns Agent object containing parsed persona and commands - this is the data structure system prompt builder will receive</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0">OpenAI SDK for chat completions API</package>
+        <package name="typescript" version="^5">Type safety for function signatures and interfaces</package>
+        <package name="jest" version="^30.2.0">Testing framework for unit and integration tests</package>
+        <package name="@types/node" version="^20">TypeScript types for Node.js</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>The system prompt must be explicit and emphatic about tool usage - OpenAI's default behavior is to acknowledge instructions politely rather than execute them</constraint>
+    <constraint>System prompt structure must follow AGENT-EXECUTION-SPEC.md Section 6 specification</constraint>
+    <constraint>Use strict TypeScript types for function signatures to avoid type safety issues identified in Story 4.7 review</constraint>
+    <constraint>Run 'npx tsc --noEmit' before committing to catch TypeScript compilation errors</constraint>
+    <constraint>No changes to API surface or component interfaces - new systemPromptBuilder.ts follows established /lib/agents/ pattern</constraint>
+    <constraint>System prompt must be compatible with OpenAI API chat completions format</constraint>
+    <constraint>Agent persona extraction must handle variations in agent XML structure (agents with/without commands section)</constraint>
+    <constraint>Testing framework: Jest (same as existing tests in lib/agents/__tests__/)</constraint>
+    <constraint>Test pattern: Unit tests for buildSystemPrompt() function, integration tests for full agentic loop with real agent XML</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>buildSystemPrompt</name>
+      <kind>function</kind>
+      <signature>function buildSystemPrompt(agent: Agent): string</signature>
+      <path>/lib/agents/systemPromptBuilder.ts</path>
+      <reason>Main function that agentic loop will call to generate system prompt. Must accept Agent type from types/index.ts and return string containing complete system prompt.</reason>
+    </interface>
+    <interface>
+      <name>Agent</name>
+      <kind>type</kind>
+      <signature>
+interface Agent {
+  id: string;
+  name: string;
+  title: string;
+  icon: string;
+  persona: {
+    role: string;
+    identity: string;
+    communication_style: string;
+    principles: string;
+  };
+  commands: Array&lt;{
+    cmd: string;
+    description: string;
+    runWorkflow?: string;
+    exec?: string;
+  }&gt;;
+  fullContent: string;
+  path: string;
+}
+      </signature>
+      <path>/types/index.ts</path>
+      <reason>Agent type definition that system prompt builder will receive as input parameter</reason>
+    </interface>
+    <interface>
+      <name>executeAgent</name>
+      <kind>function</kind>
+      <signature>async function executeAgent(agentId: string, userMessage: string, conversationHistory: Array&lt;ChatCompletionMessageParam&gt;, bundleRoot?: string): Promise&lt;ExecutionResult&gt;</signature>
+      <path>/lib/agents/agenticLoop.ts</path>
+      <reason>Integration point where buildSystemPrompt() is called at line 219 to create system message</reason>
+    </interface>
+    <interface>
+      <name>FUNCTION_TOOLS</name>
+      <kind>constant</kind>
+      <signature>Array of OpenAI tool definitions for read_file, write_file, list_files</signature>
+      <path>/lib/openai/function-tools.ts</path>
+      <reason>Tool definitions that system prompt must reference when describing available tools to OpenAI</reason>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+Testing framework: Jest with TypeScript support (ts-jest).
+Test location pattern: lib/agents/__tests__/[module-name].test.ts for unit tests, [module-name].integration.test.ts for integration tests.
+Test structure: describe blocks for test suites, test/it blocks for individual test cases.
+Mocking pattern: Mock OpenAI API responses using jest.mock(), mock file system operations when needed.
+Coverage expectations: All public functions should have unit tests covering happy path, error cases, and edge cases.
+Integration test pattern: Use real agent XML files from bmad/custom/bundles/requirements-workflow/agents/ for testing with actual agent definitions.
+Test naming convention: "should [expected behavior] when [condition]"
+Assertion style: expect() assertions from Jest
+    </standards>
+    <locations>
+      <location>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/__tests__/systemPromptBuilder.test.ts</location>
+      <location>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/__tests__/agenticLoop.test.ts</location>
+      <location>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/agents/__tests__/agenticLoop.integration.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.8.1">Test buildSystemPrompt() extracts and includes agent.persona.role, agent.persona.identity, agent.persona.communication_style, agent.persona.principles in output</idea>
+      <idea ac="AC-4.8.2">Test system prompt contains exact text: "When you see instructions to load files, use the read_file tool" or similar explicit instruction</idea>
+      <idea ac="AC-4.8.3">Test system prompt includes descriptions for read_file, write_file, list_files tools with their purposes</idea>
+      <idea ac="AC-4.8.4">Test system prompt contains workflow execution pattern steps (identify workflow path → call execute_workflow → wait for results → follow instructions)</idea>
+      <idea ac="AC-4.8.5">Test system prompt includes emphatic text like "DO NOT just acknowledge file load instructions - actually call the tools"</idea>
+      <idea ac="AC-4.8.6">Test buildSystemPrompt() extracts commands from agent.commands array and formats them correctly (cmd name, description, workflow path if present)</idea>
+      <idea ac="AC-4.8.7">Integration test: Run executeAgent() with agent containing critical-actions that load files, verify OpenAI response includes tool_calls (not just text acknowledgment)</idea>
+      <idea ac="AC-4.8.7">Integration test: Mock OpenAI API to track whether tool_calls are generated vs text-only responses, measure improvement in tool calling rate</idea>
+      <idea ac="AC-4.8.1">Test buildSystemPrompt() with agent that has no commands section - should still generate valid prompt with persona</idea>
+      <idea ac="AC-4.8.6">Test buildSystemPrompt() with agent that has commands with and without runWorkflow attribute - both formats handled correctly</idea>
+      <idea ac="AC-4.8.3">Test system prompt output is valid string with no undefined/null values interpolated</idea>
+      <idea ac="AC-4.8.7">Unit test: Verify generated prompt string matches expected structure from AGENT-EXECUTION-SPEC.md Section 6</idea>
+    </ideas>
+  </tests>
+</story-context>

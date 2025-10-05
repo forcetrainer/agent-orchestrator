@@ -198,7 +198,8 @@ async function executeToolCall(toolCall: any, bundleName: string): Promise<any> 
 export async function executeAgent(
   agentId: string,
   userMessage: string,
-  conversationHistory: Array<ChatCompletionMessageParam> = []
+  conversationHistory: Array<ChatCompletionMessageParam> = [],
+  bundleRoot?: string
 ): Promise<ExecutionResult> {
   const startTime = performance.now();
 
@@ -222,8 +223,9 @@ export async function executeAgent(
   });
 
   // Task 2.2: Add critical context messages (from Story 4.3)
-  const bundleRoot = agent.path;
-  const criticalContext = await processCriticalActions(agent, bundleRoot);
+  // Story 4.7: Use provided bundleRoot or fall back to agent.path
+  const effectiveBundleRoot = bundleRoot || agent.path;
+  const criticalContext = await processCriticalActions(agent, effectiveBundleRoot);
   messages.push(...criticalContext.messages);
 
   // Task 2.3: Append conversation history from previous turns

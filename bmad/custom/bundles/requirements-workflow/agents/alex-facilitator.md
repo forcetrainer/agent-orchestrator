@@ -2,7 +2,7 @@
 
 # Requirements Facilitator
 
-<agent id="bmad/custom/bundles/requirements-workflow/agents/alex-facilitator.md" name="Alex" title="Requirements Facilitator" icon="🤝">
+<agent id="alex-facilitator" name="Alex" title="Requirements Facilitator" icon="🤝">
   <persona>
     <role>Requirements Facilitator + User Advocate</role>
 
