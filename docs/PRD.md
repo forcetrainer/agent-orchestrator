@@ -68,6 +68,19 @@ Platform-level agent builders (ServiceNow, Microsoft Copilot Studio) excel at ac
 
 Multiple BMAD agents are production-ready but blocked by lack of a deployment platform. Without immediate validation of OpenAI compatibility, valuable agents remain untested and unused by their intended audience. The BMAD methodology cannot demonstrate its full potential beyond developer tooling, and the opportunity cost of inaction grows as ready-to-use agents sit idle instead of delivering value.
 
+**Architectural Learning:**
+
+During Epic 2 and Epic 3 implementation (completed October 2025), validation testing revealed that the initial OpenAI integration approach did not match BMAD agent execution patterns. Specifically:
+- File loading via function calling was not properly blocking execution (agents continued without loaded files)
+- BMAD path variables were not being resolved, preventing core file reuse
+- Agent initialization did not execute critical-actions as required
+
+This discovery led to creation of two architectural specifications:
+- **AGENT-EXECUTION-SPEC.md** - Defines proper agentic execution loop with pause-load-continue pattern
+- **BUNDLE-SPEC.md** - Defines standardized bundle structure for agent organization
+
+Epic 4 was created to implement these specifications, replacing the deprecated Epic 2 implementation with the correct architecture. This represents normal agile learning: build, validate, correct. The MVP scope and goals remain unchanged - only the implementation approach was refined.
+
 ### Goals
 
 **1. Validate OpenAI API Compatibility (Primary)**
@@ -110,8 +123,11 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 - Agent list updates when new agents are added to the folder
 
 **FR-2: Agent Loading and Initialization**
-- Selected agent's instruction files load into system on demand
-- Support for BMAD's lazy-loading pattern - only load files when agent requests them
+- System implements agentic execution loop with function calling (pause-load-continue pattern)
+- Selected agent's instruction files load via tool calls when agent requests them
+- Support for BMAD's lazy-loading pattern - files loaded on-demand through function calling
+- Execute agent critical-actions section during initialization
+- Parse and process agent bundle.yaml manifest for metadata
 - Preserve agent's native directory structure and file organization
 - Handle agent metadata and configuration from agent definition files
 
@@ -132,17 +148,26 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 #### OpenAI Integration
 
 **FR-5: OpenAI API with Function Calling**
-- Integration with OpenAI API using function calling pattern
-- LLM receives user message → generates tool call → backend executes → result returns to LLM → LLM continues
-- Support for multiple function calls in sequence as agent works through tasks
+- Integration with OpenAI API using agentic execution loop with function calling
+- Execution pattern: LLM receives message → generates tool call → backend pauses execution → executes tool → injects result into conversation context → LLM continues with tool result
+- Agentic loop continues until LLM returns final response without tool calls
+- Support for multiple sequential function calls as agent works through tasks
+- Tool execution blocks continuation until results are available (prevents premature continuation)
 - Proper error handling for API failures and rate limits
+- Safety limit on maximum iterations to prevent infinite loops
 
 **FR-6: File Operation Tools**
 - `read_file(path)` - Load instruction/workflow files on-demand as agent requests
 - `write_file(path, content)` - Create output files preserving directory structure
 - `list_files(directory)` - Browse available files and directories
 - Auto-create parent directories as needed for file writes
-- Restrict file operations to authorized paths (agent folder for reads, output folder for writes)
+- Restrict file operations to authorized paths (bundle folders and core for reads, output folder for writes)
+- **Path Variable Resolution System:**
+  - Resolve `{bundle-root}` to agent's bundle directory (`bmad/custom/bundles/{bundle-name}/`)
+  - Resolve `{core-root}` to BMAD core directory (`bmad/core/`)
+  - Resolve `{project-root}` to application root directory
+  - Resolve `{config_source}:variable_name` references from bundle config.yaml
+  - Support nested variable resolution in workflow configurations
 
 #### File Management
 
@@ -185,6 +210,16 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 - User can start new conversation with same agent (clears context)
 - Clean slate for testing different scenarios with same agent
 - Previous outputs remain in file viewer until manually cleaned
+
+**FR-13: Agent Bundle Structure Support**
+- System discovers agents by scanning `bmad/custom/bundles/*/bundle.yaml` manifest files
+- Parse bundle.yaml to extract agent metadata (id, name, title, description, icon, entry_point)
+- Support multi-agent bundles (multiple agents in single bundle sharing resources)
+- Support standalone agent bundles (single agent per bundle)
+- Filter agent display to only entry_point: true agents in bundle manifests
+- Load bundle resources (workflows, templates, config) relative to bundle root
+- Validate required bundle structure before loading (bundle.yaml, agents/, config.yaml)
+- Handle bundle-scoped path variables in agent instructions and workflows
 
 ### Non-Functional Requirements
 
@@ -454,10 +489,12 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 
 ---
 
-### Epic 2: OpenAI Integration with File Operations
+### Epic 2: OpenAI Integration with File Operations (DEPRECATED)
 **Goal:** Validate that BMAD agents work with OpenAI API through function calling for file operations
 
-**Scope:**
+**Status:** DEPRECATED - Replaced by Epic 4
+
+**Original Scope:**
 - OpenAI API integration with function calling support
 - File operation tools: read_file, write_file, list_files
 - Lazy-loading pattern for instruction files
@@ -465,30 +502,75 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 - Agent loading and initialization
 - Error handling for API and file operation failures
 
-**Value:** Proves the core hypothesis - BMAD agents can function with OpenAI API. This is the primary validation goal.
+**Deprecation Reason:** Validation testing revealed that the implementation did not properly implement agentic execution loop (pause-load-continue pattern) required for BMAD agents. Path variable resolution and critical actions processing were also missing. Epic 4 implements the correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md.
 
-**Estimated Stories:** 10 stories
+**Learning Preserved:** File operation security patterns, API error handling, and basic function calling concepts are reused in Epic 4.
+
+**Estimated Stories:** 10 stories (learning complete)
 
 ---
 
 ### Epic 3: Chat Interface and Agent Selection
 **Goal:** Enable end users to select and interact with BMAD agents through a familiar chat interface
 
+**Status:** PARTIALLY COMPLETE
+
 **Scope:**
-- ChatGPT-style chat UI with message history
-- Agent discovery and selection mechanism
-- Basic conversation management (new conversation, reset)
-- Markdown rendering for agent responses
-- Loading states and error handling
-- Message send functionality
+- ChatGPT-style chat UI with message history ✅
+- Agent discovery and selection mechanism (needs bundle-aware rework in Epic 4)
+- Basic conversation management (new conversation, reset) ✅
+- Markdown rendering for agent responses ✅
+- Loading states and error handling ✅
+- Message send functionality ✅
 
 **Value:** Delivers the fundamental user experience - chat interface that feels familiar and enables agent interaction
 
-**Estimated Stories:** 9 stories
+**Completion Notes:** Stories 3.1-3.8 (UI infrastructure) are complete. Stories 3.4 (Agent Discovery), 3.9 (Lazy-loading Validation), and 3.10 (Agent Initialization) are blocked pending Epic 4 completion.
+
+**Estimated Stories:** 9 stories (6 complete, 3 pending Epic 4)
 
 ---
 
-### Epic 4: File Management and Viewer
+### Epic 4: Agent Execution Architecture & Bundle System (NEW)
+**Goal:** Implement correct agent execution architecture with agentic loop and bundle structure support
+
+**Status:** IN PROGRESS
+
+**Scope:**
+- Agentic execution loop with pause-load-continue pattern
+- Path variable resolution system ({bundle-root}, {core-root}, {project-root})
+- Critical actions processor for agent initialization
+- Bundle structure discovery and loading (bundle.yaml manifests)
+- Refactor file operation tools for path variables
+- Bundle-aware agent discovery
+- System prompt builder with tool usage instructions
+- End-to-end validation with bundled agents
+- Test suite refactoring for new architecture
+- Core BMAD files volume mount support
+- Documentation updates
+
+**Value:** Fixes fundamental execution pattern mismatch discovered during Epic 2/3 validation. Enables BMAD agents to function correctly with OpenAI API using the same patterns as Claude Code. Establishes sustainable agent organization through bundle structure.
+
+**Success Criteria:**
+- ✅ Agentic execution loop implements pause-load-continue pattern (matches Claude Code)
+- ✅ File loading via function calling blocks execution until files are available
+- ✅ Path variables ({bundle-root}, {core-root}, {project-root}) resolve correctly
+- ✅ Critical actions execute during agent initialization
+- ✅ Bundle structure discovered from manifests (bundle.yaml)
+- ✅ Bundled agents load and execute successfully end-to-end
+- ✅ All Epic 2/3 tests refactored and passing with new architecture
+
+**Dependencies:**
+- Replaces deprecated Epic 2 implementation
+- Unblocks Epic 3 Stories 3.4, 3.9, 3.10
+- Must complete before Epic 5-7 can proceed
+
+**Estimated Stories:** 12 stories
+**Estimated Effort:** 1.5-2 sprints
+
+---
+
+### Epic 5: File Management and Viewer
 **Goal:** Enable users to view and verify agent-generated outputs
 
 **Scope:**
@@ -505,24 +587,29 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 
 ---
 
-### Epic 5: Docker Deployment and Configuration
+### Epic 6: Docker Deployment and Configuration
 **Goal:** Package platform for easy deployment via Docker with minimal configuration
 
 **Scope:**
 - Dockerfile for Next.js application
 - docker-compose configuration
-- Volume mounts for agents and output folders
-- Environment variable configuration
+- Volume mounts for bundles, core, and output folders
+- Environment variable configuration (including bundle and core paths)
 - Deployment documentation
 - Logging and health checks
 
 **Value:** Enables distribution and deployment - agent builders can run the platform locally or on network
 
+**Updates for Bundle Architecture:**
+- Volume mount: `./bmad/custom/bundles:/app/bmad/custom/bundles:ro` (read-only)
+- Volume mount: `./bmad/core:/app/bmad/core:ro` (read-only)
+- Environment variables: BUNDLE_ROOT_PATH, CORE_ROOT_PATH, PROJECT_ROOT_PATH
+
 **Estimated Stories:** 6 stories
 
 ---
 
-### Epic 6: Polish, Testing, and Documentation
+### Epic 7: Polish, Testing, and Documentation
 **Goal:** Ensure platform is production-ready with good UX and clear documentation
 
 **Scope:**
@@ -531,26 +618,45 @@ Multiple BMAD agents are production-ready but blocked by lack of a deployment pl
 - Cross-browser testing
 - Performance optimization
 - User documentation (README, setup guide)
-- Agent builder guide (how to deploy BMAD agents)
+- Agent builder guide (how to deploy BMAD agents with bundle structure)
+- Bundle structure documentation and examples
 - Code quality and cleanup
 - MVP validation testing
 
 **Value:** Takes platform from "works" to "delightful to use" - critical for adoption and real-world usage
 
+**Updates for Bundle Architecture:**
+- Document bundle structure requirements (bundle.yaml, agents/, config.yaml)
+- Provide bundle creation examples
+- Explain path variable usage
+- Include critical actions patterns
+
 **Estimated Stories:** 8 stories
 
 ---
 
-**Total Estimated Stories:** 44 stories across 6 epics
+**Total Estimated Stories:** 52 stories across 7 epics
+
+**Epic Summary:**
+- Epic 1: Backend Foundation - 6 stories ✅ COMPLETE
+- Epic 2: OpenAI Integration (DEPRECATED) - 10 stories (learning preserved)
+- Epic 3: Chat Interface - 9 stories (6 complete, 3 blocked)
+- Epic 4: Agent Execution & Bundle System (NEW) - 12 stories (IN PROGRESS)
+- Epic 5: File Viewer - 7 stories
+- Epic 6: Docker Deployment - 6 stories
+- Epic 7: Polish & Documentation - 8 stories
+
+**Timeline Impact:** Original 6 epics became 7 epics with +1.5-2 sprint addition for Epic 4
 
 **Critical Architectural Note:** Epic 1 (Backend Foundation) must be completed first before any other epic can begin. This is the foundational infrastructure that enables both OpenAI integration and the chat interface.
 
 **Solo Developer Execution Plan:**
-- **Strict Sequential Order:** Epic 1 → Epic 2 → Epic 3 → Epic 4 → Epic 5 → Epic 6
+- **Revised Sequential Order:** Epic 1 → Epic 4 → Epic 3 (complete) → Epic 5 → Epic 6 → Epic 7
 - **Complete each epic 100%** before moving to the next - no epic overlap
-- **Epic 2 gates Epic 3:** Chat UI cannot function until OpenAI integration is complete
-- **Epic 3 gates Epic 4:** File viewer integrates into established chat UI layout
+- **Epic 4 gates Epic 3:** Correct agent execution architecture must be in place before completing Epic 3 stories 3.4, 3.9, 3.10
+- **Epic 4 gates Epic 5+:** All subsequent epics depend on proper agent execution
 - **Test thoroughly** at the end of each epic before proceeding
+- **Epic 2 Deprecated:** Learning from Epic 2 informs Epic 4 implementation
 
 _Note: Detailed story breakdown with acceptance criteria available in epics.md_
 

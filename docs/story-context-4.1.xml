@@ -1,0 +1,131 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.1</storyId>
+    <title>Implement Agentic Execution Loop</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to implement an agentic execution loop with function calling</iWant>
+    <soThat>agents pause execution, load files via tools, and continue only after files are available</soThat>
+    <tasks>
+      - Task 1: Create Agentic Loop Module (AC: 4.1.1, 4.1.2, 4.1.5)
+      - Task 2: Message Context Building (AC: 4.1.3, 4.1.7)
+      - Task 3: OpenAI Integration (AC: 4.1.2)
+      - Task 4: Tool Execution and Result Injection (AC: 4.1.2, 4.1.4, 4.1.8)
+      - Task 5: Iteration Logging and Debugging (AC: 4.1.6)
+      - Task 6: Loop Completion and Error Handling (AC: 4.1.1, 4.1.5, 4.1.8)
+      - Task 7: Integration with Existing Systems (AC: 4.1.7)
+      - Task 8: Unit Testing (AC: All)
+      - Task 9: Integration Testing (AC: 4.1.2, 4.1.8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="4.1.1">Implement while loop that continues until LLM returns response without tool calls</ac>
+    <ac id="4.1.2">Each iteration follows pattern: call OpenAI → check for tool calls → execute tools → inject results → loop back to LLM</ac>
+    <ac id="4.1.3">Conversation messages array grows with each tool call and result, maintaining full context</ac>
+    <ac id="4.1.4">Tool results injected as 'tool' role messages with tool_call_id matching the tool call</ac>
+    <ac id="4.1.5">Loop has safety limit (MAX_ITERATIONS = 50) to prevent infinite loops</ac>
+    <ac id="4.1.6">Each iteration logged for debugging with iteration count and tool call information</ac>
+    <ac id="4.1.7">Loop maintains conversation context across all iterations (messages array preserved)</ac>
+    <ac id="4.1.8">Agent cannot continue without tool results - execution blocks on tool calls (no premature continuation)</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="BMAD Agent Execution Architecture Specification" section="Section 3: Agentic Execution Loop">
+        Defines the core agentic execution pattern: User message → LLM call → Tool calls? → Yes: Execute tools, add results to context, loop back to LLM → No: Return final response. Specifies that execution must PAUSE on tool calls and WAIT for results before continuing. This is the foundational specification for implementing the pause-load-continue pattern.
+      </doc>
+      <doc path="docs/EPIC4-TECH-SPEC.md" title="Epic 4 Technical Specification" section="Section 4.1: Story 4.1 Implementation (lines 232-316)">
+        Provides complete implementation details for the agentic loop including TypeScript code structure, ExecutionResult interface, executeAgent function, MAX_ITERATIONS = 50, message array building, tool execution within loop, and testing requirements. Primary technical reference for this story.
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="FR-5: OpenAI API with Function Calling (lines 150-158)">
+        Product requirement for agentic execution loop with function calling. Specifies execution pattern, tool execution blocking behavior, safety limit on iterations, and proper error handling. Business context for why this implementation is critical.
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 4 Story 4.1 (lines 823-846)">
+        Story-level details including acceptance criteria, prerequisites (Epic 1 complete), technical notes about MAX_ITERATIONS=50, and note that this can be implemented in parallel with Stories 4.2/4.3 using stubs.
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Section 2: Application Architecture">
+        Overall system architecture showing Next.js monolithic pattern, API routes structure, and integration between frontend (React) and backend (API routes calling business logic calling OpenAI). Provides context for where agenticLoop.ts fits in the system.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/openai/chat.ts" kind="module" symbol="executeChatCompletion" lines="65-240" reason="EXISTING implementation that will be REPLACED by Story 4.1. Current function calling loop has MAX_ITERATIONS=10 (vs required 50), does not implement critical actions processor, path resolution, or system prompt builder. Study this to understand what needs to change."/>
+      <artifact path="lib/openai/chat.ts" kind="interface" symbol="ChatCompletionResult" lines="41-45" reason="Current return type interface. Story 4.1 will create new ExecutionResult interface with similar structure but potentially different fields (success, response, iterations, messages)."/>
+      <artifact path="lib/openai/chat.ts" kind="interface" symbol="ExecutedFunctionCall" lines="31-36" reason="Tracks function calls during execution. Story 4.1 may reuse this or create similar tracking structure for tool calls."/>
+      <artifact path="lib/openai/function-tools.ts" kind="constant" symbol="FUNCTION_TOOLS" reason="Tool definitions for OpenAI function calling. Story 4.1 will use these tool definitions via getToolDefinitions() function (Story 4.5)."/>
+      <artifact path="lib/types.ts" kind="interface" symbol="Message" lines="1-29" reason="Message interface for conversation. Story 4.1 messages array will use ChatCompletionMessageParam from OpenAI SDK, but this shows current frontend message structure."/>
+      <artifact path="lib/agents/loader.ts" kind="function" symbol="loadAgent" reason="Existing function to load agent metadata. Story 4.1 Task 7.1 will import and use this."/>
+      <artifact path="lib/files/reader.ts" kind="function" symbol="readFileContent" reason="File reading function used in current tool execution. Story 4.1 will delegate to executeToolCall which wraps this (Story 4.5)."/>
+      <artifact path="lib/files/writer.ts" kind="function" symbol="writeFileContent" reason="File writing function used in current tool execution. Story 4.1 will delegate to executeToolCall which wraps this (Story 4.5)."/>
+      <artifact path="lib/files/lister.ts" kind="function" symbol="listFiles" reason="Directory listing function. Story 4.1 will delegate to executeToolCall which wraps this (Story 4.5)."/>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="openai" version="^4.104.0" reason="OpenAI SDK for chat completions and function calling"/>
+        <dependency name="next" version="14.2.0" reason="Next.js framework for API routes and server-side logic"/>
+        <dependency name="typescript" version="^5" reason="TypeScript for type-safe implementation"/>
+      </node>
+      <devDependencies>
+        <dependency name="jest" version="^30.2.0" reason="Testing framework for unit and integration tests"/>
+        <dependency name="ts-jest" version="^29.4.4" reason="TypeScript support for Jest tests"/>
+        <dependency name="@types/jest" version="^30.0.0" reason="TypeScript type definitions for Jest"/>
+        <dependency name="tsx" version="^4.20.6" reason="TypeScript execution for scripts"/>
+      </devDependencies>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Messages array is append-only - never remove or modify previous messages. This preserves conversation context across all iterations.</constraint>
+    <constraint type="architecture">Each tool result MUST include matching tool_call_id from assistant's tool_calls array. OpenAI SDK requires this for proper conversation threading.</constraint>
+    <constraint type="architecture">Tool execution is synchronous within iteration - all tools complete before next LLM call. Cannot parallelize tool execution in MVP.</constraint>
+    <constraint type="implementation">MAX_ITERATIONS = 50 (not 10 as in current implementation). This is a safety net - normal workflows should complete in less than 10 iterations.</constraint>
+    <constraint type="implementation">Use ChatCompletionMessageParam type from openai/resources/chat/completions for messages array. This ensures compatibility with OpenAI SDK.</constraint>
+    <constraint type="testing">Must write unit tests using Jest and ts-jest. Follow existing test patterns in lib/**/__tests__/ directories.</constraint>
+    <constraint type="integration">Can be implemented in parallel with Stories 4.2, 4.3 by creating stub functions initially. Integration happens after those stories complete.</constraint>
+    <constraint type="epic4">This story REPLACES the Epic 2 simple function calling loop. The key difference is execution BLOCKS on tool calls (pause-load-continue) vs acknowledgment pattern.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ExecutionResult" kind="interface" signature="{ success: boolean; response: string; iterations: number; messages: Array&lt;ChatCompletionMessageParam&gt; }" path="lib/agents/agenticLoop.ts" reason="Return type for executeAgent function. Must include success flag, final response content, iteration count, and full messages array for conversation persistence."/>
+    <interface name="executeAgent" kind="function" signature="async function executeAgent(agentId: string, userMessage: string, conversationHistory: Array&lt;ChatCompletionMessageParam&gt;): Promise&lt;ExecutionResult&gt;" path="lib/agents/agenticLoop.ts" reason="Main entry point for agentic execution loop. Called by app/api/chat/route.ts to process user messages."/>
+    <interface name="ChatCompletionMessageParam" kind="type" signature="OpenAI SDK type" path="openai/resources/chat/completions" reason="Message structure for OpenAI API. Supports roles: system, user, assistant, tool. Tool role requires tool_call_id field."/>
+    <interface name="loadAgent" kind="function" signature="function loadAgent(agentId: string): Promise&lt;Agent&gt;" path="lib/agents/loader.ts" reason="Existing function to load agent metadata. Story 4.1 Task 7.1 imports this to get agent information."/>
+    <interface name="processCriticalActions" kind="function" signature="async function processCriticalActions(agent: Agent, bundleRoot: string): Promise&lt;CriticalContext&gt;" path="lib/agents/criticalActions.ts" reason="From Story 4.3 - processes critical actions and returns messages to inject into context. May be stub initially."/>
+    <interface name="buildSystemPrompt" kind="function" signature="function buildSystemPrompt(agent: Agent): string" path="lib/agents/systemPromptBuilder.ts" reason="From Story 4.8 - builds system prompt with tool usage instructions. May be stub initially."/>
+    <interface name="executeToolCall" kind="function" signature="async function executeToolCall(toolCall: ToolCall, bundleName: string): Promise&lt;any&gt;" path="lib/tools/fileOperations.ts" reason="From Story 4.5 - executes individual tool calls with path resolution. May be stub initially."/>
+    <interface name="getToolDefinitions" kind="function" signature="function getToolDefinitions(): Array&lt;ChatCompletionTool&gt;" path="lib/tools/fileOperations.ts" reason="From Story 4.5 - returns tool definitions for OpenAI. May initially use FUNCTION_TOOLS from lib/openai/function-tools.ts as placeholder."/>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest (version 30.2.0) with ts-jest for TypeScript support.
+      Test file naming: *.test.ts or *.integration.test.ts in __tests__ subdirectories.
+      Test environment: jsdom for component tests, but lib/ tests can use node environment.
+      Test location pattern: lib/**/__tests__/**/*.test.ts
+      Coverage: Tests should cover happy path, error cases, edge cases (max iterations, empty tool calls, etc.).
+      Mocking: Use Jest mocks for OpenAI API calls, file operations, and dependent functions from other stories.
+    </standards>
+    <locations>
+      lib/agents/__tests__/ - For agenticLoop.test.ts unit tests
+      lib/agents/__tests__/ - For integration tests with mocked OpenAI
+    </locations>
+    <ideas>
+      <test id="AC-4.1.1" description="Unit test: Loop continues until no tool calls">Mock OpenAI to return assistant message with tool_calls on first call, then message without tool_calls. Verify loop executes twice and returns final response.</test>
+      <test id="AC-4.1.2" description="Unit test: Execution flow">Verify each iteration calls OpenAI → checks for tool calls → executes tools → injects results → loops. Check messages array grows correctly.</test>
+      <test id="AC-4.1.3" description="Unit test: Messages array growth">Start with 3 messages (system, user, assistant), add tool call iteration, verify messages array has 5 messages (added assistant with tool_calls + tool result).</test>
+      <test id="AC-4.1.4" description="Unit test: Tool result format">Mock tool call with specific ID, verify tool result message has role='tool' and matching tool_call_id.</test>
+      <test id="AC-4.1.5" description="Unit test: MAX_ITERATIONS limit">Mock OpenAI to always return tool_calls. Verify loop throws error after exactly 50 iterations.</test>
+      <test id="AC-4.1.6" description="Unit test: Iteration logging">Use Jest to spy on console.log, verify iteration count and tool call information logged.</test>
+      <test id="AC-4.1.7" description="Unit test: Context preservation">Pass conversation history with 2 previous messages, verify they remain in messages array throughout execution.</test>
+      <test id="AC-4.1.8" description="Integration test: Blocking behavior">Mock OpenAI with 3-iteration scenario (2 tool calls, then final response). Verify execution does not continue until tool results injected. Check timing/sequence.</test>
+      <test id="AC-all" description="Integration test: Full workflow">Mock agent with critical actions, simulate realistic scenario with 2-3 file loads, verify final ExecutionResult structure correct.</test>
+    </ideas>
+  </tests>
+</story-context>

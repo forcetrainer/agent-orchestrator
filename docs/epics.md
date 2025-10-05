@@ -1,29 +1,40 @@
 # Agent Orchestrator - Epic Breakdown
 
 **Author:** Bryan
-**Date:** 2025-10-02
+**Date:** 2025-10-02 (Updated: 2025-10-05)
 **Project Level:** Level 3 (Full Product)
-**Target Scale:** 35-45 stories across 6 epics
+**Target Scale:** 52 stories across 7 epics
 
 ---
 
 ## Epic Overview
 
-This epic breakdown supports the Agent Orchestrator PRD, organizing development into 6 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
+This epic breakdown supports the Agent Orchestrator PRD, organizing development into 7 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
 
-**Epic Sequencing (Solo Developer - Strict Sequential Order):**
-1. **Epic 1** (Backend Foundation) - MUST complete ALL stories before proceeding
-2. **Epic 2** (OpenAI Integration) - MUST complete ALL stories before proceeding (validates core hypothesis)
-3. **Epic 3** (Chat Interface) - Can only build functional UI after Epic 2 is 100% complete
-4. **Epic 4** (File Operations & Viewer) - Requires Epic 2 file operations + Epic 3 UI layout
-5. **Epic 5** (Docker Deployment) - Requires fully working application (Epics 1-4 complete)
-6. **Epic 6** (Polish & Docs) - Final polish after all features complete
+**IMPORTANT ARCHITECTURAL PIVOT (October 2025):**
+Epic 2 and Epic 3 validation testing revealed that the initial OpenAI integration approach did not properly implement the agentic execution loop required for BMAD agents. Epic 4 "Agent Execution Architecture & Bundle System" was created to implement the correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md, replacing the deprecated Epic 2 implementation.
 
-**Critical Dependency Chain (Solo Developer):** Epic 1 → Epic 2 → Epic 3 → Epic 4 → Epic 5 → Epic 6
+**Epic Sequencing (Solo Developer - Revised Sequential Order):**
+1. **Epic 1** (Backend Foundation) - ✅ COMPLETE
+2. **Epic 2** (OpenAI Integration) - ⚠️ DEPRECATED (learning preserved, replaced by Epic 4)
+3. **Epic 3** (Chat Interface) - 🔄 PARTIALLY COMPLETE (Stories 3.1-3.8 done, 3.4/3.9/3.10 blocked)
+4. **Epic 4** (Agent Execution Architecture & Bundle System) - 🚧 IN PROGRESS (NEW - replaces Epic 2)
+5. **Epic 5** (File Viewer) - Requires Epic 4 complete
+6. **Epic 6** (Docker Deployment) - Requires fully working application (Epics 1-5 complete)
+7. **Epic 7** (Polish & Docs) - Final polish after all features complete
+
+**Critical Dependency Chain (Solo Developer):** Epic 1 ✅ → Epic 4 🚧 → Epic 3 (complete) → Epic 5 → Epic 6 → Epic 7
 
 **⚠️ Solo Developer Warning:** Unlike team environments where epics can overlap, as a solo developer you MUST complete each epic fully before moving to the next. Half-built epics create technical debt and context switching overhead.
 
-**Total Estimated Effort:** 43 stories (Level 3 scope: 12-40 stories, slightly over due to infrastructure needs)
+**Total Estimated Effort:** 52 stories (Level 3 scope: 12-40 stories, expanded due to architectural correction)
+- Epic 1: 6 stories ✅ COMPLETE
+- Epic 2: 10 stories ⚠️ DEPRECATED
+- Epic 3: 9 stories (6 complete, 3 blocked)
+- Epic 4: 12 stories 🚧 IN PROGRESS
+- Epic 5: 7 stories
+- Epic 6: 6 stories
+- Epic 7: 8 stories
 
 ---
 
@@ -196,21 +207,38 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-### Epic 2: OpenAI Integration with File Operations
+### Epic 2: OpenAI Integration with File Operations (DEPRECATED)
+
+**Status:** ⚠️ DEPRECATED - Replaced by Epic 4
 
 **Epic Goal:** Validate that BMAD agents work with OpenAI API through function calling for file operations
 
 **Business Value:** Proves the core hypothesis - this is the primary validation goal of the entire MVP
 
-**Success Criteria:**
+**Original Success Criteria:**
 - At least one BMAD agent successfully executes via OpenAI API
 - File operations (read, write, list) work correctly via function calling
 - Lazy-loading pattern loads instruction files on-demand
 - Path security prevents unauthorized file access
 
+**Deprecation Reason:**
+Validation testing during Story 3.10 revealed that this implementation did not properly implement the agentic execution loop (pause-load-continue pattern) required for BMAD agents. Specific issues:
+- File loading via function calling did not block execution (agents continued without loaded files)
+- BMAD path variables ({bundle-root}, {core-root}, {project-root}) were not being resolved
+- Agent initialization did not execute critical-actions as required
+- Simple function calling loop inadequate for complex agent workflows
+
+**Learning Preserved:**
+- File operation security patterns (path validation, access controls)
+- API error handling approaches
+- Basic function calling concepts
+- OpenAI SDK integration patterns
+
+**Replaced By:** Epic 4 "Agent Execution Architecture & Bundle System" which implements correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md
+
 **Dependencies:** Epic 1 (Backend foundation must be complete - especially API routes and environment config)
 
-**Estimated Stories:** 11 (includes Story 2.3.5 smoke test for risk mitigation)
+**Estimated Stories:** 11 stories (learning complete, implementation deprecated)
 
 ---
 
@@ -471,6 +499,8 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ### Epic 3: Chat Interface and Agent Selection
 
+**Status:** 🔄 PARTIALLY COMPLETE
+
 **Epic Goal:** Enable end users to select and interact with BMAD agents through a familiar chat interface
 
 **Business Value:** Delivers the fundamental user experience that makes agents accessible to non-technical users
@@ -481,11 +511,19 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 - Markdown rendering works correctly for agent responses
 - Users can start new conversations and reset context
 
-**Dependencies:** Epic 1 (Backend foundation) AND Epic 2 (100% COMPLETE - all OpenAI integration + file operations + agent loading must be working)
+**Completion Status:**
+- ✅ Stories 3.1-3.8: UI infrastructure complete (chat layout, message display, markdown rendering)
+- 🚧 Story 3.4: Agent Discovery - needs bundle-aware rework in Epic 4
+- 🚧 Story 3.9: Lazy-loading Validation - needs re-testing after Epic 4
+- 🚧 Story 3.10: Agent Initialization - needs complete re-implementation in Epic 4
 
-**⚠️ Critical Note:** You can build UI shell (Stories 3.1-3.4) with only Epic 1 complete, but Stories 3.5-3.8 (functional chat) REQUIRE Epic 2 fully complete. For solo development, complete Epic 2 entirely before starting Epic 3.
+**Dependencies:**
+- Epic 1 (Backend foundation) ✅ COMPLETE
+- Epic 4 (Agent Execution Architecture) - REQUIRED to unblock Stories 3.4, 3.9, 3.10
 
-**Estimated Stories:** 8
+**⚠️ Architectural Note:** Original dependency was Epic 2 (deprecated). Epic 4 now provides the correct agent execution architecture needed to complete this epic.
+
+**Estimated Stories:** 9 stories (6 complete, 3 blocked pending Epic 4)
 
 ---
 
@@ -753,7 +791,340 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-### Epic 4: File Management and Viewer
+### Epic 4: Agent Execution Architecture & Bundle System (NEW)
+
+**Status:** 🚧 IN PROGRESS
+
+**Epic Goal:** Implement correct agent execution architecture with agentic loop and bundle structure support
+
+**Business Value:** Fixes fundamental execution pattern mismatch discovered during Epic 2/3 validation. Enables BMAD agents to function correctly with OpenAI API using the same patterns as Claude Code. Establishes sustainable agent organization through bundle structure.
+
+**Success Criteria:**
+- ✅ Agentic execution loop implements pause-load-continue pattern (matches Claude Code)
+- ✅ File loading via function calling blocks execution until files are available
+- ✅ Path variables ({bundle-root}, {core-root}, {project-root}) resolve correctly
+- ✅ Critical actions execute during agent initialization
+- ✅ Bundle structure discovered from manifests (bundle.yaml)
+- ✅ Bundled agents load and execute successfully end-to-end
+- ✅ All Epic 2/3 tests refactored and passing with new architecture
+
+**Dependencies:**
+- Epic 1 (Backend foundation) ✅ COMPLETE
+- Epic 3 Stories 3.1-3.8 (UI infrastructure) ✅ COMPLETE
+- Replaces deprecated Epic 2 implementation
+- Blocks Epic 3 Stories 3.4, 3.9, 3.10 completion
+- Must complete before Epic 5-7 can proceed
+
+**Estimated Stories:** 12 stories
+**Estimated Effort:** 1.5-2 sprints
+
+---
+
+#### Story 4.1: Implement Agentic Execution Loop
+
+**As a** developer
+**I want** to implement an agentic execution loop with function calling
+**So that** agents pause execution, load files via tools, and continue only after files are available
+
+**Prerequisites:** Epic 1 complete (API routes), Epic 3 Stories 3.1-3.8 (UI)
+
+**Acceptance Criteria:**
+1. Implement while loop that continues until LLM returns response without tool calls
+2. Each iteration: call OpenAI → check for tool calls → execute tools → inject results → loop
+3. Conversation messages array grows with each tool call and result
+4. Tool results injected as 'tool' role messages with tool_call_id
+5. Loop has safety limit (max 50 iterations) to prevent infinite loops
+6. Each iteration logged for debugging
+7. Loop maintains conversation context across all iterations
+8. Agent cannot continue without tool results (execution blocks on tool calls)
+
+**Technical Notes:**
+- Follow AGENT-EXECUTION-SPEC.md Section 3: "Agentic Execution Loop"
+- Replace existing simple function calling from Epic 2 Story 2.6
+- Messages array structure: system → user → assistant (with tool_calls) → tool → assistant → ...
+
+---
+
+#### Story 4.2: Implement Path Variable Resolution System
+
+**As a** developer
+**I want** to resolve BMAD path variables in file paths
+**So that** agents can use {bundle-root}, {core-root}, and {project-root} to navigate files
+
+**Prerequisites:** Story 4.1 (Agentic loop)
+
+**Acceptance Criteria:**
+1. Resolve {bundle-root} to `bmad/custom/bundles/{bundle-name}/`
+2. Resolve {core-root} to `bmad/core/`
+3. Resolve {project-root} to application root directory
+4. Resolve {config_source}:variable_name by loading bundle config.yaml
+5. Support nested variable resolution (variables within variables)
+6. Resolution happens before executing file operation tools
+7. Invalid variable references return clear error messages
+8. Path resolution function unit tested with all variable types
+
+**Technical Notes:**
+- Follow AGENT-EXECUTION-SPEC.md Section 5: "Path Resolution System"
+- Create `lib/pathResolver.ts` utility
+- Load bundle config.yaml once per agent session, cache for variable lookups
+- Resolve in order: config references → system variables → path variables
+
+---
+
+#### Story 4.3: Implement Critical Actions Processor
+
+**As a** developer
+**I want** to execute agent critical-actions during initialization
+**So that** agents can load config files and set up initial context
+
+**Prerequisites:** Story 4.2 (Path resolution)
+
+**Acceptance Criteria:**
+1. Parse `<critical-actions>` section from agent.md XML
+2. Extract file load instructions: "Load into memory {path} and set variables: var1, var2"
+3. Execute file loads via read_file function during initialization
+4. Inject loaded file contents as system messages before user input
+5. Parse config.yaml files and store variables for resolution
+6. Execute non-file instructions as system messages (e.g., "Remember user's name is {user_name}")
+7. All critical actions complete before agent accepts first user message
+8. Errors in critical actions halt initialization with clear message
+
+**Technical Notes:**
+- Follow AGENT-EXECUTION-SPEC.md Section 4: "Critical Actions Processor"
+- Create `lib/agents/criticalActions.ts`
+- Critical actions run BEFORE agentic loop starts
+- Typically loads bundle config.yaml and sets user preferences
+
+---
+
+#### Story 4.4: Implement Bundle Structure Discovery and Loading
+
+**As a** developer
+**I want** to discover agents from bundle manifests
+**So that** the system can load bundled agents with proper metadata
+
+**Prerequisites:** Story 4.2 (Path resolution)
+
+**Acceptance Criteria:**
+1. Scan `bmad/custom/bundles/*/bundle.yaml` files
+2. Parse bundle.yaml to extract type (bundle vs standalone)
+3. Extract agent metadata: id, name, title, description, icon, file, entry_point
+4. Filter agents to only show entry_point: true in agent selector
+5. Return agent list with bundle context: [{id, name, title, description, icon, bundleName, bundlePath}]
+6. Validate bundle structure (required: bundle.yaml, agents/, config.yaml)
+7. Handle missing or malformed bundle.yaml gracefully
+8. Update `/api/agents` endpoint to return bundled agents
+
+**Technical Notes:**
+- Follow BUNDLE-SPEC.md Section "Server Integration > Agent Discovery"
+- Replace Epic 3 Story 3.4 agent discovery implementation
+- Create `lib/agents/bundleScanner.ts`
+- Scan depth 1 only (`bundles/*/bundle.yaml`), not recursive
+
+---
+
+#### Story 4.5: Refactor File Operation Tools for Agentic Loop
+
+**As a** developer
+**I want** to refactor existing read_file, write_file, list_files tools
+**So that** they work correctly within the agentic execution loop and support path variables
+
+**Prerequisites:** Story 4.1 (Agentic loop), Story 4.2 (Path resolution)
+
+**Acceptance Criteria:**
+1. Update read_file to resolve path variables before reading
+2. Update write_file to resolve path variables before writing
+3. Update list_files to resolve path variables before listing
+4. Tools return results in format compatible with agentic loop context injection
+5. Tool results include resolved paths for debugging
+6. Path security validation works with resolved paths (no traversal attacks)
+7. Tools work with bundle structure ({bundle-root}/workflows/*, {core-root}/tasks/*)
+8. Existing Epic 2 tool tests refactored to test with path variables
+
+**Technical Notes:**
+- Modify existing `lib/fileOperations.ts` from Epic 2
+- Add path resolution step before Epic 2 security checks
+- Ensure tool results inject cleanly into conversation messages array
+- Test with bundled agent paths: `{bundle-root}/workflows/intake/workflow.yaml`
+
+---
+
+#### Story 4.6: Refactor Agent Discovery for Bundle Structure
+
+**As a** developer
+**I want** to update agent discovery to load from bundle manifests
+**So that** bundled agents display correctly in agent selector
+
+**Prerequisites:** Story 4.4 (Bundle discovery)
+
+**Acceptance Criteria:**
+1. Frontend calls `/api/agents` and receives bundled agent list
+2. Agent selector dropdown displays agent name and title from bundle.yaml
+3. Optional: Display bundle name as subtitle (e.g., "Alex - Requirements Facilitator")
+4. Selecting agent loads from bundle structure (bundle.yaml file path)
+5. Agent metadata (icon, description) available for UI enhancement (optional for MVP)
+6. Empty bundles folder shows "No agents available" message
+7. Malformed bundles logged but don't crash agent selector
+
+**Technical Notes:**
+- Update frontend agent selector component from Epic 3 Story 3.4
+- Keep UI simple: flat list of all entry_point agents (don't group by bundle for MVP)
+- Agent ID from bundle.yaml used as unique identifier
+
+---
+
+#### Story 4.7: Re-implement Agent Initialization with Critical Actions
+
+**As a** developer
+**I want** to execute agent initialization using critical actions processor
+**So that** agents load config and greet users correctly on selection
+
+**Prerequisites:** Story 4.3 (Critical actions), Story 4.6 (Bundle discovery)
+
+**Acceptance Criteria:**
+1. When agent selected, load agent.md from bundle
+2. Parse and execute `<critical-actions>` section
+3. Load bundle config.yaml if specified in critical actions
+4. Execute file loads via agentic loop (if agent requests files during initialization)
+5. Display agent greeting message after initialization completes
+6. Loading indicator shows during initialization
+7. Initialization errors display clearly without crashing UI
+8. User can send first message after initialization completes
+
+**Technical Notes:**
+- Replace Epic 3 Story 3.10 implementation
+- Combines critical actions processor (Story 4.3) with agentic loop (Story 4.1)
+- Agent greeting typically comes from agent definition or first system response
+
+---
+
+#### Story 4.8: Implement System Prompt Builder with Tool Usage Instructions
+
+**As a** developer
+**I want** to build system prompts that instruct OpenAI to actively use tools
+**So that** file load instructions trigger actual tool calls instead of being acknowledged as text
+
+**Prerequisites:** Story 4.1 (Agentic loop)
+
+**Acceptance Criteria:**
+1. System prompt includes agent persona, role, identity, principles
+2. System prompt explicitly instructs: "When you see instructions to load files, use the read_file tool"
+3. System prompt lists available tools and their purpose
+4. System prompt explains workflow execution pattern
+5. System prompt emphasizes: "DO NOT just acknowledge file load instructions - actually call the tools"
+6. Available commands from agent's `<cmds>` section included in prompt
+7. System prompt tested to verify it triggers tool calls (not just text acknowledgment)
+
+**Technical Notes:**
+- Follow AGENT-EXECUTION-SPEC.md Section 6: "System Prompt Builder"
+- Create `lib/agents/systemPromptBuilder.ts`
+- Critical instruction: Make OpenAI understand it MUST use tools, not describe them
+
+---
+
+#### Story 4.9: Validate Bundled Agents End-to-End
+
+**As a** developer
+**I want** to validate that bundled agents work correctly with new architecture
+**So that** we confirm agents behave like they do in Claude Code
+
+**Prerequisites:** All Epic 4 stories 4.1-4.8 complete
+
+**Acceptance Criteria:**
+1. Load bundled agent from `bmad/custom/bundles/requirements-workflow/`
+2. Agent initializes successfully, executes critical actions
+3. User sends message that triggers workflow requiring file loads
+4. Verify in logs: read_file tool called multiple times for different instruction files
+5. Verify execution pauses at each tool call, waits for result, then continues
+6. Agent successfully completes workflow using dynamically loaded instructions
+7. Path variables ({bundle-root}, {core-root}) resolve correctly in logs
+8. Agent behavior matches expected BMAD patterns (similar to Claude Code execution)
+9. Document any remaining compatibility issues discovered
+
+**Technical Notes:**
+- Use existing bundled agents: Alex, Casey, or Pixel from requirements-workflow bundle
+- This is equivalent to Epic 3 Story 3.9 (lazy-loading validation) but with correct architecture
+- Monitor console logs to verify tool execution flow
+- Compare behavior to same agent running in Claude Code (if possible)
+
+---
+
+#### Story 4.10: Refactor Epic 2 and Epic 3 Tests
+
+**As a** developer
+**I want** to refactor existing tests for new architecture
+**So that** test suite validates correct agentic execution pattern
+
+**Prerequisites:** All Epic 4 stories 4.1-4.9 complete
+
+**Acceptance Criteria:**
+1. Unit tests for agentic execution loop (iterations, tool injection, safety limits)
+2. Unit tests for path variable resolution (all variable types)
+3. Unit tests for critical actions processor
+4. Unit tests for bundle discovery and parsing
+5. Integration tests for complete agent initialization flow
+6. Integration tests for file loading during agent execution
+7. Update Epic 2 tests that are still relevant (file security, error handling)
+8. Delete Epic 2 tests that are obsolete (simple function calling loop)
+9. All tests passing with new architecture
+
+**Technical Notes:**
+- Review existing Epic 2 test suite, identify what to keep vs replace
+- Focus on testing the agentic loop, not just individual functions
+- Test with realistic agent scenarios (multi-file loads, variable resolution)
+- Mock OpenAI responses to test tool call handling
+
+---
+
+#### Story 4.11: Add Core BMAD Files Volume Mount Support
+
+**As a** developer
+**I want** to ensure core BMAD files are accessible from bundles
+**So that** agents can use {core-root} to load shared workflow files
+
+**Prerequisites:** Story 4.2 (Path resolution)
+
+**Acceptance Criteria:**
+1. System can read files from `bmad/core/` directory
+2. {core-root} variable resolves to correct path
+3. Agents can execute: `read_file({core-root}/tasks/workflow.md)`
+4. Core files are read-only (writes to core-root rejected)
+5. Path security prevents access outside core directory via traversal
+6. Document core dependencies in bundle.yaml are accessible
+7. Test with actual core file: load `bmad/core/tasks/workflow.md`
+
+**Technical Notes:**
+- Core files already exist in project at `/Users/bryan.inagaki/Documents/development/agent-orchestrator/bmad/core/`
+- This story primarily validates path resolution and security with core files
+- Prepares for Epic 6 (Docker) where core will be mounted read-only
+
+---
+
+#### Story 4.12: Update Documentation for Epic 4 Architecture
+
+**As a** developer
+**I want** to document the new architecture in code comments and README
+**So that** future developers understand the agentic execution pattern
+
+**Prerequisites:** All Epic 4 stories complete
+
+**Acceptance Criteria:**
+1. README updated with architecture overview (agentic loop + bundle structure)
+2. Code comments in agentic loop explain execution flow
+3. Code comments in path resolver explain variable resolution order
+4. Developer notes explain differences from original Epic 2 approach
+5. Link to AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md in relevant files
+6. Quick troubleshooting guide for common agent execution issues
+7. Example of successful agent execution flow in comments or docs
+
+**Technical Notes:**
+- Keep concise - detailed specs are in AGENT-EXECUTION-SPEC and BUNDLE-SPEC
+- Focus on "why we did it this way" for future maintainers
+- Document Epic 2 → Epic 4 transition for historical context
+
+---
+
+### Epic 5: File Management and Viewer
 
 **Epic Goal:** Enable users to view and verify agent-generated outputs
 
@@ -765,15 +1136,15 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 - Read-only access prevents accidental modifications
 - Directory structure is intuitive to navigate
 
-**Dependencies:** Epic 2 COMPLETE (write_file working - Story 2.4) AND Epic 3 COMPLETE (Chat UI layout established for file viewer integration)
+**Dependencies:** Epic 4 COMPLETE (write_file working with path variables) AND Epic 3 COMPLETE (Chat UI layout established for file viewer integration)
 
-**⚠️ Solo Developer Note:** Complete Epic 3 fully before starting Epic 4. The file viewer integrates into the existing chat UI layout, so you need that foundation stable first.
+**⚠️ Solo Developer Note:** Complete Epic 4 fully before starting Epic 5. The file viewer integrates into the existing chat UI layout, so you need that foundation stable first.
 
 **Estimated Stories:** 7
 
 ---
 
-#### Story 4.1: File Viewer UI Component
+#### Story 5.1: File Viewer UI Component
 
 **As an** end user
 **I want** a file viewer panel in the interface
@@ -796,13 +1167,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.2: Display Directory Tree Structure
+#### Story 5.2: Display Directory Tree Structure
 
 **As an** end user
 **I want** to see the directory structure of output files
 **So that** I can navigate folders created by the agent
 
-**Prerequisites:** Story 4.1 (File Viewer UI)
+**Prerequisites:** Story 5.1 (File Viewer UI)
 
 **Acceptance Criteria:**
 1. Directory tree displays output folder structure
@@ -821,13 +1192,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.3: Display File Contents
+#### Story 5.3: Display File Contents
 
 **As an** end user
 **I want** to view the contents of files the agent created
 **So that** I can read and verify generated documents
 
-**Prerequisites:** Story 4.2 (Directory Tree)
+**Prerequisites:** Story 5.2 (Directory Tree)
 
 **Acceptance Criteria:**
 1. Clicking file in tree loads its contents
@@ -846,13 +1217,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.4: Markdown Rendering in File Viewer
+#### Story 5.4: Markdown Rendering in File Viewer
 
 **As an** end user
 **I want** markdown files to render with formatting
 **So that** I can read generated docs as intended
 
-**Prerequisites:** Story 4.3 (Display File Contents)
+**Prerequisites:** Story 5.3 (Display File Contents)
 
 **Acceptance Criteria:**
 1. .md files render with markdown formatting
@@ -870,13 +1241,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.5: Refresh File List
+#### Story 5.5: Refresh File List
 
 **As an** end user
 **I want** the file list to update when agent creates new files
 **So that** I see newly created files without manual refresh
 
-**Prerequisites:** Story 4.2 (Directory Tree)
+**Prerequisites:** Story 5.2 (Directory Tree)
 
 **Acceptance Criteria:**
 1. File list refreshes after agent completes response
@@ -893,7 +1264,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.6: File Viewer Navigation Polish
+#### Story 5.6: File Viewer Navigation Polish
 
 **As an** end user
 **I want** smooth navigation between files
@@ -916,13 +1287,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 4.7: Security - Read-Only File Access
+#### Story 5.7: Security - Read-Only File Access
 
 **As a** platform operator
 **I want** file viewer to be read-only
 **So that** users cannot modify or delete files through the UI
 
-**Prerequisites:** All Epic 3 stories
+**Prerequisites:** All Epic 5 stories
 
 **Acceptance Criteria:**
 1. No edit or delete buttons in file viewer UI
@@ -939,7 +1310,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-### Epic 5: Docker Deployment and Configuration
+### Epic 6: Docker Deployment and Configuration
 
 **Epic Goal:** Package platform for easy deployment via Docker with minimal configuration
 
@@ -947,19 +1318,24 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 **Success Criteria:**
 - Single docker-compose up starts entire application
-- Volume mounts work correctly for agents and outputs
+- Volume mounts work correctly for bundles, core, and outputs
 - Environment variable configuration is simple
 - Clear documentation for deployment
 
-**Dependencies:** Epics 1, 2, 3, 4 ALL 100% COMPLETE - you need a fully functional application before containerizing
+**Dependencies:** Epics 1, 3, 4, 5 ALL 100% COMPLETE - you need a fully functional application before containerizing
 
 **⚠️ Solo Developer Note:** Do NOT start Docker work until you have a working app you can test locally. Debugging Docker issues with a half-built app is extremely painful.
+
+**Bundle Architecture Updates:**
+- Volume mount for `bmad/custom/bundles` (read-only)
+- Volume mount for `bmad/core` (read-only)
+- Environment variables: BUNDLE_ROOT_PATH, CORE_ROOT_PATH, PROJECT_ROOT_PATH
 
 **Estimated Stories:** 6
 
 ---
 
-#### Story 5.1: Create Dockerfile for Next.js App
+#### Story 6.1: Create Dockerfile for Next.js App
 
 **As a** developer
 **I want** a Dockerfile that builds and runs the Next.js application
@@ -984,57 +1360,64 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 5.2: Configure Volume Mounts
+#### Story 6.2: Configure Volume Mounts
 
 **As an** agent builder
-**I want** to mount my agents folder into the container
-**So that** the platform can access my agents
+**I want** to mount my bundle and core folders into the container
+**So that** the platform can access agents and shared BMAD files
 
-**Prerequisites:** Story 5.1 (Dockerfile)
+**Prerequisites:** Story 6.1 (Dockerfile)
 
 **Acceptance Criteria:**
-1. Agents folder mounts as read-only volume
-2. Output folder mounts as read-write volume
-3. Volume paths configurable via docker-compose
-4. Mounted folders accessible from Next.js app
-5. File changes in mounted volumes reflect immediately
-6. Permissions set correctly for file operations
-7. Example folder structure documented
+1. Bundle folder (`bmad/custom/bundles`) mounts as read-only volume
+2. Core folder (`bmad/core`) mounts as read-only volume
+3. Output folder mounts as read-write volume
+4. Volume paths configurable via docker-compose
+5. Mounted folders accessible from Next.js app
+6. File changes in mounted volumes reflect immediately
+7. Permissions set correctly for file operations
+8. Example bundle structure documented
 
 **Technical Notes:**
-- Define volumes in docker-compose.yml
+- Define volumes in docker-compose.yml:
+  - `./bmad/custom/bundles:/app/bmad/custom/bundles:ro`
+  - `./bmad/core:/app/bmad/core:ro`
+  - `./output:/app/output:rw`
 - Use bind mounts for development
-- Document recommended folder structure
+- Document recommended folder structure per BUNDLE-SPEC
 - Test on macOS, Linux, Windows (if possible)
 
 ---
 
-#### Story 5.3: Environment Variable Configuration
+#### Story 6.3: Environment Variable Configuration
 
 **As a** deployer
 **I want** to configure the app via environment variables
 **So that** I don't have to modify code for deployment
 
-**Prerequisites:** Story 5.1 (Dockerfile)
+**Prerequisites:** Story 6.1 (Dockerfile)
 
 **Acceptance Criteria:**
 1. OPENAI_API_KEY loaded from environment
-2. Agents folder path configurable (with default)
-3. Output folder path configurable (with default)
-4. Port number configurable (default 3000)
-5. Environment variables documented in README
-6. .env.example file provided as template
-7. App validates required variables on startup
+2. BUNDLE_ROOT_PATH configurable (default: `/app/bmad/custom/bundles`)
+3. CORE_ROOT_PATH configurable (default: `/app/bmad/core`)
+4. PROJECT_ROOT_PATH configurable (default: `/app`)
+5. OUTPUT_FOLDER_PATH configurable (default: `/app/output`)
+6. Port number configurable (default 3000)
+7. Environment variables documented in README
+8. .env.example file provided as template
+9. App validates required variables on startup
 
 **Technical Notes:**
 - Use Next.js environment variable support
-- Create .env.example with placeholder values
-- Add startup validation for OPENAI_API_KEY
+- Create .env.example with placeholder values including new path variables
+- Add startup validation for OPENAI_API_KEY and path variables
 - Document which vars are required vs optional
+- Ensure path variables match bundle architecture from Epic 4
 
 ---
 
-#### Story 5.4: Create docker-compose.yml
+#### Story 6.4: Create docker-compose.yml
 
 **As a** deployer
 **I want** a docker-compose file for easy deployment
@@ -1059,13 +1442,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 5.5: Deployment Documentation
+#### Story 6.5: Deployment Documentation
 
 **As a** new deployer
 **I want** clear instructions for deploying the platform
 **So that** I can get it running quickly
 
-**Prerequisites:** All Epic 4 stories complete
+**Prerequisites:** All Epic 5 stories complete
 
 **Acceptance Criteria:**
 1. README includes deployment section
@@ -1084,13 +1467,13 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 5.6: Basic Logging and Health Check
+#### Story 6.6: Basic Logging and Health Check
 
 **As a** deployer
 **I want** basic logging and health check
 **So that** I can verify the app is running correctly
 
-**Prerequisites:** Story 5.4 (docker-compose)
+**Prerequisites:** Story 6.4 (docker-compose)
 
 **Acceptance Criteria:**
 1. Application logs startup messages
@@ -1109,7 +1492,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-### Epic 6: Polish, Testing, and Documentation
+### Epic 7: Polish, Testing, and Documentation
 
 **Epic Goal:** Ensure platform is production-ready with good UX and clear documentation
 
@@ -1121,15 +1504,15 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 - Cross-browser testing complete
 - Documentation enables self-service setup
 
-**Dependencies:** Epics 1-5 ALL COMPLETE - final polish phase after all features working
+**Dependencies:** Epics 1-6 ALL COMPLETE - final polish phase after all features working
 
-**⚠️ Solo Developer Note:** While some polish can happen during development, save the bulk of Epic 6 for the end. Polishing incomplete features wastes time. Exception: Story 6.5 (Agent Builder Guide) and 6.6 (End User Guide) can be drafted earlier as you learn the system.
+**⚠️ Solo Developer Note:** While some polish can happen during development, save the bulk of Epic 6 for the end. Polishing incomplete features wastes time. Exception: Story 7.5 (Agent Builder Guide) and 6.6 (End User Guide) can be drafted earlier as you learn the system.
 
 **Estimated Stories:** 8
 
 ---
 
-#### Story 6.1: UI/UX Polish Pass
+#### Story 7.1: UI/UX Polish Pass
 
 **As an** end user
 **I want** a polished, professional-looking interface
@@ -1155,7 +1538,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.2: Error Message Improvements
+#### Story 7.2: Error Message Improvements
 
 **As an** end user
 **I want** helpful error messages
@@ -1180,7 +1563,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.3: Cross-Browser Testing
+#### Story 7.3: Cross-Browser Testing
 
 **As a** user on any modern browser
 **I want** the platform to work correctly
@@ -1205,7 +1588,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.4: Performance Optimization
+#### Story 7.4: Performance Optimization
 
 **As an** end user
 **I want** fast response times
@@ -1230,32 +1613,36 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.5: Agent Builder Guide
+#### Story 7.5: Agent Builder Guide
 
 **As an** agent builder
-**I want** documentation on deploying BMAD agents
+**I want** documentation on deploying BMAD agents with bundle structure
 **So that** I can successfully deploy my agents to the platform
 
-**Prerequisites:** Platform functional
+**Prerequisites:** Platform functional, Epic 4 complete
 
 **Acceptance Criteria:**
-1. Guide explains BMAD agent file structure
-2. Instructions for adding agents to agents folder
-3. Example agent provided as reference
-4. Troubleshooting section for common agent issues
-5. Explanation of OpenAI compatibility considerations
-6. Guide to testing agents before deployment
-7. Tips for optimizing agents for OpenAI
+1. Guide explains BMAD bundle structure (bundle.yaml, agents/, config.yaml)
+2. Instructions for creating new agent bundles
+3. Path variable usage examples ({bundle-root}, {core-root}, {project-root})
+4. Critical actions patterns and configuration
+5. Example bundled agent provided as reference
+6. Troubleshooting section for common agent issues
+7. Explanation of OpenAI compatibility considerations
+8. Guide to testing agents before deployment
+9. Tips for optimizing agents for OpenAI
 
 **Technical Notes:**
 - Create separate AGENT_BUILDER_GUIDE.md
-- Include sample agent with comments
+- Include sample bundled agent with comments
+- Document bundle.yaml format per BUNDLE-SPEC.md
 - Document known differences between Claude Code and OpenAI
+- Explain path variable resolution system
 - Link from main README
 
 ---
 
-#### Story 6.6: End User Guide
+#### Story 7.6: End User Guide
 
 **As an** end user
 **I want** basic usage instructions
@@ -1280,7 +1667,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.7: Code Quality and Cleanup
+#### Story 7.7: Code Quality and Cleanup
 
 **As a** developer
 **I want** clean, maintainable code
@@ -1305,7 +1692,7 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ---
 
-#### Story 6.8: MVP Validation Test
+#### Story 7.8: MVP Validation Test
 
 **As a** product owner
 **I want** to validate MVP meets success criteria
@@ -1332,34 +1719,37 @@ This epic breakdown supports the Agent Orchestrator PRD, organizing development 
 
 ## Summary
 
-**Total Stories:** 45 stories across 6 epics
+**Total Stories:** 52 stories across 7 epics
 
 **Epic Breakdown:**
-- Epic 1: 6 stories (Backend Foundation & Infrastructure)
-- Epic 2: 11 stories (OpenAI Integration with File Operations - includes 2.3.5 smoke test)
-- Epic 3: 9 stories (Chat Interface and Agent Selection)
-- Epic 4: 7 stories (File Management and Viewer)
-- Epic 5: 6 stories (Docker Deployment and Configuration)
-- Epic 6: 8 stories (Polish, Testing, and Documentation)
+- Epic 1: 6 stories (Backend Foundation & Infrastructure) ✅ COMPLETE
+- Epic 2: 11 stories (OpenAI Integration with File Operations) ⚠️ DEPRECATED
+- Epic 3: 9 stories (Chat Interface and Agent Selection) 🔄 PARTIALLY COMPLETE (6 complete, 3 blocked)
+- Epic 4: 12 stories (Agent Execution Architecture & Bundle System) 🚧 IN PROGRESS (NEW)
+- Epic 5: 7 stories (File Management and Viewer)
+- Epic 6: 6 stories (Docker Deployment and Configuration)
+- Epic 7: 8 stories (Polish, Testing, and Documentation)
 
-**Development Sequence (Solo Developer - Strict Sequential):**
-1. **Sprint 1:** Epic 1 (ALL stories 1.1-1.6) - Backend foundation - MUST complete 100% before proceeding
-2. **Sprint 2:** Epic 2 (ALL stories 2.1-2.3.5, 2.4-2.10) - OpenAI integration - MUST complete 100% before proceeding
-3. **Sprint 3:** Epic 3 (ALL stories 3.1-3.9) - Chat Interface - MUST complete 100% before proceeding
-4. **Sprint 4:** Epic 4 (ALL stories 4.1-4.7) - File Viewer - MUST complete 100% before proceeding
-5. **Sprint 5:** Epic 5 (ALL stories 5.1-5.6) - Docker Deployment - MUST complete 100% before proceeding
-6. **Sprint 6:** Epic 6 (ALL stories 6.1-6.8) - Polish, Testing, Documentation
+**Development Sequence (Solo Developer - Revised Sequential):**
+1. **Sprint 1:** Epic 1 (ALL stories 1.1-1.6) - Backend foundation ✅ COMPLETE
+2. **Sprint 2-3:** Epic 4 (ALL stories 4.1-4.12) - Agent Execution Architecture 🚧 IN PROGRESS
+3. **Sprint 4:** Epic 3 (Complete remaining stories 3.4, 3.9, 3.10) - Chat Interface completion
+4. **Sprint 5:** Epic 5 (ALL stories 5.1-5.7) - File Viewer
+5. **Sprint 6:** Epic 6 (ALL stories 6.1-6.6) - Docker Deployment
+6. **Sprint 7:** Epic 7 (ALL stories 7.1-7.8) - Polish, Testing, Documentation
 
-**Critical Path (Solo Developer):** Epic 1 → Epic 2 → Epic 3 → Epic 4 → Epic 5 → Epic 6
+**Critical Path (Solo Developer):** Epic 1 ✅ → Epic 4 🚧 → Epic 3 (complete) → Epic 5 → Epic 6 → Epic 7
 
 **⚠️ Solo Developer Critical Rules:**
 1. **NO epic overlap** - Complete each epic 100% before starting the next
 2. **NO parallel work** - Context switching between epics kills productivity
 3. **Test thoroughly** at end of each epic before moving on - fixes are cheaper now than later
-4. **Epic 2 gates Epic 3** - You cannot build functional chat until OpenAI integration is complete
-5. **Epic 3 gates Epic 4** - File viewer integrates into chat UI layout
+4. **Epic 4 gates Epic 3** - Cannot complete Epic 3 until correct agent execution architecture is in place
+5. **Epic 4 gates ALL subsequent epics** - Correct architecture is foundation for everything else
 
-**Key Insight:** Epic 1 is the critical foundation - without backend infrastructure, neither OpenAI integration nor Chat UI can be built. Each epic builds on the complete foundation of the previous epic.
+**Key Insight:** Epic 4 architectural correction is critical - it replaces the deprecated Epic 2 implementation with the correct agentic execution loop and bundle structure. This is the foundation that enables all remaining work.
+
+**Architectural Pivot (October 2025):** Epic 2 validation revealed execution pattern mismatch. Epic 4 implements correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md, replacing Epic 2.
 
 ---
 
