@@ -12,6 +12,7 @@
     "test:smoke": "tsx scripts/test-openai-smoke.ts"
   },
   "dependencies": {
+    "js-yaml": "^4.1.0",
     "next": "14.2.0",
     "openai": "^4.104.0",
     "react": "^18",
@@ -24,6 +25,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/jest": "^30.0.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

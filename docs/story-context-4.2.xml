@@ -1,0 +1,310 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.2</storyId>
+    <title>Implement Path Variable Resolution System</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to resolve BMAD path variables in file paths</iWant>
+    <soThat>agents can use {bundle-root}, {core-root}, and {project-root} to navigate files</soThat>
+    <tasks>
+      - Task 1: Create Path Resolver Module (AC: 4.2.1, 4.2.2, 4.2.3) - 7 subtasks
+      - Task 2: Config Variable Resolution (AC: 4.2.4, 4.2.5) - 6 subtasks
+      - Task 3: System Variable Resolution (AC: 4.2.5) - 4 subtasks
+      - Task 4: Path Normalization and Validation (AC: 4.2.6, 4.2.7) - 6 subtasks
+      - Task 5: Resolution Order and Strategy (AC: 4.2.5) - 4 subtasks
+      - Task 6: Integration with File Operations (AC: 4.2.6) - 5 subtasks
+      - Task 7: Bundle Config Loading (AC: 4.2.4) - 5 subtasks
+      - Task 8: Error Handling and Logging (AC: 4.2.7) - 4 subtasks
+      - Task 9: Unit Testing - Path Variables (AC: 4.2.1, 4.2.2, 4.2.3, 4.2.8) - 5 subtasks
+      - Task 10: Unit Testing - Config Variables (AC: 4.2.4, 4.2.5, 4.2.8) - 4 subtasks
+      - Task 11: Unit Testing - Security (AC: 4.2.7, 4.2.8) - 4 subtasks
+      - Task 12: Integration Testing (AC: 4.2.6, 4.2.8) - 4 subtasks
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="AC-4.2.1">
+      <description>Resolve {bundle-root} to `bmad/custom/bundles/{bundle-name}/`</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+    <ac id="AC-4.2.2">
+      <description>Resolve {core-root} to `bmad/core/`</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+    <ac id="AC-4.2.3">
+      <description>Resolve {project-root} to application root directory</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+    <ac id="AC-4.2.4">
+      <description>Resolve {config_source}:variable_name by loading bundle config.yaml</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+    <ac id="AC-4.2.5">
+      <description>Support nested variable resolution (variables within variables)</description>
+      <testable>true</testable>
+      <priority>medium</priority>
+    </ac>
+    <ac id="AC-4.2.6">
+      <description>Resolution happens before executing file operation tools</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+    <ac id="AC-4.2.7">
+      <description>Invalid variable references return clear error messages</description>
+      <testable>true</testable>
+      <priority>medium</priority>
+    </ac>
+    <ac id="AC-4.2.8">
+      <description>Path resolution function unit tested with all variable types</description>
+      <testable>true</testable>
+      <priority>high</priority>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/AGENT-EXECUTION-SPEC.md</path>
+        <title>Agent Execution Specification</title>
+        <section>Section 5: Path Resolution System (lines 140-220)</section>
+        <snippet>Defines BMAD path variables ({bundle-root}, {core-root}, {project-root}), config references ({config_source}:variable), resolution order (config → system → path), nested resolution patterns, and security validation requirements. Critical pattern: resolve config variables first as they may reference system/path variables.</snippet>
+        <relevance>Authoritative specification for path resolution implementation</relevance>
+      </doc>
+      <doc>
+        <path>docs/EPIC4-TECH-SPEC.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Story 4.2: Path Variable Resolution System (lines 319-405)</section>
+        <snippet>Provides complete implementation blueprint including PathContext interface, resolvePath function signature, validatePathSecurity implementation, resolution order algorithm, and testing requirements. Contains working code examples for regex-based variable replacement.</snippet>
+        <relevance>Technical implementation guide with code examples</relevance>
+      </doc>
+      <doc>
+        <path>docs/BUNDLE-SPEC.md</path>
+        <title>Bundle Structure Specification</title>
+        <section>Section 3: Path Variables</section>
+        <snippet>Defines bundle directory structure, config.yaml format for variable definitions, path variable syntax and usage examples. Shows how agents use {bundle-root}/workflows/intake/workflow.yaml for portable paths.</snippet>
+        <relevance>Context for bundle structure and variable usage patterns</relevance>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-6: File Operation Tools (lines 160-171)</section>
+        <snippet>Functional requirements for path variable resolution system. Specifies which variables must be supported, resolution behavior before file operations, and security constraints (bundle folders and core read-only, output folder write-only).</snippet>
+        <relevance>Business requirements and constraints</relevance>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Epic 4 Story 4.2 (lines 848-871)</section>
+        <snippet>Acceptance criteria breakdown, dependencies on Stories 4.1/4.3/4.5, integration points with agentic loop and file operations, technical notes on resolution order critical for config variables referencing other variables.</snippet>
+        <relevance>Story context and dependencies</relevance>
+      </doc>
+      <doc>
+        <path>docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>Technology Stack (lines 17-46), File System Architecture</section>
+        <snippet>Defines Node.js built-in `path` module for path normalization, fs/promises for file I/O, no external dependencies needed. Architecture uses lib/ directory for utilities like path resolver.</snippet>
+        <relevance>Technology decisions and module organization</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath, validateWritePath</symbol>
+        <lines>1-129</lines>
+        <reason>Existing path security validation functions that use path.normalize(), path.resolve(), and security checks for traversal attacks. Story 4.2 path resolver should integrate with or build upon these patterns, particularly the security validation logic (lines 31-86).</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/agenticLoop.ts</path>
+        <kind>module</kind>
+        <symbol>executeAgent, processCriticalActions (stub)</symbol>
+        <lines>1-80</lines>
+        <reason>Agentic execution loop (Story 4.1) that will indirectly use path resolver through file operation tools. Contains stub for processCriticalActions which needs bundle config loading (Story 4.3 integration point). Shows how path resolution fits into execution flow.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>module</kind>
+        <symbol>readFileContent</symbol>
+        <lines>N/A - full file</lines>
+        <reason>Existing file read function from Epic 2 that will be refactored in Story 4.5 to use path resolver. Current implementation uses validatePath from security.ts - the new path resolver must work with this pattern.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/writer.ts</path>
+        <kind>module</kind>
+        <symbol>writeFileContent</symbol>
+        <lines>N/A - full file</lines>
+        <reason>Existing file write function from Epic 2 that will be refactored in Story 4.5 to use path resolver. Uses validateWritePath for security - new resolver must maintain write-only to output folder constraint.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/env.ts</path>
+        <kind>module</kind>
+        <symbol>env object</symbol>
+        <lines>N/A - full file</lines>
+        <reason>Environment configuration providing AGENTS_PATH, OUTPUT_PATH, BMAD_PATH constants. Path resolver will use these for default path variable values and security validation boundaries.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="path">built-in</package>
+        <package name="fs/promises">built-in</package>
+        <package name="typescript">^5</package>
+        <package name="next">14.2.0</package>
+        <package name="jest">^30.2.0</package>
+        <package name="ts-jest">^29.4.4</package>
+      </node>
+      <note>No external YAML parsing library in dependencies yet - Story 4.2 may need to add 'yaml' or 'js-yaml' package for config.yaml parsing (Task 7)</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security" priority="critical">
+      <description>All resolved paths MUST be validated before any file operation. Resolved paths must be within bundleRoot OR coreRoot only. Path traversal attempts (..) must be rejected. Use path.normalize() and path.resolve() for validation.</description>
+      <source>lib/files/security.ts:31-86, AGENT-EXECUTION-SPEC.md Section 5</source>
+    </constraint>
+    <constraint type="architecture" priority="high">
+      <description>Resolution order is CRITICAL: (1) config references {config_source}:var, (2) system variables {date}/{user_name}, (3) path variables {bundle-root}/{core-root}/{project-root}. This order ensures config variables can reference other variable types.</description>
+      <source>EPIC4-TECH-SPEC.md lines 335-362, story Dev Notes</source>
+    </constraint>
+    <constraint type="integration" priority="high">
+      <description>Path resolver must be compatible with Story 4.5 file operations refactor. Functions must work with existing validatePath/validateWritePath security patterns. Resolution happens BEFORE file operations execute.</description>
+      <source>Story 4.2 Dev Notes, lib/files/security.ts</source>
+    </constraint>
+    <constraint type="architecture" priority="medium">
+      <description>Module must be pure utility with no side effects (except file reads for config.yaml). Should be easily unit testable without file system mocks. Export clear TypeScript interfaces: PathContext, resolvePath function.</description>
+      <source>solution-architecture.md, story Task 6</source>
+    </constraint>
+    <constraint type="performance" priority="low">
+      <description>Nested variable resolution must have max iteration limit (suggest 10) to prevent infinite loops from circular references. Cache parsed bundle configs to avoid repeated file reads.</description>
+      <source>Story Task 5.3, Task 7.4</source>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>PathContext</name>
+      <kind>interface</kind>
+      <signature>
+        interface PathContext {
+          bundleRoot: string;      // bmad/custom/bundles/{bundle-name}
+          coreRoot: string;        // bmad/core
+          projectRoot: string;     // /path/to/agent-orchestrator
+          bundleConfig?: any;      // Parsed config.yaml
+        }
+      </signature>
+      <path>lib/pathResolver.ts (to be created)</path>
+      <usage>Passed to resolvePath() to provide context for variable resolution. Used by Story 4.3 (critical actions) and Story 4.5 (file operations).</usage>
+    </interface>
+    <interface>
+      <name>resolvePath</name>
+      <kind>function</kind>
+      <signature>
+        function resolvePath(pathTemplate: string, context: PathContext): string
+      </signature>
+      <path>lib/pathResolver.ts (to be created)</path>
+      <usage>Primary path resolution function. Takes path template with variables (e.g., "{bundle-root}/workflows/intake/workflow.yaml") and PathContext, returns resolved absolute path. Must be called by file operations before any file I/O.</usage>
+    </interface>
+    <interface>
+      <name>validatePathSecurity</name>
+      <kind>function</kind>
+      <signature>
+        function validatePathSecurity(resolvedPath: string, context: PathContext): void
+      </signature>
+      <path>lib/pathResolver.ts (to be created)</path>
+      <usage>Security validation after path resolution. Throws error if resolved path is outside allowed directories or contains traversal attacks. Called internally by resolvePath().</usage>
+    </interface>
+    <interface>
+      <name>loadBundleConfig</name>
+      <kind>function</kind>
+      <signature>
+        async function loadBundleConfig(bundleRoot: string): Promise&lt;any&gt;
+      </signature>
+      <path>lib/pathResolver.ts (to be created)</path>
+      <usage>Loads and parses config.yaml from bundle directory. Returns parsed config object for {config_source} variable resolution. Handles missing config.yaml gracefully.</usage>
+    </interface>
+    <interface>
+      <name>createPathContext</name>
+      <kind>function</kind>
+      <signature>
+        function createPathContext(bundleName: string, bundleConfig?: any): PathContext
+      </signature>
+      <path>lib/pathResolver.ts (to be created)</path>
+      <usage>Helper function to construct PathContext from bundle name and optional config. Simplifies creating context for file operations and critical actions.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest 30.2.0 with ts-jest for TypeScript support. Tests located in `__tests__/` directories adjacent to source files. Test files named `*.test.ts` for unit tests, `*.integration.test.ts` for integration tests. All tests use jsdom environment by default. Module path alias `@/` for imports. Coverage collected from lib/ directory. Follow existing patterns from lib/files/__tests__/security.test.ts for path validation testing and lib/agents/__tests__/agenticLoop.test.ts for mocking strategies.
+    </standards>
+
+    <locations>
+      - lib/pathResolver.ts - Main implementation (to be created)
+      - lib/__tests__/pathResolver.test.ts - Unit tests for path resolution (to be created)
+      - lib/__tests__/pathResolver.integration.test.ts - Integration tests with real bundle structure (to be created)
+    </locations>
+
+    <ideas>
+      <test ac="AC-4.2.1" priority="high">
+        <description>Test {bundle-root} resolves to correct bundle directory</description>
+        <approach>Mock PathContext with bundleRoot = "bmad/custom/bundles/test-bundle", call resolvePath("{bundle-root}/workflows/test.yaml"), assert result equals "bmad/custom/bundles/test-bundle/workflows/test.yaml"</approach>
+      </test>
+      <test ac="AC-4.2.2" priority="high">
+        <description>Test {core-root} resolves to bmad/core</description>
+        <approach>Call resolvePath("{core-root}/tasks/workflow.md"), assert result equals "bmad/core/tasks/workflow.md"</approach>
+      </test>
+      <test ac="AC-4.2.3" priority="high">
+        <description>Test {project-root} resolves to process.cwd()</description>
+        <approach>Call resolvePath("{project-root}/output/test.md"), assert result starts with process.cwd()</approach>
+      </test>
+      <test ac="AC-4.2.4" priority="high">
+        <description>Test {config_source}:variable resolves from bundleConfig</description>
+        <approach>Mock bundleConfig = {output_folder: "/custom/output"}, call resolvePath("{config_source}:output_folder/test.md"), assert result equals "/custom/output/test.md"</approach>
+      </test>
+      <test ac="AC-4.2.5" priority="medium">
+        <description>Test nested variable resolution (variable value contains another variable)</description>
+        <approach>Mock bundleConfig = {output_folder: "{project-root}/output"}, call resolvePath("{config_source}:output_folder/test.md"), assert {project-root} was resolved in the config value</approach>
+      </test>
+      <test ac="AC-4.2.6" priority="high">
+        <description>Test resolution order: config → system → path variables</description>
+        <approach>Create path template with all three variable types, verify config variables resolve first (mock bundleConfig with variable containing {date}, verify {date} resolved after config substitution)</approach>
+      </test>
+      <test ac="AC-4.2.7" priority="medium">
+        <description>Test path traversal attack blocked (../../etc/passwd)</description>
+        <approach>Call resolvePath("{bundle-root}/../../etc/passwd"), expect error "Security violation: Path traversal detected"</approach>
+      </test>
+      <test ac="AC-4.2.7" priority="medium">
+        <description>Test paths outside allowed directories rejected</description>
+        <approach>Mock PathContext with bundleRoot = "/allowed/bundle", call resolvePath("/disallowed/path"), expect error "Security violation: Path outside allowed directories"</approach>
+      </test>
+      <test ac="AC-4.2.7" priority="medium">
+        <description>Test undefined config variable error</description>
+        <approach>Call resolvePath("{config_source}:missing_var"), expect error "Config variable not found: missing_var"</approach>
+      </test>
+      <test ac="AC-4.2.8" priority="high">
+        <description>Integration test with real bundle structure and config.yaml</description>
+        <approach>Create temp directory with bundle structure including config.yaml, call loadBundleConfig(), use result in PathContext, resolve complex path with multiple variable types, verify resolved path is valid and points to correct location</approach>
+      </test>
+      <test ac="AC-4.2.5" priority="medium">
+        <description>Test circular variable reference detection</description>
+        <approach>Mock bundleConfig with circular reference (var1: "{config_source}:var2", var2: "{config_source}:var1"), call resolvePath, expect error after max iterations limit</approach>
+      </test>
+      <test ac="AC-4.2.4" priority="high">
+        <description>Test loadBundleConfig handles missing config.yaml gracefully</description>
+        <approach>Call loadBundleConfig with path to non-existent config.yaml, expect function to return empty config object {}, not throw error</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>
