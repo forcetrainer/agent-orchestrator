@@ -1,0 +1,110 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>3</storyId>
+    <title>Implement Critical Actions Processor</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to execute agent critical-actions during initialization</iWant>
+    <soThat>agents can load config files and set up initial context</soThat>
+    <tasks>
+      <task id="1">Create Critical Actions Module (AC: 4.3.1)</task>
+      <task id="2">Parse Critical Actions XML (AC: 4.3.1)</task>
+      <task id="3">File Load Pattern Recognition (AC: 4.3.2)</task>
+      <task id="4">Execute File Loads (AC: 4.3.3, 4.3.5)</task>
+      <task id="5">Inject System Messages (AC: 4.3.4, 4.3.6)</task>
+      <task id="6">Variable Resolution in Instructions (AC: 4.3.6)</task>
+      <task id="7">Error Handling (AC: 4.3.8)</task>
+      <task id="8">Return CriticalContext (AC: 4.3.4, 4.3.7)</task>
+      <task id="9">Unit Testing - Parsing (AC: 4.3.1, 4.3.2)</task>
+      <task id="10">Unit Testing - File Loading (AC: 4.3.3, 4.3.5)</task>
+      <task id="11">Unit Testing - System Messages (AC: 4.3.4, 4.3.6)</task>
+      <task id="12">Integration Testing (AC: 4.3.7, 4.3.8)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.3.1">Parse &lt;critical-actions&gt; section from agent.md XML</criterion>
+    <criterion id="AC-4.3.2">Extract file load instructions: "Load into memory {path} and set variables: var1, var2"</criterion>
+    <criterion id="AC-4.3.3">Execute file loads via read_file function during initialization</criterion>
+    <criterion id="AC-4.3.4">Inject loaded file contents as system messages before user input</criterion>
+    <criterion id="AC-4.3.5">Parse config.yaml files and store variables for resolution</criterion>
+    <criterion id="AC-4.3.6">Execute non-file instructions as system messages (e.g., "Remember user's name is {user_name}")</criterion>
+    <criterion id="AC-4.3.7">All critical actions complete before agent accepts first user message</criterion>
+    <criterion id="AC-4.3.8">Errors in critical actions halt initialization with clear message</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/EPIC4-TECH-SPEC.md" section="Story 4.3 Implementation" snippet="Critical actions processor implementation guide with code examples for processCriticalActions function (lines 407-483)"/>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" section="Section 1: Agent Initialization" snippet="Critical actions phase definition - load minimal required files at agent startup, parse &lt;critical-actions&gt; section, inject into initial context (lines 49-78)"/>
+      <doc path="docs/BUNDLE-SPEC.md" section="Section 2: config.yaml specification" snippet="Bundle configuration file structure with variables for project_name, output_folder, user_name, communication_language"/>
+      <doc path="docs/prd.md" section="FR-2: Agent Loading and Initialization" snippet="Execute agent critical-actions section during initialization functional requirement"/>
+      <doc path="docs/epics.md" section="Story 4.3" snippet="Acceptance criteria and task breakdown for critical actions processor (lines 875-897)"/>
+    </docs>
+    <code>
+      <file path="lib/pathResolver.ts" kind="module" symbol="resolvePath" lines="1-50" reason="Path variable resolution required for resolving {bundle-root}/config.yaml in critical action file load instructions"/>
+      <file path="lib/pathResolver.ts" kind="interface" symbol="PathContext" lines="31-40" reason="Context interface needed for critical actions processor - provides bundleRoot, coreRoot, projectRoot, bundleConfig"/>
+      <file path="lib/agents/parser.ts" kind="module" symbol="parseAgentFile" lines="1-83" reason="Shows existing XML parsing pattern for &lt;agent&gt; tag - similar approach needed for &lt;critical-actions&gt; section"/>
+      <file path="lib/agents/loader.ts" kind="module" symbol="loadAgents" lines="1-153" reason="Agent loading flow - critical actions processor will be called during agent initialization"/>
+      <file path="lib/agents/agenticLoop.ts" kind="module" symbol="executeAgent" reason="Agentic loop entry point that will call processCriticalActions during initialization phase"/>
+      <file path="lib/utils/env.ts" kind="module" symbol="env" reason="Environment configuration utilities for accessing AGENTS_PATH and other env vars"/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="js-yaml" version="^4.1.0" usage="Parse config.yaml files in critical actions"/>
+        <package name="fs/promises" version="built-in" usage="Async file reading for loading critical action files"/>
+        <package name="path" version="built-in" usage="Path operations and normalization"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Critical actions must execute BEFORE the agentic execution loop starts (initialization phase only)</constraint>
+    <constraint>File loads must use path resolution from Story 4.2 (resolvePath function) to resolve {bundle-root}, {core-root} variables</constraint>
+    <constraint>Security validation required: all file paths validated through validatePathSecurity before loading</constraint>
+    <constraint>Errors in critical actions must halt initialization with clear error message - agent should not proceed with incomplete context</constraint>
+    <constraint>System messages must be created for both file loads and non-file instructions</constraint>
+    <constraint>If file is config.yaml, must parse as YAML and store in context.bundleConfig for subsequent variable resolution</constraint>
+    <constraint>Integration with Story 4.1: CriticalContext messages injected into message array before user input</constraint>
+    <constraint>Pattern matching must handle variations: "Load into memory {path}" with or without "and set variables" clause</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="CriticalContext" kind="interface" signature="{ messages: Array&lt;ChatMessage&gt;; config: any }" path="lib/agents/criticalActions.ts" usage="Return type for processCriticalActions - contains system messages and parsed config"/>
+    <interface name="processCriticalActions" kind="function" signature="async function processCriticalActions(agent: Agent, bundleRoot: string): Promise&lt;CriticalContext&gt;" path="lib/agents/criticalActions.ts" usage="Main entry point called by agentic loop during agent initialization"/>
+    <interface name="resolvePath" kind="function" signature="function resolvePath(pathTemplate: string, context: PathContext): string" path="lib/pathResolver.ts" usage="Resolve path variables in file load instructions before reading files"/>
+    <interface name="ChatMessage" kind="type" signature="{ role: 'system' | 'user' | 'assistant' | 'tool'; content: string; tool_call_id?: string }" usage="System message format for injecting critical action results into conversation context"/>
+  </interfaces>
+
+  <tests>
+    <standards>Use Jest testing framework. Unit tests in lib/agents/__tests__/criticalActions.test.ts. Integration tests in lib/agents/__tests__/criticalActions.integration.test.ts. Mock fs/promises for file operations. Test coverage: parsing, file loading, config parsing, system message creation, error handling, variable resolution. Follow existing test patterns from lib/__tests__/pathResolver.test.ts and lib/agents/__tests__/parser.test.ts.</standards>
+    <locations>
+      <location>lib/agents/__tests__/criticalActions.test.ts</location>
+      <location>lib/agents/__tests__/criticalActions.integration.test.ts</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.3.1">Test parsing &lt;critical-actions&gt; section from valid agent.md XML</idea>
+      <idea ac="AC-4.3.1">Test handling missing &lt;critical-actions&gt; section gracefully (return empty messages)</idea>
+      <idea ac="AC-4.3.2">Test regex pattern matching "Load into memory {path} and set variables: var1, var2"</idea>
+      <idea ac="AC-4.3.2">Test extracting file path from load instruction</idea>
+      <idea ac="AC-4.3.2">Test handling variations without "and set variables" clause</idea>
+      <idea ac="AC-4.3.3">Test file load via fs.readFile with path resolution integration</idea>
+      <idea ac="AC-4.3.3">Test file not found error handling</idea>
+      <idea ac="AC-4.3.4">Test system message creation for loaded files with correct format</idea>
+      <idea ac="AC-4.3.5">Test config.yaml parsing and storage in context.bundleConfig</idea>
+      <idea ac="AC-4.3.5">Test updating PathContext.bundleConfig after config load</idea>
+      <idea ac="AC-4.3.6">Test non-file instruction system message creation</idea>
+      <idea ac="AC-4.3.6">Test variable resolution in instruction text ({user_name}, {communication_language})</idea>
+      <idea ac="AC-4.3.7">Integration test: verify critical actions execute before first user message in agentic loop</idea>
+      <idea ac="AC-4.3.8">Test error thrown on file load failure with clear message</idea>
+      <idea ac="AC-4.3.8">Integration test: verify initialization halts on critical action error</idea>
+    </ideas>
+  </tests>
+</story-context>

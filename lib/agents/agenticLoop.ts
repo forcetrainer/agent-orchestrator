@@ -41,28 +41,9 @@ export interface ExecutionResult {
 }
 
 /**
- * Context returned from critical actions processor.
- * Stub interface for Story 4.3 integration.
+ * Import critical actions processor from Story 4.3
  */
-interface CriticalContext {
-  messages: ChatCompletionMessageParam[];
-}
-
-/**
- * Processes critical actions from agent definition.
- *
- * STUB: This is a placeholder for Story 4.3 - Critical Actions Processor
- * TODO: Replace with actual implementation when Story 4.3 is complete
- *
- * @param agent - Agent metadata
- * @param bundleRoot - Root path for bundle resolution
- * @returns Critical context messages to inject
- */
-async function processCriticalActions(agent: Agent, bundleRoot: string): Promise<CriticalContext> {
-  // Stub implementation - returns empty context
-  console.log('[agenticLoop] processCriticalActions stub called (Story 4.3 not implemented)');
-  return { messages: [] };
-}
+import { processCriticalActions } from './criticalActions';
 
 /**
  * Builds system prompt with tool usage instructions.
