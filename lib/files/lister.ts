@@ -53,8 +53,14 @@ export async function listFiles(
         } catch (bmadError: any) {
           if (bmadError.code === 'ENOENT') {
             // Try output folder as last fallback
-            basePath = validatePath(relativePath, env.OUTPUT_PATH);
-            location = 'output';
+            try {
+              basePath = validatePath(relativePath, env.OUTPUT_PATH);
+              await stat(basePath);
+              location = 'output';
+            } catch (outputError: any) {
+              // None of the paths exist - throw error with all locations tried
+              throw new Error(`Directory not found in agents, bmad, or output: ${relativePath}`);
+            }
           } else {
             throw bmadError;
           }

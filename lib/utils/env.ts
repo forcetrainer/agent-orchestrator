@@ -7,6 +7,8 @@
  * - Clear error messages when configuration is invalid
  */
 
+import { resolve } from 'path';
+
 /**
  * Validates that all required environment variables are present.
  * Throws an Error with a clear message listing missing variables if validation fails.
@@ -49,18 +51,20 @@ export const env = {
 
   /**
    * Path to directory containing agent definition files
-   * Default: ./agents
+   * Default: ./agents (resolved to absolute path based on PROJECT_ROOT)
    */
   get AGENTS_PATH(): string {
-    return process.env.AGENTS_PATH || './agents';
+    const relativePath = process.env.AGENTS_PATH || './agents';
+    return resolve(this.PROJECT_ROOT, relativePath);
   },
 
   /**
    * Path to directory for generated outputs
-   * Default: ./output
+   * Default: ./output (resolved to absolute path based on PROJECT_ROOT)
    */
   get OUTPUT_PATH(): string {
-    return process.env.OUTPUT_PATH || './output';
+    const relativePath = process.env.OUTPUT_PATH || './output';
+    return resolve(this.PROJECT_ROOT, relativePath);
   },
 
   /**
@@ -98,9 +102,10 @@ export const env = {
 
   /**
    * Path to BMAD framework directory (core, bmm, workflows, etc.)
-   * Default: ./bmad
+   * Default: ./bmad (resolved to absolute path based on PROJECT_ROOT)
    */
   get BMAD_PATH(): string {
-    return process.env.BMAD_PATH || './bmad';
+    const relativePath = process.env.BMAD_PATH || './bmad';
+    return resolve(this.PROJECT_ROOT, relativePath);
   },
 } as const;

@@ -1,0 +1,46 @@
+# Agent Bundle Manifest
+# BMAD Custom Bundle - Requirements Workflow
+type: bundle
+name: requirements-workflow
+version: 1.0.0
+description: "ServiceNow requirements gathering workflow with collaborative agents (Alex, Casey, Pixel)"
+author: "Bryan"
+created: 2025-10-05
+
+# Multi-agent configuration
+agents:
+  - id: alex-facilitator
+    name: Alex
+    title: Requirements Facilitator
+    file: agents/alex-facilitator.md
+    entry_point: true
+    description: "Friendly facilitator who gathers initial requirements from users"
+
+  - id: casey-analyst
+    name: Casey
+    title: Requirements Analyst
+    file: agents/casey-analyst.md
+    entry_point: true
+    description: "Guides BA/Developers through comprehensive requirements gathering sessions"
+
+  - id: pixel-story-developer
+    name: Pixel
+    title: Story Developer
+    file: agents/pixel-story-developer.md
+    entry_point: true
+    description: "Transforms detailed requirements into clear, actionable user stories"
+
+# Bundle resources
+resources:
+  workflows: workflows/
+  templates: templates/
+  config: config.yaml
+
+# Core BMAD dependencies (read-only from server)
+core_dependencies:
+  - bmad/core/tasks/workflow.md
+  - bmad/core/tasks/adv-elicit.md
+
+# Path resolution
+# {bundle-root} resolves to: bmad/custom/bundles/requirements-workflow/
+# {core-root} resolves to: bmad/core/

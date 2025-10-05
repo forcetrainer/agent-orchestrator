@@ -27,15 +27,22 @@ import { env } from '@/lib/utils/env';
 export async function readFileContent(relativePath: string): Promise<string> {
   const startTime = performance.now();
 
+  console.log(`[read_file] DEBUG: Attempting to read: ${relativePath}`);
+  console.log(`[read_file] DEBUG: AGENTS_PATH = ${env.AGENTS_PATH}`);
+  console.log(`[read_file] DEBUG: BMAD_PATH = ${env.BMAD_PATH}`);
+  console.log(`[read_file] DEBUG: OUTPUT_PATH = ${env.OUTPUT_PATH}`);
+
   try {
     // Try agents folder first (read-only)
     const agentsPath = validatePath(relativePath, env.AGENTS_PATH);
+    console.log(`[read_file] DEBUG: Trying agents path: ${agentsPath}`);
     try {
       const content = await readFile(agentsPath, 'utf-8');
       const duration = performance.now() - startTime;
       console.log(`[read_file] Read from agents: ${relativePath} (${duration.toFixed(2)}ms)`);
       return content;
     } catch (error: any) {
+      console.log(`[read_file] DEBUG: Agents failed with code: ${error.code}`);
       // Only catch ENOENT (file not found), re-throw other errors
       if (error.code !== 'ENOENT') {
         throw error;
@@ -44,12 +51,14 @@ export async function readFileContent(relativePath: string): Promise<string> {
 
     // Try BMAD folder second (BMAD framework files)
     const bmadPath = validatePath(relativePath, env.BMAD_PATH);
+    console.log(`[read_file] DEBUG: Trying bmad path: ${bmadPath}`);
     try {
       const content = await readFile(bmadPath, 'utf-8');
       const duration = performance.now() - startTime;
       console.log(`[read_file] Read from bmad: ${relativePath} (${duration.toFixed(2)}ms)`);
       return content;
     } catch (error: any) {
+      console.log(`[read_file] DEBUG: BMAD failed with code: ${error.code}`);
       // Only catch ENOENT (file not found), re-throw other errors
       if (error.code !== 'ENOENT') {
         throw error;
@@ -58,6 +67,7 @@ export async function readFileContent(relativePath: string): Promise<string> {
 
     // Try output folder as fallback
     const outputPath = validatePath(relativePath, env.OUTPUT_PATH);
+    console.log(`[read_file] DEBUG: Trying output path: ${outputPath}`);
     const content = await readFile(outputPath, 'utf-8');
     const duration = performance.now() - startTime;
     console.log(`[read_file] Read from output: ${relativePath} (${duration.toFixed(2)}ms)`);

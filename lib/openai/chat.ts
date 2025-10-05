@@ -90,6 +90,12 @@ CRITICAL EFFICIENCY RULE:
 - DO NOT re-load files you have already read in previous messages unless the file has been modified
 - Check the conversation history before calling read_file - if you already loaded the file, use the cached content from your context
 
+CRITICAL USER COMMUNICATION RULE:
+- When you write content to a file using write_file, ALWAYS display what you wrote to the user
+- The write_file function returns a contentPreview field - show this to the user so they can see what was saved
+- Users cannot see function calls - you must explicitly show them the content in your response
+- For workflow template-output sections: display the generated content with a separator line, then save it
+
 Use these tools to help users accomplish their tasks effectively.
 When you see {project-root} or {project_root} in workflow paths or config files, replace it with: ${env.PROJECT_ROOT}
 When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_ROOT}/`,
@@ -154,7 +160,17 @@ When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_
               case 'write_file':
                 console.log(`[write_file] 💾 Writing to: ${functionArgs.path}`);
                 await writeFileContent(functionArgs.path, functionArgs.content);
-                result = { success: true, path: functionArgs.path };
+                // Return success confirmation with content summary so LLM can inform user what was written
+                const contentPreview = functionArgs.content.length > 500
+                  ? functionArgs.content.substring(0, 500) + '...\n\n[Content truncated - full content saved to file]'
+                  : functionArgs.content;
+                result = {
+                  success: true,
+                  path: functionArgs.path,
+                  bytesWritten: functionArgs.content.length,
+                  message: `Successfully wrote ${functionArgs.content.length} bytes to ${functionArgs.path}`,
+                  contentPreview: contentPreview
+                };
                 console.log(`[write_file] ✅ Written ${functionArgs.content.length} bytes to: ${functionArgs.path}`);
                 break;
 

@@ -1,0 +1,27 @@
+# ServiceNow Story Editing Workflow Configuration
+name: "edit-stories"
+description: "Make intelligent edits and adjustments to existing user stories. Pixel guides you through changes while detecting conflicts and ensuring story consistency."
+author: "Pixel the Story Developer"
+
+# Critical variables load from config_source
+config_source: "{bundle-root}/config.yaml"
+output_folder: "{config_source}:output_folder"
+sn_projects_folder: "{config_source}:sn_projects_folder"
+user_name: "{config_source}:user_name"
+communication_language: "{config_source}:communication_language"
+project_name: "{config_source}:project_name"
+date: system-generated
+
+# Module path and component files
+installed_path: "{bundle-root}/workflows/edit-stories"
+template: "{bundle-root}/templates/story-template.md"
+instructions: "{installed_path}/instructions.md"
+
+# Input story file (user provides path)
+story_file_path: ""
+epic_name: ""
+story_number: ""
+
+# Output configuration (overwrites existing or creates new version)
+default_output_file: "{story_file_path}"
+backup_file: "{story_file_path}.backup-{{date}}"
