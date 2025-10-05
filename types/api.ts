@@ -41,7 +41,9 @@ export interface ChatResponse {
 }
 
 /**
- * Agent model for GET /api/agents (simplified for API responses)
+ * Agent model for GET /api/agents
+ * Updated for Story 4.6: Bundle-based agent discovery
+ * Includes bundle context (bundleName, bundlePath) for proper initialization
  */
 export interface AgentSummary {
   id: string;
@@ -49,7 +51,9 @@ export interface AgentSummary {
   title: string;
   description?: string;
   icon?: string;
-  path: string;
+  bundleName: string;
+  bundlePath: string;
+  filePath: string;
 }
 
 /**

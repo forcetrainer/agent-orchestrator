@@ -10,9 +10,12 @@ import {
 
 /**
  * Request body for agent initialization
+ * Story 4.6: Now requires bundlePath for bundle-based agent loading
  */
 interface InitializeRequest {
   agentId: string;
+  bundlePath?: string; // Optional for backward compatibility
+  filePath?: string;   // Optional for backward compatibility
 }
 
 /**

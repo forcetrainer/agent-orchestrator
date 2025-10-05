@@ -19,8 +19,8 @@ import { AgentSummary } from '@/types/api';
 interface AgentSelectorProps {
   /** Currently selected agent ID */
   selectedAgentId?: string;
-  /** Callback when agent selection changes */
-  onAgentSelect: (agentId: string) => void;
+  /** Callback when agent selection changes - Story 4.6: Now passes full agent data with bundlePath */
+  onAgentSelect: (agent: AgentSummary) => void;
   /** Callback when new conversation button is clicked - Story 3.7 */
   onNewConversation?: () => void;
 }
@@ -66,7 +66,11 @@ export function AgentSelector({
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const agentId = event.target.value;
     if (agentId) {
-      onAgentSelect(agentId);
+      // Story 4.6 Task 2.5: Find and pass full agent object with bundlePath
+      const selectedAgent = agents.find((agent) => agent.id === agentId);
+      if (selectedAgent) {
+        onAgentSelect(selectedAgent);
+      }
     }
   };
 
@@ -168,7 +172,7 @@ export function AgentSelector({
           {agents.map((agent) => (
             <option key={agent.id} value={agent.id}>
               {agent.icon ? `${agent.icon} ` : ''}
-              {agent.name} - {agent.title}
+              {agent.name} - {agent.title} ({agent.bundleName})
             </option>
           ))}
         </select>

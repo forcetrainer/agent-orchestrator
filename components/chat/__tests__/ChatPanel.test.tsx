@@ -20,12 +20,20 @@ beforeAll(() => {
 });
 
 // Mock fetch for AgentSelector
+// Story 4.6: Updated to include bundle metadata fields
 global.fetch = jest.fn(() =>
   Promise.resolve({
     ok: true,
     json: () => Promise.resolve({
       success: true,
-      data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+      data: [{
+        id: 'test-agent',
+        name: 'Test Agent',
+        title: 'Test',
+        bundleName: 'test-bundle',
+        bundlePath: 'bundles/test-bundle',
+        filePath: 'bundles/test-bundle/agents/test-agent.md',
+      }],
     }),
   })
 ) as jest.Mock;
@@ -96,7 +104,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -163,7 +178,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -225,7 +247,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -284,7 +313,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -351,7 +387,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -432,7 +475,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -485,7 +535,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -578,7 +635,23 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
+            }),
+          });
+        }
+        if (url === '/api/agent/initialize') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: { greeting: 'Hello!' },
             }),
           });
         }
@@ -626,7 +699,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -675,7 +755,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -724,7 +811,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }
@@ -775,7 +869,23 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
+            }),
+          });
+        }
+        if (url === '/api/agent/initialize') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: { greeting: 'Hello!' },
             }),
           });
         }
@@ -815,6 +925,11 @@ describe('ChatPanel', () => {
         expect(option).toBeInTheDocument();
       });
       await user.selectOptions(agentSelect, 'test-agent');
+
+      // Wait for initialization to complete
+      await waitFor(() => {
+        expect(screen.queryByText('Hello!')).toBeInTheDocument();
+      });
 
       // Send first message (will fail)
       const textarea = screen.getByPlaceholderText(/type your message/i);
@@ -863,7 +978,23 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
+            }),
+          });
+        }
+        if (url === '/api/agent/initialize') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: { greeting: 'Hello!' },
             }),
           });
         }
@@ -937,7 +1068,23 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
+            }),
+          });
+        }
+        if (url === '/api/agent/initialize') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: { greeting: 'Hello!' },
             }),
           });
         }
@@ -956,6 +1103,11 @@ describe('ChatPanel', () => {
         expect(option).toBeInTheDocument();
       });
       await user.selectOptions(agentSelect, 'test-agent');
+
+      // Wait for initialization to complete
+      await waitFor(() => {
+        expect(screen.queryByText('Hello!')).toBeInTheDocument();
+      });
 
       // Send message
       const textarea = screen.getByPlaceholderText(/type your message/i);
@@ -987,7 +1139,14 @@ describe('ChatPanel', () => {
             ok: true,
             json: () => Promise.resolve({
               success: true,
-              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+              data: [{
+                id: 'test-agent',
+                name: 'Test Agent',
+                title: 'Test',
+                bundleName: 'test-bundle',
+                bundlePath: 'bundles/test-bundle',
+                filePath: 'bundles/test-bundle/agents/test-agent.md',
+              }],
             }),
           });
         }

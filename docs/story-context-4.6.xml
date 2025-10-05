@@ -1,0 +1,224 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>6</storyId>
+    <title>Refactor Agent Discovery for Bundle Structure</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to update agent discovery to load from bundle manifests</iWant>
+    <soThat>bundled agents display correctly in agent selector</soThat>
+    <tasks>
+      - Task 1: Update /api/agents Endpoint (AC: 4.6.1, 4.6.7)
+      - Task 2: Refactor Agent Selector Component (AC: 4.6.2, 4.6.3, 4.6.4, 4.6.6)
+      - Task 3: Error Handling and Validation (AC: 4.6.6, 4.6.7)
+      - Task 4: Integration Testing (All ACs)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.6.1">Frontend calls /api/agents and receives bundled agent list</criterion>
+    <criterion id="AC-4.6.2">Agent selector dropdown displays agent name and title from bundle.yaml</criterion>
+    <criterion id="AC-4.6.3">Optional: Display bundle name as subtitle (e.g., "Alex - Requirements Facilitator")</criterion>
+    <criterion id="AC-4.6.4">Selecting agent loads from bundle structure (bundle.yaml file path)</criterion>
+    <criterion id="AC-4.6.5">Agent metadata (icon, description) available for UI enhancement (optional for MVP)</criterion>
+    <criterion id="AC-4.6.6">Empty bundles folder shows "No agents available" message</criterion>
+    <criterion id="AC-4.6.7">Malformed bundles logged but don't crash agent selector</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic 4 Story 4.6: Refactor Agent Discovery for Bundle Structure</title>
+        <section>Epic 4: Agent Execution Architecture & Bundle System</section>
+        <snippet>Story 4.6 refactors Epic 3 Story 3.4 agent discovery to use bundle manifests. Frontend calls /api/agents to receive bundled agent list with metadata from bundle.yaml. Agent selector displays name, title, optional bundle name subtitle. Empty bundles show "No agents available" message. Malformed bundles logged but filtered out gracefully.</snippet>
+      </doc>
+      <doc>
+        <path>docs/EPIC4-TECH-SPEC.md</path>
+        <title>Story 4.6 Implementation - Refactor Agent Discovery for Bundle Structure</title>
+        <section>4.2 API Endpoints</section>
+        <snippet>GET /api/agents endpoint returns list of available agents from bundles using discoverBundles(). Response format includes {id, name, title, description, icon, bundleName, bundlePath, filePath}. Uses centralized error handling with handleApiError.</snippet>
+      </doc>
+      <doc>
+        <path>docs/BUNDLE-SPEC.md</path>
+        <title>Bundle Manifest Structure and Agent Discovery</title>
+        <section>Bundle Specification</section>
+        <snippet>Bundle manifests (bundle.yaml) define agent metadata including id, name, title, description, icon, and entry_point flag. Multi-agent bundles have agents array; standalone bundles have single agent object. Discovery scans bundles/*/bundle.yaml at depth 1.</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator PRD - Bundle Architecture</title>
+        <section>Architecture Learning and Bundle Structure</section>
+        <snippet>Bundle architecture emerged from Epic 2/3 validation. BUNDLE-SPEC.md defines standardized structure for agent organization. Epic 4 implements bundle-aware discovery replacing Epic 3 XML-based approach.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-4.4.md</path>
+        <title>Story 4.4: Bundle Structure Discovery and Loading</title>
+        <section>Prerequisite Story - Bundle Scanner Implementation</section>
+        <snippet>Story 4.4 implemented discoverBundles() function in lib/agents/bundleScanner.ts. Scans bundle.yaml manifests, validates structure, extracts agent metadata with bundle context. Story 4.6 consumes this functionality via API endpoint and frontend.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-3.4.md</path>
+        <title>Story 3.4: Agent Discovery and Selection Dropdown (Original Implementation)</title>
+        <section>Deprecated Implementation</section>
+        <snippet>Original XML-based agent discovery scanned agents/*/*.md files for &lt;agent&gt; tags. Story 4.6 replaces this with bundle manifest-based discovery. Frontend component AgentSelector.tsx exists and needs refactoring for bundle metadata.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>lib/agents/bundleScanner.ts</path>
+        <kind>module</kind>
+        <symbol>discoverBundles</symbol>
+        <lines>126-204</lines>
+        <reason>Core function that discovers agents from bundle manifests. Story 4.6 Task 1 imports and uses this in /api/agents endpoint. Returns AgentMetadata[] with bundle context.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/bundleScanner.ts</path>
+        <kind>interface</kind>
+        <symbol>AgentMetadata</symbol>
+        <lines>22-31</lines>
+        <reason>Return type for bundle discovery. Includes id, name, title, description, icon, bundleName, bundlePath, filePath. API endpoint returns this structure to frontend.</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/agents/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>GET</symbol>
+        <lines>18-39</lines>
+        <reason>Existing endpoint already uses discoverBundles from Story 4.4. Story 4.6 Task 1 validates this implementation and ensures proper error handling and response format.</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/AgentSelector.tsx</path>
+        <kind>component</kind>
+        <symbol>AgentSelector</symbol>
+        <lines>28-206</lines>
+        <reason>Existing frontend component from Story 3.4. Story 4.6 Task 2 refactors this to display bundle metadata (bundleName, bundlePath). Currently uses AgentSummary type - needs update to use AgentMetadata.</reason>
+      </artifact>
+      <artifact>
+        <path>types/api.ts</path>
+        <kind>interface</kind>
+        <symbol>AgentSummary</symbol>
+        <lines>46-53</lines>
+        <reason>Current type used by AgentSelector. Missing bundle context fields (bundleName, bundlePath). Story 4.6 needs to either update this type or use AgentMetadata from bundleScanner.</reason>
+      </artifact>
+      <artifact>
+        <path>types/api.ts</path>
+        <kind>interface</kind>
+        <symbol>ApiResponse</symbol>
+        <lines>8-13</lines>
+        <reason>Standard API response wrapper used by /api/agents endpoint. Ensures consistent success/error handling for bundle discovery responses.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/errors.ts</path>
+        <kind>module</kind>
+        <symbol>handleApiError</symbol>
+        <lines>N/A</lines>
+        <reason>Centralized error handling used by /api/agents. Ensures malformed bundles return proper error responses without crashing (AC-4.6.7).</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">Next.js framework for API routes and React components</package>
+        <package name="react" version="^18">React for AgentSelector component</package>
+        <package name="js-yaml" version="^4.1.0">YAML parsing for bundle.yaml manifests (used by bundleScanner)</package>
+        <package name="typescript" version="^5">TypeScript for type safety</package>
+      </node>
+      <testing>
+        <package name="jest" version="^30.2.0">Testing framework</package>
+        <package name="@testing-library/react" version="^16.3.0">React component testing</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">DOM assertions</package>
+        <package name="@testing-library/user-event" version="^14.6.1">User interaction simulation</package>
+        <package name="ts-jest" version="^29.4.4">TypeScript support for Jest</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Use existing discoverBundles() from Story 4.4 - do not reimplement bundle scanning logic</constraint>
+    <constraint>Maintain backward compatibility with Epic 3 UI layout - AgentSelector should fit existing ChatPanel structure</constraint>
+    <constraint>Type safety: Reconcile AgentSummary vs AgentMetadata types - either update AgentSummary or use AgentMetadata consistently</constraint>
+    <constraint>Error handling: Malformed bundles must not crash UI (AC-4.6.7) - use try-catch and filter invalid bundles</constraint>
+    <constraint>Empty state: Show "No agents available" when bundles directory empty or no entry_point agents (AC-4.6.6)</constraint>
+    <constraint>Bundle context: Selected agent must pass bundlePath to chat API for proper initialization (AC-4.6.4)</constraint>
+    <constraint>Optional enhancement: Bundle name subtitle is optional for MVP (AC-4.6.3) - implement if time permits</constraint>
+    <constraint>Testing: Integration tests must verify end-to-end flow from bundle discovery → API → UI display</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>discoverBundles</name>
+      <kind>function</kind>
+      <signature>async function discoverBundles(bundlesRoot: string): Promise&lt;AgentMetadata[]&gt;</signature>
+      <path>lib/agents/bundleScanner.ts:126-204</path>
+      <usage>Task 1: /api/agents endpoint calls this with BUNDLES_ROOT env var or default 'bmad/custom/bundles'</usage>
+    </interface>
+    <interface>
+      <name>AgentMetadata</name>
+      <kind>type</kind>
+      <signature>interface AgentMetadata { id: string; name: string; title: string; description?: string; icon?: string; bundleName: string; bundlePath: string; filePath: string; }</signature>
+      <path>lib/agents/bundleScanner.ts:22-31</path>
+      <usage>Return type from /api/agents and data structure for AgentSelector component</usage>
+    </interface>
+    <interface>
+      <name>ApiResponse</name>
+      <kind>type</kind>
+      <signature>interface ApiResponse&lt;T&gt; { success: boolean; data?: T; error?: string; code?: number; }</signature>
+      <path>types/api.ts:8-13</path>
+      <usage>/api/agents returns ApiResponse&lt;AgentMetadata[]&gt; for consistent error handling</usage>
+    </interface>
+    <interface>
+      <name>AgentSelector props</name>
+      <kind>type</kind>
+      <signature>interface AgentSelectorProps { selectedAgentId?: string; onAgentSelect: (agentId: string) =&gt; void; onNewConversation?: () =&gt; void; }</signature>
+      <path>components/chat/AgentSelector.tsx:19-26</path>
+      <usage>Task 2: Component props remain unchanged, but internal implementation updates to display bundle metadata</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest 30.x with ts-jest for TypeScript support. Component tests use @testing-library/react with jsdom environment. Integration tests verify API → UI flow. Test files located in __tests__ directories adjacent to source files. Pattern: *.test.ts for unit tests, *.integration.test.ts for integration tests.
+    </standards>
+    <locations>
+      - lib/agents/__tests__/bundleScanner.test.ts (existing - validates discoverBundles)
+      - lib/agents/__tests__/bundleScanner.integration.test.ts (existing - end-to-end bundle discovery)
+      - app/api/agents/__tests__/route.test.ts (may need update for bundle metadata)
+      - components/chat/__tests__/AgentSelector.test.tsx (existing - needs update for bundle display)
+      - __tests__/integration/api.integration.test.ts (may add tests for /api/agents → AgentSelector flow)
+    </locations>
+    <ideas>
+      <test criteriaId="AC-4.6.1">
+        - Unit: Mock discoverBundles to return sample AgentMetadata[], verify /api/agents returns correct ApiResponse structure
+        - Integration: Call /api/agents with real bundle directory, assert response contains expected agent metadata
+      </test>
+      <test criteriaId="AC-4.6.2">
+        - Component: Render AgentSelector with mocked agents data, verify dropdown shows "name - title" format
+        - Visual: Test that agent.icon displays correctly if present (e.g., "📝 Alex - Requirements Facilitator")
+      </test>
+      <test criteriaId="AC-4.6.3">
+        - Component (optional): Test bundle name subtitle rendering if implemented (e.g., verify bundleName appears below agent name)
+      </test>
+      <test criteriaId="AC-4.6.4">
+        - Component: Simulate agent selection, verify onAgentSelect callback receives correct agentId
+        - Integration: Test selected agent's bundlePath is stored and passed to chat API (mock chat initialization)
+      </test>
+      <test criteriaId="AC-4.6.5">
+        - Component: Verify icon and description fields are accessible in rendered output (data-testid or aria attributes)
+      </test>
+      <test criteriaId="AC-4.6.6">
+        - Component: Mock empty agents array [], verify "No agents available" message displays
+        - Integration: Test with empty bundles directory, verify UI shows empty state
+      </test>
+      <test criteriaId="AC-4.6.7">
+        - API: Mock discoverBundles to throw error, verify /api/agents returns error response without crash
+        - Component: Mock fetch error, verify AgentSelector shows error message UI
+        - Integration: Create malformed bundle.yaml, verify it's logged but other bundles still load
+      </test>
+    </ideas>
+  </tests>
+</story-context>

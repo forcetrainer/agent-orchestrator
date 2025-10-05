@@ -7,6 +7,7 @@ import { InputField } from './InputField';
 import { AgentSelector } from './AgentSelector';
 import { Message } from '@/lib/types';
 import { mapErrorToUserMessage } from '@/lib/errorMapping';
+import { AgentSummary } from '@/types/api';
 
 /**
  * ChatPanel Component
@@ -24,7 +25,9 @@ import { mapErrorToUserMessage } from '@/lib/errorMapping';
  */
 export function ChatPanel() {
   // Agent selection state - Story 3.4 Task 4.2
+  // Story 4.6: Now stores full agent object with bundlePath
   const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
+  const [selectedAgent, setSelectedAgent] = useState<AgentSummary | undefined>(undefined);
 
   // Story 3.5 Task 2.1: Add messages state array
   // AC-5.4: User message immediately appears in chat history
@@ -42,11 +45,13 @@ export function ChatPanel() {
 
   // Handler for agent selection - Story 3.4 Task 4.3
   // Story 3.10 Task 2: Integrate Initialization into Chat Flow
+  // Story 4.6 Task 2.6: Now receives full agent object with bundlePath
   // AC-10.4: Agent greeting/welcome message displays automatically before user input
   // AC-10.6: Initialization completes before user can send first message
   // AC-10.7: Loading indicator shows during initialization process
-  const handleAgentSelect = async (agentId: string) => {
-    setSelectedAgentId(agentId);
+  const handleAgentSelect = async (agent: AgentSummary) => {
+    setSelectedAgentId(agent.id);
+    setSelectedAgent(agent);
 
     // Task 2.5: Clear any previous conversation when new agent selected
     setMessages([]);
@@ -55,14 +60,19 @@ export function ChatPanel() {
     // Task 2.2: Show loading state during initialization (AC-10.7)
     setIsLoading(true);
 
-    console.log('[ChatPanel] Agent selected, initializing:', agentId);
+    console.log('[ChatPanel] Agent selected, initializing:', agent.id);
 
     try {
       // Task 2.1: Call initialization API
+      // Story 4.6 Task 2.6: Pass bundlePath and filePath for bundle-based loading
       const response = await fetch('/api/agent/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ agentId }),
+        body: JSON.stringify({
+          agentId: agent.id,
+          bundlePath: agent.bundlePath,
+          filePath: agent.filePath,
+        }),
       });
 
       if (!response.ok) {
