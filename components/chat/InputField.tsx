@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, KeyboardEvent, FormEvent } from 'react';
+import { useState, KeyboardEvent, FormEvent, forwardRef } from 'react';
 
 /**
  * InputField Component
@@ -25,9 +25,10 @@ interface InputFieldProps {
 
 const MAX_MESSAGE_LENGTH = 10000; // Character limit per Dev Notes Story 3.5
 
-export function InputField({ onSend, disabled = false }: InputFieldProps) {
-  const [value, setValue] = useState('');
-  const [showLengthWarning, setShowLengthWarning] = useState(false);
+export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
+  function InputField({ onSend, disabled = false }, ref) {
+    const [value, setValue] = useState('');
+    const [showLengthWarning, setShowLengthWarning] = useState(false);
 
   // Subtask 1.6: Validate non-empty message before submission (trim whitespace)
   const handleSubmit = () => {
@@ -82,6 +83,7 @@ export function InputField({ onSend, disabled = false }: InputFieldProps) {
           {/* Subtask 1.7: Accept multiline input with proper textarea styling */}
           {/* AC-5.7: Long messages are accepted (multi-line support) */}
           <textarea
+            ref={ref}
             className={`flex-1 resize-none rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-50 ${
               isOverLimit
                 ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
@@ -135,4 +137,5 @@ export function InputField({ onSend, disabled = false }: InputFieldProps) {
       </div>
     </div>
   );
-}
+  }
+);

@@ -21,11 +21,14 @@ interface AgentSelectorProps {
   selectedAgentId?: string;
   /** Callback when agent selection changes */
   onAgentSelect: (agentId: string) => void;
+  /** Callback when new conversation button is clicked - Story 3.7 */
+  onNewConversation?: () => void;
 }
 
 export function AgentSelector({
   selectedAgentId,
   onAgentSelect,
+  onNewConversation,
 }: AgentSelectorProps) {
   const [agents, setAgents] = useState<AgentSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +88,31 @@ export function AgentSelector({
           >
             <option>Loading agents...</option>
           </select>
+          {onNewConversation && (
+            <button
+              onClick={onNewConversation}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+              aria-label="Start a new conversation"
+              title="Start a new conversation"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              New Conversation
+            </button>
+          )}
         </div>
       </div>
     );
@@ -144,6 +172,34 @@ export function AgentSelector({
             </option>
           ))}
         </select>
+        {/* Story 3.7 Task 1.1-1.6: New Conversation button */}
+        {/* AC-7.1: "New Conversation" button visible in UI */}
+        {/* AC-7.6: Button is clearly labeled and easy to find */}
+        {onNewConversation && (
+          <button
+            onClick={onNewConversation}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            aria-label="Start a new conversation"
+            title="Start a new conversation"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            New Conversation
+          </button>
+        )}
       </div>
     </div>
   );

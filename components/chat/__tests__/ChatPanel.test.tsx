@@ -1,12 +1,13 @@
 /**
  * ChatPanel Component Tests
- * Story 3.1, Story 3.2, Story 3.5, Story 3.6 - Updated for loading indicator
+ * Story 3.1, Story 3.2, Story 3.5, Story 3.6, Story 3.7
  *
  * Tests layout, state management, and component integration
  * AC-1.1 through AC-1.4: Layout tests
  * AC-2.1 through AC-2.4: Message state management
  * AC-5.1 through AC-5.8: Message send functionality (Story 3.5)
  * AC-6.1 through AC-6.6: Loading indicator functionality (Story 3.6)
+ * AC-7.1 through AC-7.6: New Conversation / Reset functionality (Story 3.7)
  */
 
 import { render, screen, waitFor } from '@testing-library/react';
@@ -331,6 +332,233 @@ describe('ChatPanel', () => {
 
       // Loading indicator should not be present
       expect(screen.queryByText(/Agent is thinking/i)).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * Story 3.7 - Task 5: Unit tests for reset functionality
+   * AC-7.1 through AC-7.6: New Conversation / Reset functionality
+   */
+  describe('New Conversation / Reset functionality', () => {
+    // Subtask 5.1: Test handleNewConversation clears messages array
+    // AC-7.2: Clicking button clears chat history
+    it('clears messages when New Conversation button is clicked', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: {
+                message: {
+                  id: 'msg-1',
+                  content: 'Response',
+                  timestamp: new Date().toISOString(),
+                },
+                conversationId: 'conv-1',
+              },
+            }),
+          });
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Wait for agents and select one
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send a message to create conversation history
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // Wait for response to appear
+      await waitFor(() => {
+        expect(screen.getByText('Response')).toBeInTheDocument();
+      });
+
+      // Click New Conversation button
+      const newConvButton = screen.getByRole('button', { name: /start a new conversation/i });
+      await user.click(newConvButton);
+
+      // Messages should be cleared (back to centered layout)
+      await waitFor(() => {
+        expect(screen.queryByText('Response')).not.toBeInTheDocument();
+        expect(screen.queryByText('Hello')).not.toBeInTheDocument();
+      });
+    });
+
+    // AC-7.1, AC-7.6: Button is visible and clearly labeled
+    it('renders New Conversation button with clear label', async () => {
+      render(<ChatPanel />);
+
+      // Wait for agents to load
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+
+      // Button should be visible
+      const button = screen.getByRole('button', { name: /start a new conversation/i });
+      expect(button).toBeInTheDocument();
+      expect(button).toHaveTextContent(/new conversation/i);
+    });
+
+    // Subtask 5.4: Test isLoading is reset to false
+    it('resets loading state when New Conversation is clicked during loading', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Simulate slow response (never resolves for this test)
+          return new Promise(() => {});
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Wait for agents and select one
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message to trigger loading state
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Test');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // Verify loading indicator appears
+      await waitFor(() => {
+        expect(screen.getByText(/Agent is thinking/i)).toBeInTheDocument();
+      });
+
+      // Click New Conversation to reset
+      const newConvButton = screen.getByRole('button', { name: /start a new conversation/i });
+      await user.click(newConvButton);
+
+      // Loading indicator should disappear
+      await waitFor(() => {
+        expect(screen.queryByText(/Agent is thinking/i)).not.toBeInTheDocument();
+      });
+    });
+
+    // Subtask 5.5: Test input focus is triggered
+    // AC-7.4: Input field remains focused and ready for new message
+    it('focuses input field after reset', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: {
+                message: {
+                  id: 'msg-1',
+                  content: 'Response',
+                  timestamp: new Date().toISOString(),
+                },
+              },
+            }),
+          });
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Wait for agents and select one
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send a message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // Wait for response
+      await waitFor(() => {
+        expect(screen.getByText('Response')).toBeInTheDocument();
+      });
+
+      // Click New Conversation
+      const newConvButton = screen.getByRole('button', { name: /start a new conversation/i });
+      await user.click(newConvButton);
+
+      // Input should be focused (check active element)
+      await waitFor(() => {
+        const textareaAfterReset = screen.getByPlaceholderText(/type your message/i);
+        expect(document.activeElement).toBe(textareaAfterReset);
+      });
+    });
+
+    // AC-7.6: Button is easy to find (accessibility)
+    it('New Conversation button is keyboard accessible', async () => {
+      const user = userEvent.setup();
+
+      render(<ChatPanel />);
+
+      // Wait for agents to load
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+
+      // Button should be accessible via keyboard (focusable)
+      const button = screen.getByRole('button', { name: /start a new conversation/i });
+      button.focus();
+      expect(document.activeElement).toBe(button);
+
+      // Can be activated with keyboard
+      await user.keyboard('{Enter}');
+      // Should execute (no errors thrown)
     });
   });
 });

@@ -1,0 +1,183 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>7</storyId>
+    <title>New Conversation / Reset Functionality</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>to start a new conversation with the same agent</iWant>
+    <soThat>I can test different scenarios or recover from errors</soThat>
+    <tasks>
+      - Task 1: Add "New Conversation" button to UI (AC: 7.1, 7.6)
+      - Task 2: Implement conversation reset functionality (AC: 7.2, 7.3)
+      - Task 3: Auto-focus input field after reset (AC: 7.4)
+      - Task 4: (Optional) Add confirmation dialog for long conversations (AC: 7.5)
+      - Task 5: Unit tests for reset functionality (Testing Strategy)
+      - Task 6: Integration tests for new conversation flow (Testing Strategy)
+      - Task 7: Manual validation and UX testing (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-7.1: "New Conversation" button visible in UI
+    AC-7.2: Clicking button clears chat history
+    AC-7.3: Agent context resets (doesn't remember previous messages)
+    AC-7.4: Input field remains focused and ready for new message
+    AC-7.5: Confirmation dialog if conversation has significant history (optional for MVP)
+    AC-7.6: Button is clearly labeled and easy to find
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>Technical Specification: Chat Interface and Agent Selection</title>
+        <section>Story 3.7: New Conversation / Reset Functionality</section>
+        <snippet>AC-7.1 through AC-7.6 define requirements for conversation reset. Workflows section (lines 829-838) details New Conversation Flow: user clicks button → clears messages array → resets error states → input receives focus → agent selection unchanged → backend stateless (no reset needed)</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 3.7: New Conversation / Reset Functionality (lines 652-673)</section>
+        <snippet>Prerequisites: Story 3.5 complete. Key technical notes: Clear messages array (setMessages([])), reset to empty array, no backend state to clear (stateless API), focus input field after reset</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>FR-12: Conversation Reset</section>
+        <snippet>User can start new conversation with same agent (clears context). Clean slate for testing different scenarios. Previous outputs remain in file viewer until manually cleaned.</snippet>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-3.md</path>
+        <title>System Architecture Alignment</title>
+        <section>Stateless API design</section>
+        <snippet>Conversation context maintained in frontend state only. Backend is stateless (Epic 2 design). No server-side conversation persistence. Clearing frontend messages array = full context reset.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <entry>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>ChatPanel</symbol>
+        <lines>24-178</lines>
+        <reason>Primary component where reset button and handler will be added. Contains messages state (setMessages), conversationId state (setConversationId), isLoading state, and selectedAgentId. Reset handler will clear these states. Input ref can be added here for auto-focus.</reason>
+      </entry>
+      <entry>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>state</kind>
+        <symbol>messages, setMessages</symbol>
+        <lines>30</lines>
+        <reason>Messages state array that needs to be cleared on reset (setMessages([])). This is the primary state that holds conversation history.</reason>
+      </entry>
+      <entry>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>state</kind>
+        <symbol>conversationId, setConversationId</symbol>
+        <lines>37</lines>
+        <reason>Conversation ID state that needs to be reset to undefined on new conversation. This ensures backend treats next message as fresh conversation.</reason>
+      </entry>
+      <entry>
+        <path>components/chat/ChatPanel.tsx</path>
+        <kind>state</kind>
+        <symbol>isLoading, setIsLoading</symbol>
+        <lines>34</lines>
+        <reason>Loading state that should be reset to false on new conversation in case user resets during agent processing.</reason>
+      </entry>
+      <entry>
+        <path>components/chat/InputField.tsx</path>
+        <kind>component</kind>
+        <symbol>InputField</symbol>
+        <lines>unknown</lines>
+        <reason>Input component that needs to receive focus after reset. May need to expose ref or add focus method for parent to call.</reason>
+      </entry>
+      <entry>
+        <path>components/chat/AgentSelector.tsx</path>
+        <kind>component</kind>
+        <symbol>AgentSelector</symbol>
+        <lines>unknown</lines>
+        <reason>Reference for button positioning - reset button should be placed near agent selector or in header area for easy discovery.</reason>
+      </entry>
+    </code>
+    <dependencies>
+      <node>
+        <react>^18</react>
+        <react-dom>^18</react-dom>
+        <next>14.2.0</next>
+        <tailwindcss>^3.4.0</tailwindcss>
+      </node>
+      <testing>
+        <jest>^30.2.0</jest>
+        <testing-library-react>^16.3.0</testing-library-react>
+        <testing-library-jest-dom>^6.9.1</testing-library-jest-dom>
+        <testing-library-user-event>^14.6.1</testing-library-user-event>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Backend is stateless - conversation context maintained ONLY in frontend state (messages array). Clearing messages = full context reset from agent perspective (tech-spec-epic-3.md Architecture Alignment)</constraint>
+    <constraint>Reset must clear: messages array, conversationId, error states, isLoading flag (ChatPanel.tsx state management)</constraint>
+    <constraint>selectedAgentId should NOT change on reset - user stays with same agent (epics.md line 671)</constraint>
+    <constraint>Previous outputs remain in file viewer - reset only clears chat history, not generated files (PRD FR-12)</constraint>
+    <constraint>Confirmation dialog for long conversations is OPTIONAL for MVP (AC-7.5) - can defer if time constrained</constraint>
+    <constraint>Follow existing button patterns in ChatPanel for visual consistency (Tailwind CSS styling)</constraint>
+    <constraint>Button must be keyboard accessible (ARIA labels, focus states) per UX principles</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>Message</name>
+      <kind>type</kind>
+      <signature>interface Message { id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: Date; functionCalls?: Array&lt;{name: string; arguments: Record&lt;string, any&gt;; result?: any; error?: string}&gt; }</signature>
+      <path>lib/types.ts</path>
+    </interface>
+    <interface>
+      <name>setMessages</name>
+      <kind>state setter</kind>
+      <signature>setMessages: React.Dispatch&lt;React.SetStateAction&lt;Message[]&gt;&gt;</signature>
+      <path>components/chat/ChatPanel.tsx line 30</path>
+    </interface>
+    <interface>
+      <name>setConversationId</name>
+      <kind>state setter</kind>
+      <signature>setConversationId: React.Dispatch&lt;React.SetStateAction&lt;string | undefined&gt;&gt;</signature>
+      <path>components/chat/ChatPanel.tsx line 37</path>
+    </interface>
+    <interface>
+      <name>setIsLoading</name>
+      <kind>state setter</kind>
+      <signature>setIsLoading: React.Dispatch&lt;React.SetStateAction&lt;boolean&gt;&gt;</signature>
+      <path>components/chat/ChatPanel.tsx line 34</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Jest with React Testing Library (@testing-library/react ^16.3.0). Unit tests verify component behavior and state changes. Integration tests validate full user flows with mocked API calls. Test files located in __tests__ subdirectories alongside components. Pattern: Component.test.tsx for each component. Aim for 80%+ code coverage on new features.
+    </standards>
+    <locations>
+      components/chat/__tests__/ChatPanel.test.tsx
+      components/chat/__tests__/*.test.tsx
+    </locations>
+    <ideas>
+      <test id="AC-7.1,7.6">Test button is rendered and visible in ChatPanel UI with clear label</test>
+      <test id="AC-7.2">Test clicking button calls handleNewConversation and clears messages array (setMessages([]))</test>
+      <test id="AC-7.3">Test conversationId is reset to undefined after button click</test>
+      <test id="AC-7.3">Integration test: after reset, send new message and verify backend doesn't receive old conversation context</test>
+      <test id="AC-7.4">Test input field receives focus after reset (mock inputRef.current.focus)</test>
+      <test id="AC-7.5">Test confirmation dialog appears if messages.length >= threshold (if implemented)</test>
+      <test id="AC-7.5">Test reset only executes if user confirms dialog (if implemented)</test>
+      <test id="general">Test isLoading is reset to false on new conversation</test>
+      <test id="general">Test error states are cleared on reset</test>
+      <test id="general">Test selectedAgentId is NOT changed by reset</test>
+      <test id="edge">Test reset during loading state (should cancel and reset)</test>
+      <test id="edge">Test reset with empty conversation (should not error)</test>
+    </ideas>
+  </tests>
+</story-context>

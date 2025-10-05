@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { InputField } from './InputField';
@@ -36,11 +36,39 @@ export function ChatPanel() {
   // Conversation ID for maintaining conversation state across messages
   const [conversationId, setConversationId] = useState<string | undefined>(undefined);
 
+  // Story 3.7 Task 3.1: Ref for input field auto-focus after reset
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
   // Handler for agent selection - Story 3.4 Task 4.3
   const handleAgentSelect = (agentId: string) => {
     setSelectedAgentId(agentId);
     // TODO Story 3.5: Reset conversation when agent changes (optional per AC-4.6)
     console.log('[ChatPanel] Agent selected:', agentId);
+  };
+
+  // Story 3.7 Task 2.1: Create handleNewConversation function
+  // AC-7.2: Clicking button clears chat history
+  // AC-7.3: Agent context resets (doesn't remember previous messages)
+  // AC-7.4: Input field remains focused and ready for new message
+  const handleNewConversation = () => {
+    // Task 2.2: Clear messages array
+    setMessages([]);
+
+    // Task 2.3: Reset conversationId to undefined (fresh conversation)
+    setConversationId(undefined);
+
+    // Task 2.4: Clear any error states (handled by clearing messages array)
+
+    // Task 2.5: Reset isLoading to false if active
+    setIsLoading(false);
+
+    // Task 3.2: Focus input field after reset
+    // AC-7.4: Input field remains focused and ready for new message
+    setTimeout(() => {
+      inputRef.current?.focus();
+    }, 0);
+
+    console.log('[ChatPanel] New conversation started');
   };
 
   // Story 3.5 Task 2.3-2.9: Create handleSendMessage function
@@ -142,13 +170,14 @@ export function ChatPanel() {
         <AgentSelector
           selectedAgentId={selectedAgentId}
           onAgentSelect={handleAgentSelect}
+          onNewConversation={handleNewConversation}
         />
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-3xl px-4">
             {/* Task 3.1: Render InputField component */}
             {/* Task 3.2: Pass handleSendMessage as onSend callback */}
             {/* Task 3.3: Pass isLoading as disabled prop */}
-            <InputField onSend={handleSendMessage} disabled={isLoading} />
+            <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
           </div>
         </div>
       </div>
@@ -163,6 +192,7 @@ export function ChatPanel() {
       <AgentSelector
         selectedAgentId={selectedAgentId}
         onAgentSelect={handleAgentSelect}
+        onNewConversation={handleNewConversation}
       />
       {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
       {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
@@ -172,7 +202,7 @@ export function ChatPanel() {
       {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}
       {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
       {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
-      <InputField onSend={handleSendMessage} disabled={isLoading} />
+      <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
     </div>
   );
 }
