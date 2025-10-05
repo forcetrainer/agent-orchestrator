@@ -6,6 +6,7 @@ import { MessageInput } from './MessageInput';
 import { InputField } from './InputField';
 import { AgentSelector } from './AgentSelector';
 import { Message } from '@/lib/types';
+import { mapErrorToUserMessage } from '@/lib/errorMapping';
 
 /**
  * ChatPanel Component
@@ -72,8 +73,12 @@ export function ChatPanel() {
   };
 
   // Story 3.5 Task 2.3-2.9: Create handleSendMessage function
+  // Story 3.8 Task 2: Implement error handling in ChatPanel API calls
   // AC-5.4: User message immediately appears
   // AC-5.8: Agent response appears when received
+  // AC-8.1: API errors display as error messages in chat
+  // AC-8.6: User can still send new messages after error
+  // AC-8.7: Errors don't crash the interface
   const handleSendMessage = async (messageContent: string) => {
     // Validation: Require agent selection
     if (!selectedAgentId) {
@@ -81,13 +86,22 @@ export function ChatPanel() {
       // Add error message to chat
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        role: 'system',
+        role: 'error',
         content: 'Please select an agent before sending a message.',
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, errorMessage]);
       return;
     }
+
+    // Story 3.8 Task 5: Detailed logging context
+    const requestContext = {
+      agentId: selectedAgentId,
+      messageLength: messageContent.length,
+      conversationId,
+      messageCount: messages.length,
+      timestamp: new Date().toISOString(),
+    };
 
     try {
       // Task 2.4: Add user message to messages array immediately (optimistic update)
@@ -105,6 +119,7 @@ export function ChatPanel() {
       setIsLoading(true);
 
       // Task 2.6: POST to /api/chat with {agentId, message, conversationId} payload
+      // Story 3.8 Task 2.1: Wrap fetch call in try/catch
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -115,12 +130,48 @@ export function ChatPanel() {
         }),
       });
 
+      // Story 3.8 Task 2: Handle HTTP errors
       // Task 4.3: Handle API errors (400, 404, 500 responses)
       if (!response.ok) {
+        // Task 5.2: Log API response details for debugging
+        console.error('[ChatPanel] API error response:', {
+          status: response.status,
+          statusText: response.statusText,
+          headers: response.headers?.entries ? Object.fromEntries(response.headers.entries()) : {},
+          context: requestContext,
+        });
+
         // Task 4.4: Parse error messages from API response
         const errorData = await response.json().catch(() => ({}));
-        const errorMessage = errorData.error || `API error: ${response.status} ${response.statusText}`;
-        throw new Error(errorMessage);
+
+        // Story 3.8 Task 3, 4: Map technical errors to user-friendly messages
+        // Create error object with both the error message and HTTP status
+        const errorToMap = errorData.error
+          ? { error: errorData.error, status: response.status }
+          : { status: response.status };
+        const userFriendlyMessage = mapErrorToUserMessage(errorToMap);
+
+        // Task 5.3: Log user-friendly error message that was displayed
+        console.error('[ChatPanel] Displaying error to user:', {
+          userMessage: userFriendlyMessage,
+          technicalError: errorData.error || `HTTP ${response.status}`,
+          context: requestContext,
+        });
+
+        // Task 2.2, 2.3: Create error message object and add to messages array
+        // AC-8.1: API errors display as error messages in chat
+        const errorMessage: Message = {
+          id: `error-${Date.now()}`,
+          role: 'error',
+          content: userFriendlyMessage,
+          timestamp: new Date(),
+        };
+        setMessages((prev) => [...prev, errorMessage]);
+
+        // Task 2.4: Reset isLoading to false on error to unblock UI
+        // AC-8.6: User can still send new messages after error
+        setIsLoading(false);
+        return;
       }
 
       // Task 2.7: Parse response and add assistant message to messages array
@@ -143,21 +194,44 @@ export function ChatPanel() {
         setMessages((prev) => [...prev, assistantMessage]);
       }
     } catch (error) {
-      // Task 2.9: Handle errors by adding error message to chat (role='error')
-      // Task 4.2: Handle network errors (fetch rejection, offline)
-      // Task 4.6: Log detailed errors to console for debugging
-      console.error('[ChatPanel] Error sending message:', error);
+      // Story 3.8 Task 2.1: Handle network errors (fetch rejection, offline)
+      // Task 5.1: Log full error object with stack trace
+      console.error('[ChatPanel] Error sending message:', {
+        error,
+        stack: error instanceof Error ? error.stack : undefined,
+        context: requestContext,
+      });
 
+      // Story 3.8 Task 3: Map technical errors to user-friendly messages
+      // AC-8.3: Errors explain what went wrong in plain language
+      // AC-8.4: Network errors show "Connection failed - please try again"
+      const userFriendlyMessage = mapErrorToUserMessage(error);
+
+      // Task 5.3: Log user-friendly error message that was displayed
+      console.error('[ChatPanel] Displaying error to user:', {
+        userMessage: userFriendlyMessage,
+        technicalError: error instanceof Error ? error.message : String(error),
+        context: requestContext,
+      });
+
+      // Task 2.2, 2.3: Create error message object with role='error' and add to messages array
+      // AC-8.1: API errors display as error messages in chat
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
-        role: 'system',
-        content: error instanceof Error ? error.message : 'Failed to send message. Please try again.',
+        role: 'error',
+        content: userFriendlyMessage,
         timestamp: new Date(),
       };
+
+      // Task 2.3: Add error message to messages array (appears in chat history)
+      // Task 2.5: Preserve messages array and state even when error occurs
+      // AC-8.7: Errors don't crash the interface
       setMessages((prev) => [...prev, errorMessage]);
     } finally {
       // Task 2.8: Set isLoading=false after response (success or error)
-      // Task 4.7: Ensure user can send new messages after error (isLoading reset)
+      // Task 2.4: Reset isLoading to false on error to unblock UI
+      // Task 2.6: Allow user to continue sending messages after error (don't disable input)
+      // AC-8.6: User can still send new messages after error
       setIsLoading(false);
     }
   };

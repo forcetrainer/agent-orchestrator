@@ -60,20 +60,39 @@ describe('MessageBubble', () => {
     expect(screen.getByText('This is my message content')).toBeInTheDocument();
   });
 
-  // Task 5.5: Test system/error role styling
-  it('renders system message (error) with red styling', () => {
+  // Task 5.5: Test system role styling
+  it('renders system message with red styling', () => {
     const systemMessage: Message = {
       role: 'system',
-      content: 'Something went wrong',
+      content: 'System message',
+      id: 'sys-1',
+      timestamp: new Date(),
     };
 
     const { container } = render(<MessageBubble message={systemMessage} />);
     const bubble = container.firstChild as HTMLElement;
 
-    // System messages (errors/info) left-aligned with red background
+    // System messages (info) left-aligned with red background
     expect(bubble).toHaveClass('mr-auto');
     expect(bubble).toHaveClass('bg-red-500');
     expect(bubble).toHaveClass('text-white');
+  });
+
+  // Story 3.8 Task 6.1: Test error role delegates to ErrorMessage component
+  it('renders error message with ErrorMessage component', () => {
+    const errorMessage: Message = {
+      role: 'error',
+      content: 'Connection failed - please try again',
+      id: 'error-1',
+      timestamp: new Date(),
+    };
+
+    render(<MessageBubble message={errorMessage} />);
+
+    // Error messages should be rendered by ErrorMessage component
+    expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+    // ErrorMessage component has role="alert"
+    expect(screen.getByRole('alert')).toBeInTheDocument();
   });
 
   // AC-2.3: Visual distinction test

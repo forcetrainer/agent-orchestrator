@@ -1,0 +1,105 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>3.9</storyId>
+    <title>Validate Lazy-Loading with Complex BMAD Agent Workflow</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to validate that lazy-loading works with complex BMAD agents</iWant>
+    <soThat>I can confirm OpenAI function calling properly loads multiple instruction files on-demand</soThat>
+    <tasks>
+      <task id="1" acs="9.1,9.2">Select and prepare complex BMAD agent for testing</task>
+      <task id="2" acs="9.4">Configure test environment and logging</task>
+      <task id="3" acs="9.3,9.5">Execute realistic agent workflow via chat interface</task>
+      <task id="4" acs="9.4,9.6">Verify lazy-loading behavior in logs</task>
+      <task id="5" acs="9.7">Validate BMAD agent behavior patterns</task>
+      <task id="6" acs="9.8">Document OpenAI compatibility findings</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="9.1">Select or create a complex BMAD agent that requires loading at least 3 instruction files during execution</ac>
+    <ac id="9.2">Agent uses lazy-loading pattern (files loaded via read_file when agent requests them, not upfront)</ac>
+    <ac id="9.3">Test agent via chat interface with realistic workflow that triggers multiple instruction loads</ac>
+    <ac id="9.4">Verify in console logs that read_file is called multiple times for different instruction files</ac>
+    <ac id="9.5">Agent successfully completes workflow using dynamically loaded instructions</ac>
+    <ac id="9.6">All lazy-loaded files return correct content to OpenAI</ac>
+    <ac id="9.7">Agent behavior matches expected BMAD agent patterns</ac>
+    <ac id="9.8">Document any OpenAI compatibility issues discovered during testing</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Story 3.9: Validate Lazy-Loading with Complex BMAD Agent Workflow" lines="1068-1078">
+        Defines all 8 acceptance criteria for story 3.9. Specifies validation approach: select/create complex BMAD agent requiring ≥3 instruction file loads, test via chat interface with realistic workflow, verify read_file calls in console logs, document OpenAI compatibility findings.
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Traceability Mapping AC-9.1 - AC-9.8" lines="1091">
+        Maps story 3.9 ACs to PRD Goal #1, FR-2, FR-6. References Epic 2 file operations, POST /api/chat with read_file function calling. Test approach: complex agent workflow → verify multiple read_file calls in logs → workflow completes successfully.
+      </doc>
+      <doc path="docs/epics.md" title="Epics Overview" section="Story 3.9: Validate Lazy-Loading with Complex BMAD Agent Workflow" lines="702-726">
+        User story and technical notes. Prerequisites: Stories 3.5-3.8 complete, Epic 2 complete. Recommends using bmad/bmm/agents/architect or creating test agent. Test should simulate real-world usage. Validates PRD Goal #1: lazy-loading instruction pattern viability with OpenAI.
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Goal 1: Validate OpenAI API Compatibility" lines="73-77">
+        Primary project goal: Deploy 3+ BMAD agents via OpenAI API. Prove lazy-loading instruction pattern viable with OpenAI function calling. Success Metric: 95%+ of BMAD agent features work correctly with OpenAI API. Story 3.9 provides critical validation evidence.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/openai/function-tools.ts" kind="module" symbol="READ_FILE_TOOL" lines="17-33" reason="Defines read_file function tool for OpenAI - this is the core mechanism for lazy-loading instruction files. Story 3.9 validates that OpenAI correctly calls this function multiple times during complex agent workflows."/>
+      <artifact path="lib/openai/function-tools.ts" kind="module" symbol="FUNCTION_TOOLS" lines="85-89" reason="Array of all available function tools. Includes READ_FILE_TOOL, WRITE_FILE_TOOL, LIST_FILES_TOOL. Used when calling OpenAI chat completions with tool support."/>
+      <artifact path="app/api/chat/route.ts" kind="api-route" symbol="POST" lines="32-98" reason="Main chat API endpoint that handles OpenAI function calling. Calls executeChatCompletion which invokes read_file. Console logs from this route will verify lazy-loading behavior for AC-9.4."/>
+      <artifact path="lib/openai/chat.ts" kind="service" symbol="executeChatCompletion" lines="1-200" reason="Executes OpenAI chat completion with function calling loop. Handles read_file tool calls and returns results to OpenAI. Critical for validating lazy-loading pattern works correctly."/>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="ChatPanel" lines="1-200" reason="Chat interface component used to test agent workflows. Sends messages to /api/chat endpoint. Used in AC-9.3 to execute realistic agent workflow via chat interface."/>
+      <artifact path="bmad/bmm/agents/sm.md" kind="agent-definition" symbol="Scrum Master Agent" lines="1-100" reason="Complex BMAD agent recommended for testing (Story Dev Notes line 123). Has workflows that load multiple files: workflow.yaml, instructions.md, template.md, checklist.md. Meets AC-9.1 requirement of ≥3 instruction file loads."/>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="openai" version="^4.104.0" purpose="OpenAI API client - provides chat completions with function calling support for read_file tool"/>
+        <package name="next" version="14.2.0" purpose="Next.js framework - provides /api/chat route handler infrastructure"/>
+        <package name="react" version="^18" purpose="React library - powers ChatPanel component used for testing"/>
+        <package name="react-markdown" version="^10.1.0" purpose="Markdown renderer for displaying agent messages in chat interface"/>
+        <package name="typescript" version="^5" purpose="TypeScript - provides type safety for ChatRequest/ChatResponse interfaces"/>
+        <package name="jest" version="^30.2.0" purpose="Testing framework - though story 3.9 uses manual validation, not automated tests"/>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="testing-approach">Story 3.9 is a validation/testing story, not a feature implementation. No new code should be written. Manual execution via chat interface is required (not automated test suite).</constraint>
+    <constraint type="api-compatibility">Must use real OpenAI API calls (not mocks) to validate actual compatibility with lazy-loading pattern.</constraint>
+    <constraint type="agent-complexity">Selected test agent must require loading at least 3 instruction files during execution (AC-9.1). Recommended: bmad/bmm/agents/sm.md (Scrum Master) with workflows loading workflow.yaml, instructions.md, template.md, checklist.md.</constraint>
+    <constraint type="logging-requirement">Console logging must be enabled/enhanced in /api/chat/route.ts to capture read_file function calls with file paths and timestamps (AC-9.4).</constraint>
+    <constraint type="workflow-realism">Test must use realistic workflow execution, not simple "hello world" commands. Agent should complete full workflow demonstrating real-world usage patterns (AC-9.3, AC-9.5).</constraint>
+    <constraint type="documentation-requirement">All findings (successful patterns, issues, workarounds, limitations) must be documented including screenshots of console logs showing read_file calls (AC-9.8).</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="POST /api/chat" kind="rest-api" signature="POST /api/chat { agentId, message, conversationId } -> { conversationId, message }" path="app/api/chat/route.ts" usage="Primary interface for testing agent workflows. Send messages to agent and receive responses. Monitor this endpoint's logs to verify read_file calls."/>
+    <interface name="read_file" kind="function-tool" signature="read_file(path: string) -> string" path="lib/openai/function-tools.ts" usage="OpenAI function tool for lazy-loading instruction files. Called by OpenAI when agent requests file content. Verify multiple calls to this function in console logs."/>
+    <interface name="executeChatCompletion" kind="typescript-function" signature="executeChatCompletion(agent: Agent, messages: ChatCompletionMessageParam[]) -> Promise&lt;{content: string, functionCalls: FunctionCall[]}>" path="lib/openai/chat.ts" usage="Core function that handles OpenAI chat completion with function calling loop. Returns assistant response and list of function calls made during execution."/>
+  </interfaces>
+  <tests>
+    <standards>
+      Project uses Jest testing framework with React Testing Library for component tests and ts-jest for TypeScript support. Test files located in __tests__ directories alongside source files. Naming convention: [component-name].test.ts or [component-name].test.tsx. However, Story 3.9 is a MANUAL VALIDATION story - no automated tests should be written. Instead, execute real agent workflow via chat interface and document findings in story completion notes.
+    </standards>
+    <locations>
+      <location>components/chat/__tests__/*.test.tsx - React component tests (NOT applicable to story 3.9)</location>
+      <location>lib/**/__tests__/*.test.ts - Library/service unit tests (NOT applicable to story 3.9)</location>
+      <location>app/api/**/__tests__/*.test.ts - API route tests (NOT applicable to story 3.9)</location>
+      <location>docs/stories/story-3.9.md - Story completion notes (THIS is where validation findings should be documented)</location>
+    </locations>
+    <ideas>
+      <idea ac="9.1,9.2">Select bmad/bmm/agents/sm.md (Scrum Master) as test agent - has *create-story workflow that loads workflow.yaml, instructions.md, context-template.xml, checklist.md (≥3 files, meets AC-9.1)</idea>
+      <idea ac="9.4">Before testing, add console.log statements to lib/openai/chat.ts in read_file function handler to log file path and timestamp for each read_file call</idea>
+      <idea ac="9.3,9.5">Execute realistic workflow: Start app (npm run dev) → Select Scrum Master agent → Send command "*create-story" → Follow prompts through complete workflow → Verify agent completes successfully</idea>
+      <idea ac="9.4,9.6">Monitor browser DevTools console during workflow execution → Verify multiple read_file log entries with different file paths → Confirm all files return content successfully (no errors)</idea>
+      <idea ac="9.7">Validate BMAD agent patterns: agent greeting appears, numbered command list shown, workflow steps execute in sequence, template rendering works, agent maintains persona throughout</idea>
+      <idea ac="9.8">Document findings in story completion notes: list all read_file calls observed (file paths, sequence), screenshot console logs, note any OpenAI compatibility issues or successful patterns, provide recommendations for agent builders</idea>
+      <idea ac="all">Edge case: If Scrum Master workflow completes without ≥3 file loads, try alternative agent (pm.md Product Manager) or create minimal test agent with explicit multi-file dependency chain</idea>
+    </ideas>
+  </tests>
+</story-context>

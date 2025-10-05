@@ -1,0 +1,180 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>3</epicId>
+    <storyId>8</storyId>
+    <title>Basic Error Handling in Chat</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-04</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-3.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>end user</asA>
+    <iWant>clear error messages when something goes wrong</iWant>
+    <soThat>I understand what happened and can try again</soThat>
+    <tasks>
+      - Task 1: Define error message component and styling (AC: 8.2)
+      - Task 2: Implement error handling in ChatPanel API calls (AC: 8.1, 8.6, 8.7)
+      - Task 3: Map technical errors to user-friendly messages (AC: 8.3, 8.4, 8.5)
+      - Task 4: Preserve agent-specific error context (AC: 8.5)
+      - Task 5: Detailed logging for debugging (AC: 8.3, NFR-8)
+      - Task 6: Unit tests for error handling
+      - Task 7: Integration tests for error scenarios
+      - Task 8: Manual validation and UX testing
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-8.1: API errors display as error messages in chat
+    AC-8.2: Error messages are clearly styled (red/warning color)
+    AC-8.3: Errors explain what went wrong in plain language
+    AC-8.4: Network errors show "Connection failed - please try again"
+    AC-8.5: Agent errors show agent-specific error information
+    AC-8.6: User can still send new messages after error
+    AC-8.7: Errors don't crash the interface
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Story 3.8: Basic Error Handling in Chat (lines 1058-1067)">
+        Defines 7 acceptance criteria for error handling:
+        - AC-8.1: API errors display as error messages in chat
+        - AC-8.2: Error messages clearly styled (red/warning color)
+        - AC-8.3: Plain language error explanations
+        - AC-8.4: Network errors show "Connection failed - please try again"
+        - AC-8.5: Agent errors show agent-specific information
+        - AC-8.6: User can still send messages after error
+        - AC-8.7: Errors don't crash interface
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="Error Handling Flow (lines 830-838)">
+        Defines the error handling workflow:
+        1. API call fails (network, 400/500 response)
+        2. Frontend catches error in try/catch
+        3. Create error message object {role: 'error', content: errorMessage}
+        4. Add error message to messages array
+        5. ErrorDisplay component renders with distinct styling
+        6. Set isLoading=false
+        7. User can continue conversation or reset
+      </doc>
+      <doc path="docs/tech-spec-epic-3.md" title="Technical Specification Epic 3" section="APIs and Interfaces - Chat Response Error Formats (lines 196-210)">
+        Backend error response formats:
+        - 400 Bad Request: { success: false, error: "Agent ID is required" }
+        - 404 Not Found: { success: false, error: "Agent not found" }
+        - 500 Server Error: { success: false, error: "OpenAI API error: Rate limit exceeded" }
+        Network errors: fetch() rejection (no HTTP response)
+      </doc>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Edge Cases &amp; Error States (lines 19)">
+        UX design guidance for error states, emphasizing clear visual feedback and user recovery paths
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="NFR-2: Reliability">
+        System must gracefully handle OpenAI API failures with clear error messages. File operation errors don't crash application. Agent errors/failures allow user to recover and continue or restart conversation.
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="UX Principle 4: Trust Through Transparency">
+        Clear error messages explain what went wrong and suggest recovery paths
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="FR-4: Response Handling and Display">
+        Error messages displayed clearly when agent encounters issues
+      </doc>
+    </docs>
+    <code>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="ChatPanel" lines="1-150" reason="Main chat component that manages message state and API calls - needs error handling in handleSendMessage function (lines 77-150)">
+        Current sendMessage implementation has try/catch that adds system message for 'No agent selected' error. Needs expansion to handle:
+        - Network errors (fetch failures)
+        - HTTP error responses (400, 404, 500)
+        - API error payloads from backend
+        - Error message mapping to user-friendly text
+        - Ensure isLoading reset on error
+        - Preserve conversation state on error
+      </artifact>
+      <artifact path="components/chat/MessageList.tsx" kind="component" symbol="MessageList" lines="1-100" reason="Renders message bubbles - will need to handle/render error messages with role='error'">
+        Currently renders user/assistant messages. May need extension to handle error messages or rely on MessageBubble to detect error role.
+      </artifact>
+      <artifact path="app/api/chat/route.ts" kind="api-route" symbol="POST /api/chat" lines="32-90" reason="Backend API that can return error responses - defines error formats frontend must handle">
+        Uses centralized error handling (handleApiError). Returns structured error responses:
+        - validateAgentId throws ValidationError → 400
+        - NotFoundError for missing agent → 404
+        - Any unhandled errors → 500 with error message
+        Error response format: ApiResponse with success=false, error=string
+      </artifact>
+      <artifact path="types/index.ts" kind="type" symbol="Message" lines="58-69" reason="Message type definition - currently supports 'user'|'assistant'|'system' roles, may need 'error' role">
+        Current Message interface has role: 'user' | 'assistant' | 'system'. Need to confirm if 'error' should be added or if system role is used for errors.
+      </artifact>
+      <artifact path="lib/utils/errors.ts" kind="utility" symbol="handleApiError" lines="1-50" reason="Centralized error handling utility - reference for error types and handling patterns">
+        Defines ValidationError, NotFoundError, FileSecurityError custom error classes. handleApiError function converts errors to NextResponse with appropriate status codes.
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" usage="Next.js framework with API routes and error handling patterns" />
+        <package name="react" version="^18" usage="React for component state management and error boundaries" />
+        <package name="react-dom" version="^18" usage="DOM rendering" />
+        <package name="typescript" version="^5" usage="Type safety for error handling" />
+        <package name="@testing-library/react" version="^16.3.0" usage="Component testing for error scenarios" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" usage="Jest matchers for DOM assertions" />
+        <package name="jest" version="^30.2.0" usage="Test framework for error handling tests" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Error messages MUST be displayed inline in chat history, not as modal dialogs or browser alerts
+    - Error messages MUST use role='error' or role='system' to distinguish from normal messages
+    - Error messages MUST be styled distinctly (red/warning colors) but not dominating the UI
+    - Technical error details MUST be logged to console but NOT shown to end users
+    - Error handling MUST NOT corrupt messages array or crash the React component
+    - User MUST be able to send new messages after an error without page reload
+    - isLoading state MUST be reset to false when error occurs (prevent UI lockup)
+    - Error mapping MUST convert technical errors to plain language (no stack traces, no jargon)
+    - Network errors MUST show "Connection failed - please try again"
+    - Agent-specific errors from backend MUST be preserved and shown to user when meaningful
+    - All fetch calls in ChatPanel MUST be wrapped in try/catch blocks
+    - Error messages MUST be accessible (proper color contrast, not color-only indicators)
+    - Testing MUST cover: network failures, 400/404/500 responses, unknown errors, error recovery
+  </constraints>
+
+  <interfaces>
+    <interface name="Message" kind="type" signature="{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: Date; functionCalls?: FunctionCall[] }" path="types/index.ts">
+      May need to add 'error' as a role option, or use 'system' role for error messages
+    </interface>
+    <interface name="ChatRequest" kind="type" signature="{ agentId: string; message: string; conversationId?: string }" path="types/api.ts">
+      Request format for POST /api/chat
+    </interface>
+    <interface name="ChatResponse" kind="type" signature="{ conversationId: string; message: Message }" path="types/api.ts">
+      Success response format from POST /api/chat
+    </interface>
+    <interface name="ApiResponse" kind="type" signature="{ success: boolean; data?: any; error?: string }" path="types/api.ts">
+      Generic API response wrapper - error responses have success=false and error field
+    </interface>
+    <interface name="handleSendMessage" kind="function" signature="async (messageContent: string) => Promise&lt;void&gt;" path="components/chat/ChatPanel.tsx">
+      Function that sends user messages to backend - needs comprehensive error handling added
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Jest + React Testing Library with JSDOM environment. Tests are located in __tests__ directories alongside source files. Component tests use render() and screen queries. API calls are mocked with global.fetch. Test file naming: *.test.ts or *.test.tsx. Integration tests use *.integration.test.ts naming. Coverage collected from app/, components/, and lib/ directories. All tests run with npm test command.
+    </standards>
+    <locations>
+      - components/chat/__tests__/*.test.tsx (component tests)
+      - lib/utils/__tests__/*.test.ts (utility tests)
+      - app/api/**/__tests__/*.test.ts (API route tests)
+      - __tests__/integration/*.integration.test.ts (integration tests)
+    </locations>
+    <ideas>
+      AC-8.1: Test that API errors are added to messages array with role='error'
+      AC-8.2: Test error message component renders with red/warning styling
+      AC-8.3: Test error mapping utility converts technical errors to plain language messages
+      AC-8.4: Test network error (fetch rejection) shows "Connection failed - please try again"
+      AC-8.5: Test backend API error with specific message is preserved and shown
+      AC-8.6: Test user can send new message after error (input not disabled)
+      AC-8.7: Test error doesn't crash component or corrupt messages state
+      Integration test: Mock fetch to fail with network error → verify error message in UI
+      Integration test: Mock 404 response → verify agent not found message
+      Integration test: Mock 500 response → verify server error message
+      Integration test: Send message → error → send another message → success (recovery flow)
+      Unit test: mapErrorToUserMessage function for all error types (network, 400, 404, 500, unknown)
+      Unit test: ErrorMessage component styling and accessibility
+    </ideas>
+  </tests>
+</story-context>

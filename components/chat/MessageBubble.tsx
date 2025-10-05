@@ -4,6 +4,7 @@ import { memo } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Message } from '@/lib/types';
+import { ErrorMessage } from './ErrorMessage';
 
 /**
  * MessageBubble Component
@@ -11,16 +12,19 @@ import { Message } from '@/lib/types';
  * Renders individual message with role-based styling
  * Story 3.2 - Task 2: Role-based message rendering
  * Story 3.3 - Task 2: Markdown rendering for assistant messages
+ * Story 3.8 - Task 1: Error message rendering
  *
  * AC-2.1: User messages appear right-aligned with distinct styling
  * AC-2.2: Agent messages appear left-aligned with different styling
  * AC-2.3: Clear visual distinction between user and agent messages
  * AC-3.1 to AC-3.7: Markdown rendering for assistant messages (headings, lists, code, links, bold, italic, tables)
+ * AC-8.2: Error messages are clearly styled (red/warning color)
  *
  * Styling follows design system from Story 3.1:
  * - User: Right-aligned, blue background (#3B82F6), white text (plain text, no markdown)
  * - Assistant: Left-aligned, gray background (gray-200), dark text (markdown rendered)
  * - System: Left-aligned, red background, white text (plain text, no markdown - for errors/info)
+ * - Error: Left-aligned, red border, light red background, warning icon (plain text, no markdown)
  * - Max width 75% for readability
  * - Border radius: rounded-lg
  * - Padding: px-4 py-3
@@ -29,6 +33,10 @@ import { Message } from '@/lib/types';
  * Performance: React.memo prevents unnecessary re-renders (NFR-1: < 100ms target)
  */
 export const MessageBubble = memo(function MessageBubble({ message }: { message: Message }) {
+  // Story 3.8 Task 1.5: Delegate error messages to ErrorMessage component
+  if (message.role === 'error') {
+    return <ErrorMessage message={message} />;
+  }
   // Base styles for all messages
   const baseStyles = 'max-w-[75%] px-4 py-3 rounded-lg';
 

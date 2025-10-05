@@ -10,7 +10,7 @@
  * AC-7.1 through AC-7.6: New Conversation / Reset functionality (Story 3.7)
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChatPanel } from '../ChatPanel';
 
@@ -559,6 +559,502 @@ describe('ChatPanel', () => {
       // Can be activated with keyboard
       await user.keyboard('{Enter}');
       // Should execute (no errors thrown)
+    });
+  });
+
+  /**
+   * Story 3.8 - Task 7: Integration tests for error scenarios
+   * AC-8.1 through AC-8.7: Error handling behavior
+   */
+  describe('Error handling integration', () => {
+    // Task 7.1: Simulate network failure → verify "Connection failed" message
+    // AC-8.4: Network errors show "Connection failed - please try again"
+    it('displays connection failed message on network error', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Simulate network failure (fetch TypeError)
+          return Promise.reject(new TypeError('Failed to fetch'));
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // AC-8.1: Error message appears in chat
+      // AC-8.4: Network errors show "Connection failed - please try again"
+      await waitFor(() => {
+        expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+      });
+
+      // AC-8.2: Error message has warning styling
+      const errorElement = screen.getByRole('alert');
+      expect(errorElement).toBeInTheDocument();
+    });
+
+    // Task 7.2: Mock 500 server error → verify server error message
+    it('displays server error message on 500 response', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Simulate 500 server error
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+            json: () => Promise.resolve({ error: 'OpenAI API error: rate limit exceeded' }),
+          });
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // AC-8.1, AC-8.3, AC-8.5: Error message appears with plain language
+      // Rate limit errors take precedence over generic OpenAI errors
+      await waitFor(() => {
+        expect(screen.getByText('Service is experiencing high demand. Please try again in a moment.')).toBeInTheDocument();
+      });
+    });
+
+    // Task 7.3: Mock agent not found (404) → verify agent selection error message
+    it('displays agent not found message on 404 response', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Simulate 404 agent not found (no specific error message)
+          return Promise.resolve({
+            ok: false,
+            status: 404,
+            statusText: 'Not Found',
+            json: () => Promise.resolve({}),
+          });
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // AC-8.1, AC-8.3: Error message appears for 404
+      await waitFor(() => {
+        expect(screen.getByText('Selected agent could not be found. Please try selecting a different agent.')).toBeInTheDocument();
+      });
+    });
+
+    // Task 7.4: Mock OpenAI rate limit error → verify rate limit message
+    // AC-8.5: Agent errors show agent-specific error information
+    it('displays rate limit message on OpenAI rate limit error', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Simulate OpenAI rate limit error
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            statusText: 'Internal Server Error',
+            json: () => Promise.resolve({ error: 'OpenAI rate limit exceeded' }),
+          });
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // AC-8.5: Error message shows service-specific error (rate limit)
+      await waitFor(() => {
+        expect(screen.getByText('Service is experiencing high demand. Please try again in a moment.')).toBeInTheDocument();
+      });
+    });
+
+    // Task 7.5: Test recovery - send message → error → send new message → success
+    // AC-8.6: User can still send new messages after error
+    // AC-8.7: Errors don't crash the interface
+    it('allows sending new message after error (error recovery)', async () => {
+      const user = userEvent.setup();
+
+      let callCount = 0;
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          callCount++;
+          if (callCount === 1) {
+            // First call fails
+            return Promise.reject(new TypeError('Failed to fetch'));
+          } else {
+            // Second call succeeds
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve({
+                success: true,
+                data: {
+                  message: {
+                    id: 'msg-1',
+                    role: 'assistant',
+                    content: 'Success!',
+                    timestamp: new Date().toISOString(),
+                  },
+                  conversationId: 'conv-1',
+                },
+              }),
+            });
+          }
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send first message (will fail)
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'First message');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // Error message appears
+      await waitFor(() => {
+        expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+      });
+
+      // AC-8.6, AC-8.7: User can still send new messages after error
+      // Wait for input to be enabled before trying to use it
+      await waitFor(() => {
+        expect(textarea).not.toBeDisabled();
+        expect(sendButton).not.toBeDisabled();
+      });
+      // Manually clear textarea for test
+      fireEvent.change(textarea, { target: { value: '' } });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Input should not be disabled - can send new message
+      await user.type(textarea, 'Second message');
+      await user.click(sendButton);
+
+      // Second message succeeds
+      await waitFor(() => {
+        expect(screen.getByText('Success!')).toBeInTheDocument();
+      });
+
+      // Both user messages and error should be in history
+      expect(screen.getByText('First message')).toBeInTheDocument();
+      expect(screen.getByText('Second message')).toBeInTheDocument();
+      expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+    });
+
+    // Task 7.6: Test multiple consecutive errors don't break UI
+    // AC-8.7: Errors don't crash the interface
+    it('handles multiple consecutive errors without crashing', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          // Always fail
+          return Promise.reject(new TypeError('Failed to fetch'));
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send multiple messages that all fail
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+
+      // First error
+      await user.type(textarea, 'Message 1');
+      await user.click(sendButton);
+      await waitFor(() => {
+        expect(screen.getAllByText('Connection failed - please try again').length).toBeGreaterThan(0);
+      });
+      await waitFor(() => expect(textarea).not.toBeDisabled());
+
+      // Manually clear textarea for test (InputField auto-clears via setValue but tests need explicit clear)
+      fireEvent.change(textarea, { target: { value: '' } });
+      // Small delay to let React process the change event
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Second error
+      await user.type(textarea, 'Message 2');
+      await user.click(sendButton);
+      await waitFor(() => {
+        expect(screen.getAllByText('Connection failed - please try again').length).toBe(2);
+      });
+      await waitFor(() => expect(textarea).not.toBeDisabled());
+
+      // Manually clear textarea for test
+      fireEvent.change(textarea, { target: { value: '' } });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Third error
+      await user.type(textarea, 'Message 3');
+      await user.click(sendButton);
+      await waitFor(() => {
+        expect(screen.getAllByText('Connection failed - please try again').length).toBe(3);
+      });
+      await waitFor(() => expect(textarea).not.toBeDisabled());
+
+      // AC-8.7: UI should not crash - all messages and errors visible
+      expect(screen.getByText('Message 1')).toBeInTheDocument();
+      expect(screen.getByText('Message 2')).toBeInTheDocument();
+      expect(screen.getByText('Message 3')).toBeInTheDocument();
+    });
+
+    // Task 6.4: Test isLoading resets to false on error
+    it('resets loading state on error', async () => {
+      const user = userEvent.setup();
+
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          return Promise.reject(new TypeError('Failed to fetch'));
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send message
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'Hello');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      // Error message appears
+      await waitFor(() => {
+        expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+      });
+
+      // Loading indicator should NOT be visible (isLoading reset to false)
+      expect(screen.queryByText(/Agent is thinking/i)).not.toBeInTheDocument();
+
+      // Input should be enabled (not disabled)
+      expect(textarea).not.toBeDisabled();
+      expect(sendButton).not.toBeDisabled();
+    });
+
+    // Task 6.6: Test error doesn't corrupt messages array or crash component
+    it('preserves message history when error occurs', async () => {
+      const user = userEvent.setup();
+
+      let callCount = 0;
+      global.fetch = jest.fn().mockImplementation((url) => {
+        if (url === '/api/agents') {
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({
+              success: true,
+              data: [{ id: 'test-agent', name: 'Test Agent', title: 'Test' }],
+            }),
+          });
+        }
+        if (url === '/api/chat') {
+          callCount++;
+          if (callCount === 1) {
+            // First call succeeds
+            return Promise.resolve({
+              ok: true,
+              json: () => Promise.resolve({
+                success: true,
+                data: {
+                  message: {
+                    id: 'msg-1',
+                    role: 'assistant',
+                    content: 'First response',
+                    timestamp: new Date().toISOString(),
+                  },
+                  conversationId: 'conv-1',
+                },
+              }),
+            });
+          } else {
+            // Second call fails
+            return Promise.reject(new TypeError('Failed to fetch'));
+          }
+        }
+        return Promise.reject(new Error('Unknown URL'));
+      }) as jest.Mock;
+
+      render(<ChatPanel />);
+
+      // Select agent
+      const agentSelect = screen.getByRole('combobox');
+      await waitFor(() => {
+        const option = screen.queryByRole('option', { name: /test agent/i });
+        expect(option).toBeInTheDocument();
+      });
+      await user.selectOptions(agentSelect, 'test-agent');
+
+      // Send first message (succeeds)
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      await user.type(textarea, 'First message');
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+      await user.click(sendButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('First response')).toBeInTheDocument();
+      });
+      await waitFor(() => expect(textarea).not.toBeDisabled());
+
+      // Manually clear textarea for test
+      fireEvent.change(textarea, { target: { value: '' } });
+      await new Promise(resolve => setTimeout(resolve, 10));
+
+      // Send second message (fails)
+      await user.type(textarea, 'Second message');
+      await user.click(sendButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Connection failed - please try again')).toBeInTheDocument();
+      });
+
+      // Previous messages should still be visible (messages array not corrupted)
+      expect(screen.getByText('First message')).toBeInTheDocument();
+      expect(screen.getByText('First response')).toBeInTheDocument();
+      expect(screen.getByText('Second message')).toBeInTheDocument();
     });
   });
 });

@@ -138,16 +138,25 @@ When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_
             // Execute function based on name
             switch (functionName) {
               case 'read_file':
+                const timestamp = new Date().toISOString();
+                console.log(`[read_file #${functionCalls.filter(fc => fc.name === 'read_file').length + 1}] 📂 Loading: ${functionArgs.path} at ${timestamp}`);
                 result = await readFileContent(functionArgs.path);
+                const contentLength = typeof result === 'string' ? result.length : JSON.stringify(result).length;
+                console.log(`[read_file #${functionCalls.filter(fc => fc.name === 'read_file').length + 1}] ✅ Loaded ${contentLength} bytes from: ${functionArgs.path}`);
                 break;
 
               case 'write_file':
+                console.log(`[write_file] 💾 Writing to: ${functionArgs.path}`);
                 await writeFileContent(functionArgs.path, functionArgs.content);
                 result = { success: true, path: functionArgs.path };
+                console.log(`[write_file] ✅ Written ${functionArgs.content.length} bytes to: ${functionArgs.path}`);
                 break;
 
               case 'list_files':
+                console.log(`[list_files] 📋 Listing: ${functionArgs.path} (recursive: ${functionArgs.recursive || false})`);
                 result = await listFiles(functionArgs.path, functionArgs.recursive || false);
+                const fileCount = Array.isArray(result) ? result.length : 0;
+                console.log(`[list_files] ✅ Found ${fileCount} items in: ${functionArgs.path}`);
                 break;
 
               default:

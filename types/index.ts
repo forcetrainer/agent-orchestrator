@@ -59,7 +59,7 @@ export interface Message {
   /** Unique message identifier (UUID) */
   id: string;
   /** Role of the message sender */
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'error';
   /** Message content */
   content: string;
   /** Message timestamp */
