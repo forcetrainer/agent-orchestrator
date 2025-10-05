@@ -1,0 +1,142 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4</storyId>
+    <title>Implement Bundle Structure Discovery and Loading</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to discover agents from bundle manifests</iWant>
+    <soThat>the system can load bundled agents with proper metadata</soThat>
+    <tasks>
+      - Task 1: Create Bundle Scanner Module (AC: 4.4.1)
+      - Task 2: Load and Parse Bundle Manifests (AC: 4.4.1, 4.4.2)
+      - Task 3: Process Multi-Agent Bundles (AC: 4.4.2, 4.4.3, 4.4.4)
+      - Task 4: Process Standalone Bundles (AC: 4.4.2, 4.4.3)
+      - Task 5: Validate Bundle Structure (AC: 4.4.6)
+      - Task 6: Error Handling (AC: 4.4.7)
+      - Task 7: Return Agent Metadata List (AC: 4.4.5)
+      - Task 8: Update /api/agents Endpoint (AC: 4.4.8)
+      - Task 9: Unit Testing - Bundle Discovery (AC: 4.4.1, 4.4.7)
+      - Task 10: Unit Testing - Multi-Agent Bundles (AC: 4.4.2, 4.4.3, 4.4.4)
+      - Task 11: Unit Testing - Standalone Bundles (AC: 4.4.2, 4.4.3)
+      - Task 12: Unit Testing - Validation (AC: 4.4.6)
+      - Task 13: Integration Testing (AC: 4.4.8)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="4.4.1">Scan `bmad/custom/bundles/*/bundle.yaml` files</criterion>
+    <criterion id="4.4.2">Parse bundle.yaml to extract type (bundle vs standalone)</criterion>
+    <criterion id="4.4.3">Extract agent metadata: id, name, title, description, icon, file, entry_point</criterion>
+    <criterion id="4.4.4">Filter agents to only show entry_point: true in agent selector</criterion>
+    <criterion id="4.4.5">Return agent list with bundle context: [{id, name, title, description, icon, bundleName, bundlePath}]</criterion>
+    <criterion id="4.4.6">Validate bundle structure (required: bundle.yaml, agents/, config.yaml)</criterion>
+    <criterion id="4.4.7">Handle missing or malformed bundle.yaml gracefully</criterion>
+    <criterion id="4.4.8">Update `/api/agents` endpoint to return bundled agents</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/BUNDLE-SPEC.md" title="BMAD Agent Bundle Specification v1.0" section="Section 1-2">
+        Bundle directory structure specification defining multi-agent and standalone bundle layouts. Multi-agent bundles contain bundle.yaml, config.yaml, agents/, workflows/, templates/. Standalone bundles have agent.md in root. Manifest-driven discovery replaces file scanning approach.
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="bundle.yaml Schema" section="Section 2 (lines 44-106)">
+        Bundle manifest schema with required fields: type (bundle|standalone), name (kebab-case), version (semver), description. Multi-agent bundles define agents array with id, name, title, file, entry_point flag. Standalone bundles have single agent object.
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="Server Integration" section="Section 7 (lines 369-427)">
+        Agent discovery pattern: scan bmad/custom/bundles/*, read bundle.yaml, validate structure, register agents with entry_point: true. Path resolution uses bundleName for {bundle-root}. Pseudocode for loadBundles() function provided.
+      </doc>
+      <doc path="docs/EPIC4-TECH-SPEC.md" title="Story 4.4 Implementation" section="Lines 485-592">
+        Complete implementation reference including AgentMetadata interface, discoverBundles() function, validateBundleManifest(), error handling patterns. Defines return format with bundleName, bundlePath, filePath for integration with Story 4.2 path resolution.
+      </doc>
+      <doc path="docs/prd.md" title="Agent Bundle Structure Support" section="FR-13 (lines 213-223)">
+        Functional requirement for bundle structure support. System must discover agents from bundle.yaml manifests, parse metadata, filter by entry_point, validate structure, handle bundle-scoped paths. Supports multi-agent and standalone bundles.
+      </doc>
+      <doc path="docs/epics.md" title="Story 4.4 Details" section="Lines 899-924">
+        Story acceptance criteria and prerequisites. Depends on Story 4.2 (Path Resolution). Creates lib/agents/bundleScanner.ts. Updates app/api/agents/route.ts. Replaces Epic 3 Story 3.4 file-based agent discovery with manifest-based approach.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="app/api/agents/route.ts" kind="file" symbol="GET" lines="1-43" reason="Existing /api/agents endpoint that needs to be refactored to use discoverBundles() instead of loadAgents()">
+        Current implementation loads agents using loadAgents() from lib/agents/loader.ts (Epic 2 deprecated approach). Returns AgentSummary[] with id, name, title, description, icon, path. This needs to be replaced with bundleScanner.discoverBundles() which returns AgentMetadata with additional bundleName, bundlePath, filePath fields per BUNDLE-SPEC.
+      </artifact>
+      <artifact path="lib/agents/loader.ts" kind="file" symbol="loadAgents" lines="all" reason="Deprecated agent loading function that scans .md files with XML tags - to be replaced by bundle scanner">
+        Epic 2 implementation that scans for .md files and parses XML tags. This file-scanning approach is being replaced by manifest-based discovery in Story 4.4. Bundle scanner provides better performance, explicit metadata, and support for multi-agent bundles.
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="file" symbol="PathContext" lines="15-21" reason="PathContext interface used by bundle scanner to resolve {bundle-root} paths">
+        Interface definition: bundleRoot, coreRoot, projectRoot, bundleConfig. Bundle scanner will construct PathContext with bundleRoot set to bundlePath for each discovered bundle. Used by Stories 4.2, 4.3, and will be used by Story 4.7 for agent initialization.
+      </artifact>
+      <artifact path="lib/agents/criticalActions.ts" kind="file" symbol="processCriticalActions" lines="all" reason="Uses bundlePath from bundle metadata for path resolution context">
+        Critical actions processor (Story 4.3) expects bundlePath as parameter to construct PathContext. Bundle scanner provides this via AgentMetadata.bundlePath. Agent.md loaded from AgentMetadata.filePath for XML parsing.
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="js-yaml" version="^4.1.0">YAML parsing library for bundle.yaml manifests</package>
+        <package name="next" version="14.2.0">Next.js framework providing API routes</package>
+        <package name="typescript" version="^5">TypeScript for type definitions (AgentMetadata, BundleManifest interfaces)</package>
+      </node>
+      <builtin>
+        <package name="fs/promises">Async file system operations for directory scanning and file reading</package>
+        <package name="path">Path manipulation for constructing bundlePath, filePath, manifestPath</package>
+      </builtin>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="manifest-driven">Bundle discovery MUST use bundle.yaml manifests as source of truth, NOT file scanning. Declarative metadata approach provides explicit control over discoverable agents and bundle-level information.</constraint>
+    <constraint id="entry-point-filtering">Only agents with entry_point: true are discoverable. Multi-agent bundles can have internal helper agents with entry_point: false that are called by other agents but not shown in UI.</constraint>
+    <constraint id="graceful-degradation">Scanner MUST continue processing remaining bundles when individual bundle fails validation. One malformed bundle must not break entire platform. Log errors with bundle name context.</constraint>
+    <constraint id="depth-1-scan">Scan bundles directory at depth 1 only (non-recursive). Each immediate subdirectory represents one bundle. Do not recurse into workflows/, templates/, agents/ subdirectories.</constraint>
+    <constraint id="validation-required">All bundles MUST pass validateBundleManifest() checks: required fields (type, name, version), type-specific validation (agents array for multi-agent, agent object for standalone), at least one entry_point: true agent.</constraint>
+    <constraint id="path-construction">File paths constructed using path.join() for cross-platform compatibility. bundlePath: join(bundlesRoot, bundleDir.name), filePath: join(bundlePath, agent.file), manifestPath: join(bundlePath, 'bundle.yaml').</constraint>
+    <constraint id="integration-story-4.2">AgentMetadata.bundlePath used by Story 4.2 path resolver to construct {bundle-root} paths. Must be absolute path or relative to project root for path resolution to work correctly.</constraint>
+    <constraint id="integration-story-4.3">AgentMetadata.filePath used by Story 4.3 critical actions to load agent.md file. Must point to valid agent definition file with <critical-actions> XML section.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="AgentMetadata" kind="interface" signature="{ id: string; name: string; title: string; description?: string; icon?: string; bundleName: string; bundlePath: string; filePath: string; }" path="lib/agents/bundleScanner.ts">
+      Return type for discoverBundles(). Extends Epic 2 AgentSummary with bundle context fields. Required fields: id, name, title, bundleName, bundlePath, filePath. Optional: description, icon. Used by /api/agents endpoint and agent selector UI.
+    </interface>
+    <interface name="BundleManifest" kind="interface" signature="{ type: 'bundle' | 'standalone'; name: string; version: string; description?: string; agents?: Array<AgentDef>; agent?: AgentDef; }" path="lib/agents/bundleScanner.ts">
+      Type definition for parsed bundle.yaml content. Discriminated union on 'type' field. Multi-agent bundles have agents array, standalone bundles have agent object. Must match BUNDLE-SPEC.md schema exactly.
+    </interface>
+    <interface name="discoverBundles" kind="function" signature="async function discoverBundles(bundlesRoot: string): Promise<Array<AgentMetadata>>" path="lib/agents/bundleScanner.ts">
+      Main entry point for bundle discovery. Scans bundlesRoot directory, reads bundle.yaml files, validates structure, extracts agent metadata. Returns array of discoverable agents (entry_point: true only). Called by /api/agents endpoint.
+    </interface>
+    <interface name="validateBundleManifest" kind="function" signature="function validateBundleManifest(manifest: any): void" path="lib/agents/bundleScanner.ts">
+      Validation function that throws descriptive errors for invalid bundles. Checks: type field exists, name exists, version exists, type-specific requirements (agents array or agent object), at least one entry_point: true.
+    </interface>
+    <interface name="GET /api/agents" kind="endpoint" signature="GET -> { success: boolean; data?: AgentMetadata[]; error?: string; }" path="app/api/agents/route.ts">
+      API endpoint returning list of discoverable agents. Needs refactoring to call discoverBundles() instead of loadAgents(). Returns bundled agent metadata for frontend agent selector. Environment variable BUNDLES_ROOT (default: 'bmad/custom/bundles').
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Jest framework conventions established in Epic 1-3. Unit tests in lib/agents/__tests__/bundleScanner.test.ts verify individual functions in isolation. Integration tests in lib/agents/__tests__/bundleScanner.integration.test.ts test with real filesystem directory structures. API endpoint tests verify /api/agents returns correct JSON format. Test data includes sample multi-agent and standalone bundles with valid and invalid manifests.
+    </standards>
+    <locations>
+      - lib/agents/__tests__/bundleScanner.test.ts (unit tests)
+      - lib/agents/__tests__/bundleScanner.integration.test.ts (integration tests)
+      - app/api/agents/__tests__/route.test.ts (API endpoint tests, may need creation)
+    </locations>
+    <ideas>
+      <test ac="4.4.1">Unit: Test discoverBundles() scans directory and identifies bundle.yaml files. Mock fs.readdir to return sample directory entries. Verify only directories processed, files skipped.</test>
+      <test ac="4.4.2">Unit: Test multi-agent bundle parsing extracts manifest.type === 'bundle' correctly. Test standalone bundle parsing extracts manifest.type === 'standalone'. Verify type field required.</test>
+      <test ac="4.4.3">Unit: Test agent metadata extraction from multi-agent bundle agents array. Verify id, name, title, description, icon, file extracted correctly. Test with missing optional fields (description, icon).</test>
+      <test ac="4.4.4">Unit: Test entry_point filtering. Multi-agent bundle with 3 agents (2 entry_point: true, 1 false) should return only 2 agents. Verify agent with entry_point: false excluded from results.</test>
+      <test ac="4.4.5">Unit: Test AgentMetadata includes bundleName and bundlePath. Verify filePath constructed correctly with path.join(bundlePath, agent.file). All required fields populated in return object.</test>
+      <test ac="4.4.6">Unit: Test validateBundleManifest() rejects missing type, name, version. Multi-agent bundle requires agents array. Standalone bundle requires agent object. At least one entry_point: true required for multi-agent.</test>
+      <test ac="4.4.7">Unit: Test error handling for missing bundle.yaml (skip directory), invalid YAML syntax (log error, continue), validation errors (log error, continue). Verify scan continues to next bundle on error.</test>
+      <test ac="4.4.8">Integration: Test /api/agents endpoint calls discoverBundles() and returns AgentMetadata array. Mock BUNDLES_ROOT environment variable. Verify JSON format: {success: true, data: [...]}. Test error response format.</test>
+      <test ac="integration">Integration: Create test bundles directory with real bundle.yaml files. Test mixed multi-agent and standalone bundles. Test empty bundles directory returns empty array. Test with malformed bundle (scan continues).</test>
+    </ideas>
+  </tests>
+</story-context>

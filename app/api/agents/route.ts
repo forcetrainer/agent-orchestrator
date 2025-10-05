@@ -1,38 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse, AgentSummary } from '@/types/api';
+import { ApiResponse } from '@/types/api';
 import { handleApiError } from '@/lib/utils/errors';
-import { loadAgents } from '@/lib/agents/loader';
+import { discoverBundles, AgentMetadata } from '@/lib/agents/bundleScanner';
+import { join } from 'path';
 
 /**
  * GET /api/agents
- * Returns list of available agents
+ * Returns list of available agents from bundle manifests
  *
  * Story 1.2: API Route Structure
  * Story 1.4: Error Handling Middleware
- * Story 2.10: Integrate agent loader to discover agents from filesystem
- * - Uses loadAgents() to discover agents from agents folder
- * - Uses proper ApiResponse<AgentSummary[]> type
+ * Story 4.4: Bundle Structure Discovery and Loading
+ * - Uses discoverBundles() to discover agents from bundle.yaml manifests
+ * - Returns AgentMetadata with bundle context (bundleName, bundlePath, filePath)
  * - Uses centralized error handling with handleApiError
  */
 export async function GET(request: NextRequest) {
   try {
-    // Load agents from agents folder using lazy-loading pattern
-    const agents = await loadAgents();
+    // Get bundles root from environment or use default
+    const bundlesRoot = process.env.BUNDLES_ROOT || 'bmad/custom/bundles';
 
-    // Map to AgentSummary (exclude fullContent for API response)
-    const agentSummaries: AgentSummary[] = agents.map((agent) => ({
-      id: agent.id,
-      name: agent.name,
-      title: agent.title,
-      description: agent.description,
-      icon: agent.icon,
-      path: agent.path,
-    }));
+    // Resolve to absolute path from project root
+    const bundlesPath = join(process.cwd(), bundlesRoot);
 
-    return NextResponse.json<ApiResponse<AgentSummary[]>>(
+    // Discover agents from bundle manifests
+    const agents = await discoverBundles(bundlesPath);
+
+    return NextResponse.json<ApiResponse<AgentMetadata[]>>(
       {
         success: true,
-        data: agentSummaries,
+        data: agents,
       },
       { status: 200 }
     );
