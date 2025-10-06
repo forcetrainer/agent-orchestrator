@@ -1140,7 +1140,98 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 **⚠️ Solo Developer Note:** Complete Epic 4 fully before starting Epic 5. The file viewer integrates into the existing chat UI layout, so you need that foundation stable first.
 
-**Estimated Stories:** 7
+**Estimated Stories:** 8 (includes foundational Story 5.0)
+
+---
+
+#### Story 5.0: Session-Based Output Management (Foundation)
+
+**As a** workflow engine developer
+**I want** a standardized, secure session-based output management system
+**So that** agent outputs are organized, discoverable, and isolated from application source code
+
+**Prerequisites:** Epic 4 COMPLETE (Path Resolution Story 4.2, Workflow Engine Story 4.9)
+
+**⚠️ CRITICAL:** This is a **foundational story** that MUST be completed before Stories 5.1-5.7. The file viewer has no predictable structure to display without this.
+
+**Problem Statement:**
+- Current agents use inconsistent output paths with undefined variables
+- No standardized way for agents to discover outputs from other agents
+- Security risk: agents could potentially write to source code directories
+- File viewer (Stories 5.1-5.7) needs reliable directory structure to display
+
+**Solution:**
+- Isolated `/data/agent-outputs/` directory for all agent writes
+- UUID-based session folders provide unique, collision-free namespacing
+- Manifest.json enables cross-agent discovery and human navigation
+- Security boundary: agents can ONLY write to `/data`, never to source code
+
+**Acceptance Criteria:**
+
+1. **Isolated Output Directory**
+   - [ ] `/data/agent-outputs/` directory created at project root
+   - [ ] `/data` added to `.gitignore` (agent outputs not version controlled)
+   - [ ] Path validator enforces: agents can ONLY write to `/data/agent-outputs`
+   - [ ] Attempts to write outside `/data` throw security error
+
+2. **Session ID Generation**
+   - [ ] Workflow engine generates UUID v4 for each workflow execution
+   - [ ] Session folder created at `/data/agent-outputs/{uuid}/`
+   - [ ] `{{session_id}}` template variable available to agents
+   - [ ] Session ID immutable for duration of workflow
+
+3. **Manifest Auto-Generation**
+   - [ ] Manifest.json created on workflow start with `status: "running"`
+   - [ ] Manifest finalized on completion with `completed_at` and final status
+   - [ ] Schema matches SESSION-OUTPUT-SPEC.md v1.0.0
+   - [ ] Manifest saved to `{session-folder}/manifest.json`
+
+4. **Configuration Updates**
+   - [ ] `bmad/bmm/config.yaml` updated:
+     ```yaml
+     output_folder: '{project-root}/data/agent-outputs'
+     agent_outputs_folder: '{output_folder}'
+     ```
+   - [ ] Variables resolve correctly via path resolver
+
+5. **Agent Workflow Migration**
+   - [ ] **IMPORTANT: This is one of the LAST steps (Phase 5 in implementation)**
+   - [ ] All Alex workflows updated (6 workflows): session_id, session_folder, manifest_file, default_output_file
+   - [ ] All Casey workflows updated (6 workflows): same fields
+   - [ ] All Pixel workflows updated (3 workflows): same fields
+   - [ ] **DO NOT UPDATE until workflow engine changes are complete and tested**
+
+6. **Session Discovery API**
+   - [ ] `findSessions()` function implemented with filters (agent, workflow, status, limit)
+   - [ ] Returns array of manifest objects sorted by started_at (newest first)
+   - [ ] Empty array returned if no matches (not error)
+
+7. **Output Registration**
+   - [ ] `registerOutput()` utility available for agents
+   - [ ] Appends to `manifest.outputs[]` array atomically
+   - [ ] Auto-populates `created_at` timestamp
+
+8. **Documentation**
+   - [ ] SESSION-OUTPUT-SPEC.md finalized in `/docs`
+   - [ ] BUNDLE-SPEC.md updated with session management section
+
+**Implementation Phases:**
+
+1. **Phase 1: Infrastructure** - Directory creation, config updates, documentation
+2. **Phase 2: Workflow Engine** - UUID generation, session folder creation, manifest auto-generation
+3. **Phase 3: Session Discovery** - findSessions() API, registerOutput() utility
+4. **Phase 4: Security** - Path validator enforcement, security testing
+5. **Phase 5: Agent Migration** - Update all workflow.yaml files (LAST STEP before testing)
+6. **Phase 6: Integration Testing** - End-to-end validation, cross-agent discovery
+
+**Technical Notes:**
+- Detailed architecture in `docs/tech-spec-epic-5.md` Story 5.0 section
+- Full specification in `docs/SESSION-OUTPUT-SPEC.md`
+- Security model: `/data` is the ONLY writable location for agents
+- Manifest schema enables programmatic cross-agent file discovery
+- Session UUIDs prevent collision and enable concurrent workflow execution
+
+**Story Points:** 8 (foundational infrastructure work)
 
 ---
 

@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "session_id": "66864cc8-de8f-4201-b4b9-49ab71552b14",
+  "agent": {
+    "name": "unknown",
+    "title": "Unknown Agent",
+    "bundle": "unknown"
+  },
+  "workflow": {
+    "name": "intake-app",
+    "description": "Initial requirements gathering for ServiceNow application development requests. Quick user-facing session (3-5 minutes) to capture problem statement, business impact, and initial requirements."
+  },
+  "execution": {
+    "started_at": "2025-10-06T23:39:11.048Z",
+    "status": "running",
+    "user": "Bryan"
+  },
+  "outputs": [],
+  "inputs": {},
+  "related_sessions": [],
+  "metadata": {}
+}

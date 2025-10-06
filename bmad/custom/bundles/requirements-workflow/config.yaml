@@ -11,3 +11,6 @@ output_folder: '{project-root}/docs'
 
 # SN Project Structure Configuration
 sn_projects_folder: '{project-root}/docs/sn-projects'
+
+# Agent Output Configuration (Story 5.0)
+agent_outputs_folder: '{project-root}/data/agent-outputs'

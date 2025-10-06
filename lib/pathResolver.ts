@@ -134,6 +134,56 @@ export async function loadBundleConfig(
 }
 
 /**
+ * Validates that write operations are restricted to agent output directories only
+ *
+ * Story 5.0: Path validator blocks writes outside /data/agent-outputs
+ *
+ * @param resolvedPath - Absolute path after variable resolution
+ * @param context - PathContext with projectRoot
+ * @throws Error if write path is not within /data/agent-outputs
+ */
+export function validateWritePath(
+  resolvedPath: string,
+  context: PathContext
+): void {
+  const normalizedPath = resolve(normalize(resolvedPath));
+  const agentOutputsPath = resolve(context.projectRoot, 'data/agent-outputs');
+
+  // Check if path is within /data/agent-outputs/
+  const isInAgentOutputs =
+    normalizedPath.startsWith(agentOutputsPath + sep) ||
+    normalizedPath === agentOutputsPath;
+
+  if (!isInAgentOutputs) {
+    console.error('[PathValidator Security] Write blocked - path outside agent outputs directory:', {
+      requested: normalizedPath,
+      allowed: agentOutputsPath,
+    });
+    throw new Error(
+      'Security violation: Write operations are only allowed within /data/agent-outputs/ directory'
+    );
+  }
+
+  // Additional check: Block writes to specific protected paths even if they're in project root
+  const protectedPaths = [
+    resolve(context.projectRoot, 'agents'),
+    resolve(context.projectRoot, 'bmad'),
+    resolve(context.projectRoot, 'lib'),
+    resolve(context.projectRoot, 'app'),
+    resolve(context.projectRoot, 'docs'),
+  ];
+
+  for (const protectedPath of protectedPaths) {
+    if (normalizedPath.startsWith(protectedPath + sep) || normalizedPath === protectedPath) {
+      console.error('[PathValidator Security] Write blocked - protected source directory:', protectedPath);
+      throw new Error(
+        'Security violation: Write operations to source code directories are not allowed'
+      );
+    }
+  }
+}
+
+/**
  * Validates that resolved path is within allowed directories and doesn't contain
  * path traversal attempts. Also validates symbolic links don't escape allowed directories.
  *

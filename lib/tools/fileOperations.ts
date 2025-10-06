@@ -14,7 +14,8 @@
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname, resolve, sep } from 'path';
 import { load as parseYaml } from 'js-yaml';
-import { resolvePath, PathContext, loadBundleConfig } from '@/lib/pathResolver';
+import { resolvePath, PathContext, loadBundleConfig, validateWritePath } from '@/lib/pathResolver';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
  * Standard result format for all file operation tools
@@ -143,7 +144,18 @@ export async function executeSaveOutput(
     // Resolve path variables (includes security validation)
     resolvedPath = resolvePath(params.file_path, context);
 
-    // Check if path is within core-root (read-only directory)
+    // Story 5.0: Validate write path is within /data/agent-outputs only
+    try {
+      validateWritePath(resolvedPath, context);
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        path: resolvedPath,
+      };
+    }
+
+    // Legacy check: if path is within core-root (read-only directory)
     const normalizedCoreRoot = resolve(context.coreRoot);
     const normalizedPath = resolve(resolvedPath);
     const isInCore = normalizedPath.startsWith(normalizedCoreRoot + sep) || normalizedPath === normalizedCoreRoot;
@@ -194,14 +206,69 @@ export async function executeSaveOutput(
 }
 
 /**
+ * Creates initial manifest.json for a new session
+ *
+ * Story 5.0: Auto-generates manifest on workflow start with status: "running"
+ *
+ * @param sessionId - UUID v4 session identifier
+ * @param sessionFolder - Absolute path to session folder
+ * @param workflowName - Name of the workflow
+ * @param workflowDescription - Description of the workflow
+ * @param author - Workflow author (e.g., "Alex the Facilitator")
+ * @param bundleName - Bundle name extracted from bundle root path
+ * @param bundleConfig - Bundle configuration with user_name
+ */
+async function createInitialManifest(
+  sessionId: string,
+  sessionFolder: string,
+  workflowName: string,
+  workflowDescription: string,
+  author: string,
+  bundleName: string,
+  bundleConfig?: Record<string, any>
+): Promise<void> {
+  // Extract agent name from author (e.g., "Alex the Facilitator" -> "alex")
+  const agentName = author.split(' ')[0].toLowerCase();
+
+  const manifest = {
+    version: '1.0.0',
+    session_id: sessionId,
+    agent: {
+      name: agentName,
+      title: author,
+      bundle: bundleName,
+    },
+    workflow: {
+      name: workflowName,
+      description: workflowDescription,
+    },
+    execution: {
+      started_at: new Date().toISOString(),
+      status: 'running',
+      user: bundleConfig?.user_name || 'unknown',
+    },
+    outputs: [],
+    inputs: {},
+    related_sessions: [],
+    metadata: {},
+  };
+
+  const manifestPath = resolve(sessionFolder, 'manifest.json');
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2), 'utf-8');
+  console.log(`[createInitialManifest] Created manifest: ${manifestPath}`);
+}
+
+/**
  * Execute Workflow Tool
  *
  * Loads a workflow configuration, instructions, and optional template.
  * Resolves all path variables in the workflow configuration.
  *
+ * Story 5.0: Generates UUID session ID, creates session folder, and injects session variables.
+ *
  * @param params - Workflow path and optional user input
  * @param context - PathContext with bundleRoot, coreRoot, projectRoot, bundleConfig
- * @returns ToolResult with workflow data: name, description, instructions, template, config, user_input
+ * @returns ToolResult with workflow data: name, description, instructions, template, config, user_input, session_id, session_folder
  */
 export async function executeWorkflow(
   params: ExecuteWorkflowParams,
@@ -232,15 +299,29 @@ export async function executeWorkflow(
       bundleConfig = parseYaml(configContent) as Record<string, any>;
     }
 
+    // Story 5.0: Generate UUID v4 session ID
+    const sessionId = uuidv4();
+    console.log(`[executeWorkflow] Generated session ID: ${sessionId}`);
+
+    // Story 5.0: Inject session_id into workflow config for variable resolution
+    workflowConfig.session_id = sessionId;
+
     // Create enhanced context with loaded config
     const enhancedContext: PathContext = {
       ...context,
       bundleConfig,
     };
 
-    // Resolve workflow config variables using enhanced context
-    const resolvedConfig = await resolveWorkflowVariables(
+    // First pass: Resolve workflow config variables
+    let resolvedConfig = await resolveWorkflowVariables(
       workflowConfig,
+      enhancedContext
+    );
+
+    // Story 5.0: Second pass to resolve session_folder after session_id is injected
+    // The session_folder might reference {{session_id}}, so we need another resolution pass
+    resolvedConfig = await resolveWorkflowVariables(
+      resolvedConfig,
       enhancedContext
     );
 
@@ -264,6 +345,35 @@ export async function executeWorkflow(
       template = await readFile(templatePath, 'utf-8');
     }
 
+    // Story 5.0: Create session folder if session_folder is defined in config
+    let sessionFolder = '';
+    if (resolvedConfig.session_folder) {
+      // Story 5.0: Final mustache replacement for {{session_id}} in session_folder
+      sessionFolder = resolvedConfig.session_folder
+        .replace(/\{\{session_id\}\}/g, sessionId)
+        .replace(/\{session_id\}/g, sessionId);
+
+      // Story 5.0: Resolve any remaining path variables (like {project-root})
+      if (sessionFolder.includes('{')) {
+        try {
+          sessionFolder = resolvePath(sessionFolder, enhancedContext);
+        } catch (error: any) {
+          console.warn(`[executeWorkflow] Could not fully resolve session_folder: ${error.message}`);
+        }
+      }
+
+      // Create the session directory
+      await mkdir(sessionFolder, { recursive: true });
+      console.log(`[executeWorkflow] Created session folder: ${sessionFolder}`);
+
+      // Story 5.0: Create initial manifest.json
+      // Extract agent metadata from workflow and context
+      const author = workflowConfig.author || 'Unknown Agent';
+      const bundleName = context.bundleRoot.split('/').pop() || 'unknown';
+
+      await createInitialManifest(sessionId, sessionFolder, workflowName, description, author, bundleName, bundleConfig);
+    }
+
     return {
       success: true,
       path: resolvedWorkflowPath,
@@ -273,6 +383,8 @@ export async function executeWorkflow(
       template: template,
       config: resolvedConfig,
       user_input: params.user_input || {},
+      session_id: sessionId,
+      session_folder: sessionFolder,
     };
   } catch (error: any) {
     // Handle various error types
@@ -347,11 +459,14 @@ async function resolveWorkflowVariables(
             let resolvedValue = value;
 
             // Replace references to other workflow variables (e.g., {installed_path})
+            // Story 5.0: Also support {{session_id}} mustache syntax (double braces)
             for (const [varKey, varValue] of Object.entries(currentConfig)) {
               if (typeof varValue === 'string' && !varValue.includes('{')) {
                 // This variable is already resolved, can be used for substitution
                 const varPattern = new RegExp(`\\{${varKey}\\}`, 'g');
+                const mustachePattern = new RegExp(`\\{\\{${varKey}\\}\\}`, 'g');
                 resolvedValue = resolvedValue.replace(varPattern, varValue);
+                resolvedValue = resolvedValue.replace(mustachePattern, varValue);
               }
             }
 

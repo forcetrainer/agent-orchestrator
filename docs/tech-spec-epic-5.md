@@ -42,6 +42,246 @@ Epic 5 builds upon Epic 4's completed agent execution architecture by:
 
 The file viewer operates as a complementary output verification system, providing transparency into agent-generated artifacts without interfering with the core agentic execution loop.
 
+---
+
+## Story 5.0: Session-Based Output Management (Foundation)
+
+**Priority:** Critical - Must complete before Stories 5.1-5.7
+**Story Points:** 8
+**Dependencies:** Epic 4 (Path Resolution, Workflow Engine)
+
+### Purpose
+
+Story 5.0 establishes the foundational output management infrastructure that all subsequent Epic 5 stories depend on. Without this foundation, the file viewer (Stories 5.1-5.7) would have no predictable directory structure to display.
+
+**Problem Addressed:**
+- Current agents use inconsistent output paths with undefined variables
+- No standardized way for agents to discover outputs from other agents
+- Security risk: agents could potentially write to source code directories
+- File viewer needs reliable directory structure to display
+
+**Solution:**
+- Isolated `/data/agent-outputs/` directory for all agent writes
+- UUID-based session folders provide unique, collision-free namespacing
+- Manifest.json enables cross-agent discovery and human navigation
+- Security boundary: agents can ONLY write to `/data`, never to source code
+
+### Architecture Impact
+
+**New Directory Structure:**
+```
+{project-root}/
+├── app/, lib/, agents/, bmad/  # Source code (READ-ONLY for agents)
+├── docs/                         # Version-controlled documentation
+├── data/                         # NEW: Runtime data (git-ignored)
+│   └── agent-outputs/            # Agent write zone - isolated
+│       ├── {uuid-1}/
+│       │   ├── manifest.json
+│       │   └── [agent files...]
+│       └── {uuid-2}/
+│           └── ...
+```
+
+**Security Model:**
+- Path validator enforces: agents can ONLY write to `/data/agent-outputs/`
+- Attempts to write to `/agents`, `/bmad`, `/lib`, `/app` throw security errors
+- Clear separation: "Code is in `/`, runtime data is in `/data`"
+- File viewer (Stories 5.1-5.7) has read-only access to `/data/agent-outputs` only
+
+**Session Management:**
+- Each workflow execution gets unique UUID v4 session ID
+- Session folder: `/data/agent-outputs/{session-uuid}/`
+- Manifest file: `{session-folder}/manifest.json`
+- Variables available to agents: `{{session_id}}`, `{session_folder}`
+
+**Manifest Schema (v1.0.0):**
+```json
+{
+  "version": "1.0.0",
+  "session_id": "a3f2c9d1-4b5e-6789-01ab-cdef12345678",
+  "agent": {
+    "name": "alex",
+    "title": "Alex the Facilitator",
+    "bundle": "bmad/bmm"
+  },
+  "workflow": {
+    "name": "intake-app",
+    "description": "Initial requirements gathering"
+  },
+  "execution": {
+    "started_at": "2025-10-05T23:01:45.123Z",
+    "completed_at": "2025-10-05T23:05:22.456Z",
+    "status": "completed",
+    "user": "Bryan"
+  },
+  "outputs": [
+    {
+      "file": "requirements.md",
+      "type": "document",
+      "description": "Initial requirements document",
+      "created_at": "2025-10-05T23:05:20.789Z"
+    }
+  ],
+  "inputs": {},
+  "related_sessions": [],
+  "metadata": {}
+}
+```
+
+### Implementation Components
+
+**Workflow Engine Updates (lib/agents/workflowExecution.ts):**
+- Generate UUID v4 session ID on workflow start
+- Create session folder: `/data/agent-outputs/{uuid}/`
+- Create manifest.json with initial metadata
+- Inject `session_id` and `session_folder` into workflow context
+- Finalize manifest on workflow completion (add `completed_at`, update `status`)
+
+**Session Discovery API (lib/agents/sessionDiscovery.ts):**
+```typescript
+findSessions({
+  agent?: string,              // Filter by agent name
+  workflow?: string | RegExp,  // Filter by workflow name/pattern
+  status?: "running" | "completed" | "failed",
+  limit?: number               // Default: 10
+}): SessionManifest[]
+```
+
+**Configuration Updates:**
+```yaml
+# bmad/bmm/config.yaml
+output_folder: '{project-root}/data/agent-outputs'
+agent_outputs_folder: '{output_folder}'
+```
+
+**Git Ignore:**
+```gitignore
+# Agent runtime data
+/data/
+```
+
+### Acceptance Criteria
+
+**AC 5.0.1: Isolated Output Directory**
+- [ ] `/data/agent-outputs/` directory structure exists
+- [ ] `/data` added to `.gitignore`
+- [ ] Path validator blocks writes outside `/data/agent-outputs`
+
+**AC 5.0.2: Session ID Generation**
+- [ ] UUID v4 generated for each workflow execution
+- [ ] Session folder created at `/data/agent-outputs/{uuid}/`
+- [ ] `{{session_id}}` variable available to agents
+
+**AC 5.0.3: Manifest Auto-Generation**
+- [ ] Manifest created on workflow start with `status: "running"`
+- [ ] Manifest finalized on completion with `completed_at` and final status
+- [ ] Schema matches SESSION-OUTPUT-SPEC.md v1.0.0
+
+**AC 5.0.4: Configuration Updates**
+- [ ] `bmad/bmm/config.yaml` updated with `agent_outputs_folder`
+- [ ] Variables resolve correctly via path resolver
+
+**AC 5.0.5: Agent Workflow Migration**
+- [ ] **IMPORTANT: This is one of the LAST steps before testing**
+- [ ] All Alex workflows updated (6 workflows)
+- [ ] All Casey workflows updated (6 workflows)
+- [ ] All Pixel workflows updated (3 workflows)
+- [ ] Updated fields: `session_id`, `session_folder`, `manifest_file`, `default_output_file`
+- [ ] **DO NOT UPDATE until workflow engine changes are complete and tested**
+
+**AC 5.0.6: Session Discovery API**
+- [ ] `findSessions()` function implemented
+- [ ] Filters by agent, workflow, status work correctly
+- [ ] Returns sorted results (newest first)
+
+**AC 5.0.7: Output Registration**
+- [ ] `registerOutput()` utility available
+- [ ] Appends to `manifest.outputs[]` array
+- [ ] Auto-populates `created_at` timestamp
+
+**AC 5.0.8: Documentation**
+- [ ] SESSION-OUTPUT-SPEC.md finalized in `/docs`
+- [ ] BUNDLE-SPEC.md updated with session management section
+
+### Implementation Order
+
+1. **Phase 1: Infrastructure Setup**
+   - Create `/data/agent-outputs/` directory
+   - Add `/data` to `.gitignore`
+   - Update `bmad/bmm/config.yaml`
+   - Update SESSION-OUTPUT-SPEC.md and BUNDLE-SPEC.md
+
+2. **Phase 2: Workflow Engine Changes**
+   - Implement UUID generation
+   - Implement session folder creation
+   - Implement manifest auto-generation
+   - Implement manifest finalization
+
+3. **Phase 3: Session Discovery**
+   - Implement `findSessions()` API
+   - Implement `registerOutput()` utility
+   - Add unit tests for discovery API
+
+4. **Phase 4: Security Validation**
+   - Update path validator to enforce `/data` boundary
+   - Test path traversal attempts
+   - Verify writes outside `/data` are blocked
+
+5. **Phase 5: Agent Migration (LAST STEP)**
+   - Update Alex workflow.yaml files (6 files)
+   - Update Casey workflow.yaml files (6 files)
+   - Update Pixel workflow.yaml files (3 files)
+   - Test each agent workflow end-to-end
+
+6. **Phase 6: Integration Testing**
+   - Run Alex → Casey → Pixel workflow chain
+   - Verify session discovery works cross-agent
+   - Verify all manifests created correctly
+   - Verify no regression in Epic 4 functionality
+
+### Testing Requirements
+
+**Unit Tests:**
+- Session ID generation (UUID v4 format, uniqueness)
+- Session folder creation
+- Manifest auto-generation and schema validation
+- Manifest finalization on success/failure
+- Path security (blocks outside `/data`, allows within)
+- Session discovery filtering and sorting
+- Output registration
+
+**Integration Tests:**
+- End-to-end workflow execution creates session
+- Cross-agent discovery (Pixel finds Casey's output)
+- Concurrent workflow sessions (no UUID collision)
+
+**Security Tests:**
+- Attempt write to `/agents` → blocked
+- Attempt write to `/bmad` → blocked
+- Attempt write to `/lib` → blocked
+- Attempt path traversal `../../etc/passwd` → blocked
+- Valid write to `/data/agent-outputs/{uuid}/file.md` → allowed
+
+### Definition of Done
+
+- [ ] All acceptance criteria passing
+- [ ] All unit tests passing (80%+ coverage)
+- [ ] All integration tests passing
+- [ ] All security tests passing
+- [ ] Documentation updated (SESSION-OUTPUT-SPEC.md, BUNDLE-SPEC.md)
+- [ ] Agent workflows migrated and tested
+- [ ] No regression in Epic 4 functionality
+- [ ] Code reviewed and merged to main
+
+### References
+
+- **SESSION-OUTPUT-SPEC.md** - Full specification document
+- **Epic 4 Story 4.2** - Path Resolution System (reused here)
+- **Epic 4 Story 4.9** - Workflow Execution Engine (extended here)
+- **BUNDLE-SPEC.md** - Bundle configuration standards
+
+---
+
 ## Detailed Design
 
 ### Services and Modules
@@ -571,6 +811,17 @@ function validateOutputPath(requestedPath: string): string {
 | **5.7.5** | File downloads disabled | Security > Read-Only Access | No download endpoints/buttons | Verify no download capability in UI/API |
 | **5.7.6** | Path traversal blocked | Security > Path Traversal Prevention | `validateOutputPath` with `../` | Test `?path=../../etc/passwd`, verify 403 |
 | **5.7.7** | Only output directory accessible | Security > Directory Scope | Path validation logic | Test bundle/core paths, verify blocked |
+
+## Post-Review Follow-ups
+
+**Story 5.0 Review (2025-10-06):**
+1. **[HIGH]** Complete agent metadata extraction from XML `<agent>` element in manifest generation (lib/tools/fileOperations.ts:230)
+2. **[MEDIUM]** Add formal unit test suite for session discovery API and path security validation
+3. **[MEDIUM]** Connect workflow finalization hook to automatically finalize manifests on completion
+4. **[LOW]** Validate concurrent write safety for output registration under high concurrency scenarios
+5. **[LOW]** Add end-to-end integration test for cross-agent session discovery (Alex → Casey → Pixel chain)
+
+---
 
 ## Risks, Assumptions, Open Questions
 

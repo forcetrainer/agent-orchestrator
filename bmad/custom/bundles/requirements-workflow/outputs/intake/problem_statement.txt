@@ -1,0 +1,5 @@
+Problem Statement for "Bryan's Dumb Application"
+
+Today, access requests for "Bryan's Dumb Application" are completed manually. Requesters currently submit access requests by a manual process, approvals are handled manually, and granting access is performed manually, which leads to delays, inconsistent provisioning, and potential security gaps.
+
+You want a workflow where a user fills out a form, the request routes to the appropriate approver(s) for approval, and upon approval the system automatically grants the requested access (provisioning), reducing manual effort and errors.

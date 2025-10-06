@@ -1,0 +1,275 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>0</storyId>
+    <title>Session-Based Output Management (Foundation)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-06</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.0.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>workflow engine developer</asA>
+    <iWant>a standardized, secure session-based output management system</iWant>
+    <soThat>agent outputs are organized, discoverable, and isolated from application source code</soThat>
+    <tasks>
+      <task id="1" title="Infrastructure Setup" ac="1,4,8">
+        <subtask id="1.1">Create /data/agent-outputs/ directory structure</subtask>
+        <subtask id="1.2">Add /data to .gitignore</subtask>
+        <subtask id="1.3">Update bmad/bmm/config.yaml with agent_outputs_folder</subtask>
+        <subtask id="1.4">Verify path resolver resolves {config_source}:agent_outputs_folder</subtask>
+        <subtask id="1.5">Create/update SESSION-OUTPUT-SPEC.md in /docs</subtask>
+        <subtask id="1.6">Update BUNDLE-SPEC.md with session management section</subtask>
+      </task>
+      <task id="2" title="Workflow Engine UUID Generation" ac="2">
+        <subtask id="2.1">Install uuid library (npm install uuid @types/uuid)</subtask>
+        <subtask id="2.2">Implement UUID v4 generation in workflow execution engine</subtask>
+        <subtask id="2.3">Create session folder at /data/agent-outputs/{uuid}/</subtask>
+        <subtask id="2.4">Inject session_id and session_folder variables into workflow context</subtask>
+        <subtask id="2.5">Ensure session ID immutable for workflow duration</subtask>
+        <subtask id="2.6">Test UUID generation and folder creation</subtask>
+      </task>
+      <task id="3" title="Manifest Auto-Generation" ac="3">
+        <subtask id="3.1">Implement manifest creation on workflow start</subtask>
+        <subtask id="3.2">Populate initial manifest fields</subtask>
+        <subtask id="3.3">Extract agent metadata from agent XML definition</subtask>
+        <subtask id="3.4">Extract workflow metadata from workflow.yaml</subtask>
+        <subtask id="3.5">Save initial manifest to {session-folder}/manifest.json</subtask>
+        <subtask id="3.6">Implement manifest finalization on workflow completion</subtask>
+        <subtask id="3.7">Update manifest with completed_at and final status</subtask>
+        <subtask id="3.8">Validate manifest schema matches SESSION-OUTPUT-SPEC.md v1.0.0</subtask>
+      </task>
+      <task id="4" title="Session Discovery API" ac="6">
+        <subtask id="4.1">Create lib/agents/sessionDiscovery.ts module</subtask>
+        <subtask id="4.2">Implement findSessions() with filter parameters</subtask>
+        <subtask id="4.3">Scan /data/agent-outputs/ for manifest.json files</subtask>
+        <subtask id="4.4">Parse and validate manifest files</subtask>
+        <subtask id="4.5">Apply filters to manifest data</subtask>
+        <subtask id="4.6">Sort results by execution.started_at (newest first)</subtask>
+        <subtask id="4.7">Return empty array if no matches</subtask>
+        <subtask id="4.8">Add unit tests for session discovery</subtask>
+      </task>
+      <task id="5" title="Output Registration Utility" ac="7">
+        <subtask id="5.1">Create registerOutput() function</subtask>
+        <subtask id="5.2">Implement atomic append to manifest.outputs[]</subtask>
+        <subtask id="5.3">Auto-populate created_at timestamp</subtask>
+        <subtask id="5.4">Validate output object schema</subtask>
+        <subtask id="5.5">Handle concurrent output registration</subtask>
+        <subtask id="5.6">Add unit tests for output registration</subtask>
+      </task>
+      <task id="6" title="Path Security Validation" ac="1">
+        <subtask id="6.1">Update lib/pathResolver.ts or create lib/files/pathValidator.ts</subtask>
+        <subtask id="6.2">Implement validation: only allow writes to /data/agent-outputs/</subtask>
+        <subtask id="6.3">Block writes to /agents, /bmad, /lib, /app, /docs</subtask>
+        <subtask id="6.4">Test path traversal attempts</subtask>
+        <subtask id="6.5">Ensure existing read operations remain functional</subtask>
+        <subtask id="6.6">Add security tests for write boundaries</subtask>
+      </task>
+      <task id="7" title="Agent Workflow Migration (LAST STEP)" ac="5">
+        <subtask id="7.1">CRITICAL: Only execute AFTER Tasks 1-6 complete and tested</subtask>
+        <subtask id="7.2">Update Alex workflows (6 files)</subtask>
+        <subtask id="7.3">Update Casey workflows (6 files)</subtask>
+        <subtask id="7.4">Update Pixel workflows (3 files)</subtask>
+        <subtask id="7.5">Add/update variables: session_id, session_folder, manifest_file, default_output_file</subtask>
+        <subtask id="7.6">Test each updated workflow end-to-end</subtask>
+      </task>
+      <task id="8" title="Integration Testing" ac="All">
+        <subtask id="8.1">Execute Alex workflow → verify session folder created</subtask>
+        <subtask id="8.2">Execute Casey workflow → verify session discovery works</subtask>
+        <subtask id="8.3">Execute Pixel workflow → verify cross-agent discovery</subtask>
+        <subtask id="8.4">Test concurrent workflow executions (no UUID collision)</subtask>
+        <subtask id="8.5">Verify manifest schema compliance</subtask>
+        <subtask id="8.6">Test registerOutput() adds files to manifest</subtask>
+        <subtask id="8.7">Verify no regression in Epic 4 functionality</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="5.0.1" title="Isolated Output Directory">
+      <item>/data/agent-outputs/ directory structure exists</item>
+      <item>/data added to .gitignore</item>
+      <item>Path validator blocks writes outside /data/agent-outputs</item>
+    </criterion>
+    <criterion id="5.0.2" title="Session ID Generation">
+      <item>UUID v4 generated for each workflow execution</item>
+      <item>Session folder created at /data/agent-outputs/{uuid}/</item>
+      <item>{{session_id}} variable available to agents</item>
+      <item>Session ID immutable for duration of workflow</item>
+    </criterion>
+    <criterion id="5.0.3" title="Manifest Auto-Generation">
+      <item>Manifest created on workflow start with status: "running"</item>
+      <item>Manifest finalized on completion with completed_at and final status</item>
+      <item>Schema matches SESSION-OUTPUT-SPEC.md v1.0.0</item>
+      <item>Manifest saved to {session-folder}/manifest.json</item>
+    </criterion>
+    <criterion id="5.0.4" title="Configuration Updates">
+      <item>bmad/bmm/config.yaml updated with agent_outputs_folder</item>
+      <item>Variables resolve correctly via path resolver</item>
+    </criterion>
+    <criterion id="5.0.5" title="Agent Workflow Migration">
+      <item>IMPORTANT: This is one of the LAST steps (Phase 5 in implementation)</item>
+      <item>All Alex workflows updated (6 workflows)</item>
+      <item>All Casey workflows updated (6 workflows)</item>
+      <item>All Pixel workflows updated (3 workflows)</item>
+      <item>DO NOT UPDATE until workflow engine changes are complete and tested</item>
+    </criterion>
+    <criterion id="5.0.6" title="Session Discovery API">
+      <item>findSessions() function implemented with filters</item>
+      <item>Returns array of manifest objects sorted by started_at (newest first)</item>
+      <item>Empty array returned if no matches (not error)</item>
+    </criterion>
+    <criterion id="5.0.7" title="Output Registration">
+      <item>registerOutput() utility available for agents</item>
+      <item>Appends to manifest.outputs[] array atomically</item>
+      <item>Auto-populates created_at timestamp</item>
+    </criterion>
+    <criterion id="5.0.8" title="Documentation">
+      <item>SESSION-OUTPUT-SPEC.md finalized in /docs</item>
+      <item>BUNDLE-SPEC.md updated with session management section</item>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/SESSION-OUTPUT-SPEC.md" title="Session Output Management Specification" section="Complete Specification">
+        <snippet>Defines session-based output structure with UUID sessions, manifest schema v1.0.0, and cross-agent discovery patterns</snippet>
+      </doc>
+      <doc path="docs/tech-spec-epic-5.md" title="Technical Specification: File Management and Viewer" section="Story 5.0">
+        <snippet>Detailed architecture for session management including security model, implementation phases, and migration strategy</snippet>
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 5.0">
+        <snippet>Story requirements including critical dependency: MUST complete before Stories 5.1-5.7 for file viewer foundation</snippet>
+      </doc>
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Epic 5">
+        <snippet>Product requirements for file management including security (NFR-4), performance (NFR-1), and reliability (NFR-2)</snippet>
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="Bundle Specification" section="To be updated">
+        <snippet>Bundle configuration standards - needs session management section added per AC-5.0.8</snippet>
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="Agent Execution Specification" section="Path Resolution">
+        <snippet>Epic 4 path resolution system that will be extended for session path variables</snippet>
+      </doc>
+      <doc path="docs/stories/story-4.2.md" title="Story 4.2: Path Variable Resolution System" section="Implementation">
+        <snippet>Existing path resolver at lib/pathResolver.ts with {bundle-root}, {core-root}, {project-root} support</snippet>
+      </doc>
+      <doc path="docs/stories/story-4.9.md" title="Story 4.9: Validate Bundled Agents End-to-End" section="Workflow Engine">
+        <snippet>Current workflow execution engine location and patterns to extend for UUID generation and manifest creation</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath" lines="1-100" reason="Core path resolution system to extend for session path variables and write validation">
+        <note>Implements {bundle-root}, {core-root}, {project-root} resolution with security validation</note>
+        <note>Need to add write-only validation for /data/agent-outputs/ boundary enforcement</note>
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="function" symbol="createPathContext" lines="81-95" reason="Creates PathContext for bundle-aware path resolution - will be used for session path variables">
+        <note>Returns PathContext with bundleRoot, coreRoot, projectRoot, bundleConfig</note>
+      </artifact>
+      <artifact path="lib/agents/agenticLoop.ts" kind="module" symbol="executeAgenticLoop" lines="1-100" reason="Agentic execution loop where UUID generation and manifest creation will be integrated">
+        <note>Current execution flow: initialize agent → critical actions → agentic loop → tool execution</note>
+        <note>Need to inject session_id and session_folder variables into workflow context before execution</note>
+      </artifact>
+      <artifact path="lib/files/security.ts" kind="module" symbol="validatePath" lines="42-97" reason="Epic 2 security validation (deprecated) - reference for write boundary patterns">
+        <note>DEPRECATED: Use lib/pathResolver.ts for new code</note>
+        <note>Shows pattern for validating paths within allowed directories</note>
+      </artifact>
+      <artifact path="lib/agents/criticalActions.ts" kind="module" symbol="processCriticalActions" lines="1-50" reason="Critical actions processor that loads bundle config - reference for config loading pattern">
+        <note>Loads bundle config.yaml and processes critical-actions section</note>
+        <note>Can reference for manifest metadata extraction from agent XML</note>
+      </artifact>
+      <artifact path="bmad/bmm/config.yaml" kind="config" symbol="config" lines="1-15" reason="Bundle config file to be updated with agent_outputs_folder variable">
+        <note>Current: output_folder: '{project-root}/docs'</note>
+        <note>Need to add: agent_outputs_folder: '{project-root}/data/agent-outputs'</note>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="uuid" version="NOT INSTALLED" note="REQUIRED - Need to install: npm install uuid @types/uuid" />
+        <package name="@types/uuid" version="NOT INSTALLED" note="REQUIRED - TypeScript types for uuid" />
+        <package name="js-yaml" version="^4.1.0" note="Already installed - use for parsing manifest.json and workflow.yaml" />
+        <package name="next" version="14.2.0" note="Next.js framework" />
+        <package name="typescript" version="^5" note="TypeScript compiler" />
+        <package name="jest" version="^30.2.0" note="Testing framework for unit and integration tests" />
+        <package name="@types/jest" version="^30.0.0" note="TypeScript types for Jest" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint category="implementation-order" severity="critical">
+      Phase 1: Infrastructure → Phase 2: Workflow Engine → Phase 3: Session Discovery → Phase 4: Security → Phase 5: Agent Migration → Phase 6: Integration Testing
+    </constraint>
+    <constraint category="migration-timing" severity="critical">
+      DO NOT update agent workflow.yaml files (Task 7) until Tasks 1-6 are complete and tested. Early migration will cause failures.
+    </constraint>
+    <constraint category="security" severity="high">
+      Path validator MUST enforce /data/agent-outputs/ as the ONLY writable location for agents. Block writes to /agents, /bmad, /lib, /app, /docs.
+    </constraint>
+    <constraint category="backward-compatibility" severity="medium">
+      Existing docs in docs/ remain untouched. New agent executions use new structure. No migration of old files required.
+    </constraint>
+    <constraint category="testing" severity="high">
+      Integration tests MUST verify: cross-agent discovery (Pixel finds Casey's output), concurrent execution (no UUID collision), Epic 4 regression (path resolution, agentic loop, critical actions unchanged)
+    </constraint>
+    <constraint category="manifest-schema" severity="high">
+      Manifest must exactly match SESSION-OUTPUT-SPEC.md v1.0.0 schema including: version, session_id, agent, workflow, execution, outputs, inputs (optional), related_sessions (optional), metadata (optional)
+    </constraint>
+    <constraint category="epic-dependency" severity="critical">
+      Story 5.0 is FOUNDATIONAL for Epic 5. File viewer (Stories 5.1-5.7) CANNOT function without this session management system.
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="PathContext" kind="interface" signature="{ bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig?: Record<string, any>; }" path="lib/pathResolver.ts">
+      <note>Used for path variable resolution - will be extended with session path context</note>
+    </interface>
+    <interface name="SessionManifest" kind="type" signature="{ version: string; session_id: string; agent: {...}; workflow: {...}; execution: {...}; outputs: [...]; ... }" path="NEW: lib/agents/sessionDiscovery.ts">
+      <note>TypeScript interface matching SESSION-OUTPUT-SPEC.md v1.0.0 manifest schema</note>
+    </interface>
+    <interface name="findSessions" kind="function" signature="(filters?: { agent?: string; workflow?: string | RegExp; status?: 'running' | 'completed' | 'failed'; limit?: number }) => Promise<SessionManifest[]>" path="NEW: lib/agents/sessionDiscovery.ts">
+      <note>Session discovery API - AC-5.0.6</note>
+    </interface>
+    <interface name="registerOutput" kind="function" signature="(sessionId: string, output: { file: string; type: string; description: string; }) => Promise<void>" path="NEW: lib/agents/sessionDiscovery.ts">
+      <note>Output registration utility - AC-5.0.7</note>
+    </interface>
+    <interface name="resolvePath" kind="function" signature="(pathWithVariables: string, context: PathContext) => Promise<string>" path="lib/pathResolver.ts">
+      <note>Existing path resolver to be extended for session path validation</note>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest (v30.2.0) with ts-jest for TypeScript support. Test files in __tests__/ directories alongside source. Unit tests focus on isolated function behavior. Integration tests verify cross-module workflows. Security tests validate path boundary enforcement. Pattern: lib/module.ts has lib/__tests__/module.test.ts (unit) and lib/__tests__/module.integration.test.ts (integration). Coverage target: 80%+ for new code.
+    </standards>
+    <locations>
+      <location>lib/agents/__tests__/sessionDiscovery.test.ts (NEW - unit tests)</location>
+      <location>lib/agents/__tests__/sessionDiscovery.integration.test.ts (NEW - integration tests)</location>
+      <location>lib/__tests__/pathResolver.test.ts (EXISTING - extend for write validation)</location>
+      <location>lib/files/__tests__/security.test.ts (EXISTING - reference for path security patterns)</location>
+    </locations>
+    <ideas>
+      <idea ac="5.0.1" type="unit">Test path validator blocks writes outside /data/agent-outputs (../etc/passwd, /agents/foo.md)</idea>
+      <idea ac="5.0.2" type="unit">Test UUID v4 generation format and uniqueness across multiple calls</idea>
+      <idea ac="5.0.2" type="unit">Test session folder creation at /data/agent-outputs/{uuid}/</idea>
+      <idea ac="5.0.3" type="unit">Test manifest creation with correct initial fields (version, session_id, status: "running")</idea>
+      <idea ac="5.0.3" type="unit">Test manifest finalization updates completed_at and status</idea>
+      <idea ac="5.0.3" type="unit">Test manifest schema validation against SESSION-OUTPUT-SPEC.md v1.0.0</idea>
+      <idea ac="5.0.4" type="integration">Test path resolver resolves {config_source}:agent_outputs_folder correctly</idea>
+      <idea ac="5.0.6" type="unit">Test findSessions() filters by agent name</idea>
+      <idea ac="5.0.6" type="unit">Test findSessions() filters by workflow pattern (string and RegExp)</idea>
+      <idea ac="5.0.6" type="unit">Test findSessions() filters by status (running, completed, failed)</idea>
+      <idea ac="5.0.6" type="unit">Test findSessions() sorts results by started_at (newest first)</idea>
+      <idea ac="5.0.6" type="unit">Test findSessions() returns empty array when no matches</idea>
+      <idea ac="5.0.7" type="unit">Test registerOutput() appends to manifest.outputs[] atomically</idea>
+      <idea ac="5.0.7" type="unit">Test registerOutput() auto-populates created_at timestamp</idea>
+      <idea ac="5.0.7" type="unit">Test registerOutput() validates output object schema</idea>
+      <idea ac="5.0.7" type="integration">Test concurrent registerOutput() calls don't corrupt manifest</idea>
+      <idea ac="All" type="integration">Execute Alex workflow → verify session folder and manifest created</idea>
+      <idea ac="All" type="integration">Execute Casey workflow → verify findSessions() discovers Alex's output</idea>
+      <idea ac="All" type="integration">Execute Pixel workflow → verify cross-agent discovery works</idea>
+      <idea ac="All" type="integration">Test concurrent workflow executions → verify no UUID collision</idea>
+      <idea ac="All" type="regression">Verify Epic 4 functionality unchanged (path resolution, agentic loop, critical actions)</idea>
+    </ideas>
+  </tests>
+</story-context>
