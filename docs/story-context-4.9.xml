@@ -1,0 +1,280 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>9</storyId>
+    <title>Validate Bundled Agents End-to-End</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to validate that bundled agents work correctly with new architecture</iWant>
+    <soThat>we confirm agents behave like they do in Claude Code</soThat>
+    <tasks>
+      - Task 1: Prepare Test Environment (AC: 4.9.1)
+      - Task 2: Execute Agent Initialization (AC: 4.9.1, 4.9.2)
+      - Task 3: Execute Workflow with File Loading (AC: 4.9.3, 4.9.4, 4.9.5)
+      - Task 4: Validate Path Resolution (AC: 4.9.7)
+      - Task 5: Validate Behavior Against BMAD Patterns (AC: 4.9.6, 4.9.8)
+      - Task 6: Document Findings and Compatibility Issues (AC: 4.9.9)
+      - Task 7: Testing and Verification (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.9.1">Load bundled agent from bmad/custom/bundles/requirements-workflow/</criterion>
+    <criterion id="AC-4.9.2">Agent initializes successfully, executes critical actions</criterion>
+    <criterion id="AC-4.9.3">User sends message that triggers workflow requiring file loads</criterion>
+    <criterion id="AC-4.9.4">Verify in logs: read_file tool called multiple times for different instruction files</criterion>
+    <criterion id="AC-4.9.5">Verify execution pauses at each tool call, waits for result, then continues</criterion>
+    <criterion id="AC-4.9.6">Agent successfully completes workflow using dynamically loaded instructions</criterion>
+    <criterion id="AC-4.9.7">Path variables ({bundle-root}, {core-root}) resolve correctly in logs</criterion>
+    <criterion id="AC-4.9.8">Agent behavior matches expected BMAD patterns (similar to Claude Code execution)</criterion>
+    <criterion id="AC-4.9.9">Document any remaining compatibility issues discovered</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Epic 4: Agent Execution Architecture &amp; Bundle System - Story 4.9</section>
+        <snippet>Story validation testing to confirm bundled agents work correctly with agentic loop, file loading, path resolution, and BMAD patterns</snippet>
+        <relevance>Primary source for story requirements and acceptance criteria</relevance>
+      </doc>
+      <doc>
+        <path>docs/EPIC4-TECH-SPEC.md</path>
+        <title>Epic 4 Technical Specification</title>
+        <section>Section 8: Testing Strategy - Integration Tests - End-to-End Workflow</section>
+        <snippet>User selects agent → User invokes workflow command → Agent loads workflow via tool call → Workflow executes successfully → Output saved correctly</snippet>
+        <relevance>Defines expected end-to-end execution flow and testing approach</relevance>
+      </doc>
+      <doc>
+        <path>docs/AGENT-EXECUTION-SPEC.md</path>
+        <title>BMAD Agent Execution Architecture Specification</title>
+        <section>Section 3: Agentic Execution Loop</section>
+        <snippet>User message → LLM call → Tool calls? → Yes: Execute tools, add results to context, loop back to LLM → No: Return final response</snippet>
+        <relevance>Defines the pause-load-continue pattern that must be validated</relevance>
+      </doc>
+      <doc>
+        <path>docs/AGENT-EXECUTION-SPEC.md</path>
+        <title>BMAD Agent Execution Architecture Specification</title>
+        <section>Example: Complete Execution Flow</section>
+        <snippet>Step-by-step example showing Alex agent loading config.yaml, executing workflow, loading instructions/template via tool calls</snippet>
+        <relevance>Provides reference implementation pattern for validation testing</relevance>
+      </doc>
+      <doc>
+        <path>docs/BUNDLE-SPEC.md</path>
+        <title>BMAD Agent Bundle Specification v1.0</title>
+        <section>Section 3: Path Variables</section>
+        <snippet>{bundle-root} resolves to bmad/custom/bundles/{bundle-name}/, {core-root} resolves to bmad/core/</snippet>
+        <relevance>Defines path variable resolution rules to validate in logs</relevance>
+      </doc>
+      <doc>
+        <path>docs/BUNDLE-SPEC.md</path>
+        <title>BMAD Agent Bundle Specification v1.0</title>
+        <section>Example Bundle: requirements-workflow</section>
+        <snippet>Real-world multi-agent bundle with Alex, Casey, Pixel agents, 15+ workflows, shared templates and config</snippet>
+        <relevance>Test environment structure and reference implementation</relevance>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>Goals - 1. Validate OpenAI API Compatibility</section>
+        <snippet>Successfully deploy at least 3 different BMAD agents via OpenAI API. Prove that lazy-loading instruction pattern is viable with OpenAI function calling. Success Metric: 95%+ of BMAD agent features work correctly with OpenAI API</snippet>
+        <relevance>Primary validation goal - this story proves the core PRD objective</relevance>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>FR-2: Agent Loading and Initialization</section>
+        <snippet>System implements agentic execution loop with function calling (pause-load-continue pattern). Selected agent's instruction files load via tool calls when agent requests them. Support for BMAD's lazy-loading pattern - files loaded on-demand through function calling. Execute agent critical-actions section during initialization.</snippet>
+        <relevance>Functional requirement being validated in this story</relevance>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/agents/agenticLoop.ts</path>
+        <kind>module</kind>
+        <symbol>executeAgent</symbol>
+        <lines>1-300</lines>
+        <reason>Core agentic execution loop implementation - validates AC-4.9.4, AC-4.9.5 (tool calls, execution pausing)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/pathResolver.ts</path>
+        <kind>module</kind>
+        <symbol>resolvePath</symbol>
+        <lines>1-200</lines>
+        <reason>Path variable resolution system - validates AC-4.9.7 ({bundle-root}, {core-root} resolution)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/criticalActions.ts</path>
+        <kind>module</kind>
+        <symbol>processCriticalActions</symbol>
+        <lines>1-150</lines>
+        <reason>Critical actions processor - validates AC-4.9.2 (agent initialization, config.yaml loading)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/bundleScanner.ts</path>
+        <kind>module</kind>
+        <symbol>discoverBundles</symbol>
+        <lines>1-200</lines>
+        <reason>Bundle discovery and loading - validates AC-4.9.1 (loading bundled agents)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/systemPromptBuilder.ts</path>
+        <kind>module</kind>
+        <symbol>buildSystemPrompt</symbol>
+        <lines>1-150</lines>
+        <reason>System prompt builder - validates AC-4.9.2, AC-4.9.8 (agent persona, tool usage instructions)</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/parser.ts</path>
+        <kind>module</kind>
+        <symbol>parseAgentFile</symbol>
+        <lines>1-200</lines>
+        <reason>Agent XML parsing - validates AC-4.9.2 (loading agent.md, extracting metadata)</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/agents/route.ts</path>
+        <kind>api</kind>
+        <symbol>GET</symbol>
+        <lines>1-50</lines>
+        <reason>Agent discovery endpoint - validates AC-4.9.1 (listing available bundled agents)</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/agent/initialize/route.ts</path>
+        <kind>api</kind>
+        <symbol>POST</symbol>
+        <lines>1-100</lines>
+        <reason>Agent initialization endpoint - validates AC-4.9.2 (initializing agent, executing critical actions)</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api</kind>
+        <symbol>POST</symbol>
+        <reason>Chat endpoint with agentic loop - validates AC-4.9.3, AC-4.9.4, AC-4.9.5, AC-4.9.6 (workflow execution with tool calls)</reason>
+      </artifact>
+      <artifact>
+        <path>bmad/custom/bundles/requirements-workflow/bundle.yaml</path>
+        <kind>config</kind>
+        <symbol>bundle manifest</symbol>
+        <reason>Test bundle manifest - validates AC-4.9.1 (bundle structure, entry_point agents)</reason>
+      </artifact>
+      <artifact>
+        <path>bmad/custom/bundles/requirements-workflow/config.yaml</path>
+        <kind>config</kind>
+        <symbol>bundle config</symbol>
+        <reason>Test bundle configuration - validates AC-4.9.2 (config.yaml loading, variable resolution)</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0" usage="OpenAI API client for agentic loop and tool calling" />
+        <package name="js-yaml" version="^4.1.0" usage="YAML parsing for bundle.yaml and config.yaml files" />
+        <package name="next" version="14.2.0" usage="Next.js framework for API routes" />
+      </node>
+      <dev>
+        <package name="jest" version="^30.2.0" usage="Testing framework (not used for this story - manual testing only)" />
+        <package name="tsx" version="^4.20.6" usage="TypeScript execution for smoke tests" />
+        <package name="dotenv" version="^17.2.3" usage="Environment variable loading for API keys" />
+      </dev>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">This is an end-to-end validation story - NO new code implementation, only testing and validation of existing Epic 4 components</constraint>
+    <constraint type="testing">Manual testing required with detailed log inspection - automated tests not applicable for this validation story</constraint>
+    <constraint type="logging">Enable verbose logging in agenticLoop.ts, pathResolver.ts, and criticalActions.ts to capture all execution details for validation</constraint>
+    <constraint type="environment">Requires bmad/custom/bundles/requirements-workflow/ bundle with valid bundle.yaml, config.yaml, and agent files (Alex, Casey, or Pixel)</constraint>
+    <constraint type="prerequisites">Epic 4 Stories 4.1-4.8 must be complete and working before this validation can succeed</constraint>
+    <constraint type="scope">Test at least one bundled agent (Alex, Casey, or Pixel) with at least one workflow command that loads multiple files</constraint>
+    <constraint type="documentation">All findings, issues, and compatibility notes must be documented in validation report or FOLLOW-UP-ITEMS.md</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>GET /api/agents</name>
+      <kind>REST API</kind>
+      <signature>GET /api/agents → {success: boolean, agents: AgentMetadata[]}</signature>
+      <path>app/api/agents/route.ts</path>
+      <usage>Call to discover and list available bundled agents for AC-4.9.1</usage>
+    </interface>
+    <interface>
+      <name>POST /api/agent/initialize</name>
+      <kind>REST API</kind>
+      <signature>POST /api/agent/initialize {agent_id: string} → {success: boolean, greeting: string, commands: Command[]}</signature>
+      <path>app/api/agent/initialize/route.ts</path>
+      <usage>Call to initialize selected agent and execute critical actions for AC-4.9.2</usage>
+    </interface>
+    <interface>
+      <name>POST /api/chat</name>
+      <kind>REST API</kind>
+      <signature>POST /api/chat {agent_id: string, message: string, conversation_history: Message[]} → {success: boolean, response: string, iterations: number}</signature>
+      <path>app/api/chat/route.ts</path>
+      <usage>Call to send workflow commands and validate agentic loop execution for AC-4.9.3, AC-4.9.4, AC-4.9.5, AC-4.9.6</usage>
+    </interface>
+    <interface>
+      <name>executeAgent</name>
+      <kind>function</kind>
+      <signature>async function executeAgent(agentId: string, userMessage: string, conversationHistory: Message[]): Promise&lt;ExecutionResult&gt;</signature>
+      <path>lib/agents/agenticLoop.ts</path>
+      <usage>Core agentic loop - inspect logs to validate tool calls and execution pausing</usage>
+    </interface>
+    <interface>
+      <name>resolvePath</name>
+      <kind>function</kind>
+      <signature>function resolvePath(pathTemplate: string, context: PathContext): string</signature>
+      <path>lib/pathResolver.ts</path>
+      <usage>Path variable resolution - inspect logs to validate {bundle-root}, {core-root} resolution for AC-4.9.7</usage>
+    </interface>
+    <interface>
+      <name>processCriticalActions</name>
+      <kind>function</kind>
+      <signature>async function processCriticalActions(agent: Agent, bundleRoot: string): Promise&lt;CriticalContext&gt;</signature>
+      <path>lib/agents/criticalActions.ts</path>
+      <usage>Critical actions processor - inspect logs to validate config.yaml loading for AC-4.9.2</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>Manual testing with detailed log inspection required for this validation story. No automated tests. Enable verbose console logging in agenticLoop.ts, pathResolver.ts, and criticalActions.ts. Document all findings in validation report.</standards>
+
+    <locations>
+      Manual testing - no automated test files for this story.
+      Validation report should be created at: docs/validation-report-story-4.9.md or findings added to docs/FOLLOW-UP-ITEMS.md
+    </locations>
+
+    <ideas>
+      <test id="T-4.9.1" ac="AC-4.9.1">
+        Manual test: Call GET /api/agents, verify requirements-workflow bundle agents (Alex, Casey, Pixel) are listed with correct metadata
+      </test>
+      <test id="T-4.9.2" ac="AC-4.9.2">
+        Manual test: Call POST /api/agent/initialize with selected agent_id, verify greeting includes commands, inspect logs for config.yaml load
+      </test>
+      <test id="T-4.9.3" ac="AC-4.9.3, AC-4.9.4, AC-4.9.5">
+        Manual test: Send workflow command (e.g., "*intake-workflow"), monitor console logs, count tool calls (execute_workflow, read_file for instructions.md, read_file for template.md), verify execution pauses between calls
+      </test>
+      <test id="T-4.9.4" ac="AC-4.9.6">
+        Manual test: Verify agent response includes workflow content (not just acknowledgment), confirm workflow completes without errors
+      </test>
+      <test id="T-4.9.5" ac="AC-4.9.7">
+        Manual test: Examine logs for resolved paths, verify {bundle-root} → bmad/custom/bundles/requirements-workflow/, {core-root} → bmad/core/, no unresolved variables
+      </test>
+      <test id="T-4.9.6" ac="AC-4.9.8">
+        Manual test: Compare agent behavior to expected BMAD pattern: command → load workflow → execute steps → generate output. Verify greeting includes available commands from &lt;cmds&gt; section
+      </test>
+      <test id="T-4.9.7" ac="AC-4.9.9">
+        Manual test: Document all findings, issues, compatibility notes in validation report (docs/validation-report-story-4.9.md or docs/FOLLOW-UP-ITEMS.md)
+      </test>
+      <test id="T-4.9.8" ac="All">
+        Manual test: Re-test with different agent if issues found, verify fixes for any problems discovered
+      </test>
+    </ideas>
+  </tests>
+</story-context>

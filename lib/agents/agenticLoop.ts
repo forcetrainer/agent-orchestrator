@@ -16,6 +16,7 @@ import { getOpenAIClient } from '@/lib/openai/client';
 import { getAgentById } from '@/lib/agents/loader';
 import type { Agent } from '@/types';
 import { env } from '@/lib/utils/env';
+import { buildSystemPrompt } from './systemPromptBuilder';
 
 /**
  * Maximum number of iterations to prevent infinite loops.
@@ -56,38 +57,7 @@ import { processCriticalActions } from './criticalActions';
  * @param agent - Agent metadata
  * @returns System prompt content
  */
-function buildSystemPrompt(agent: Agent): string {
-  // Stub implementation - uses existing pattern from Epic 2
-  console.log('[agenticLoop] buildSystemPrompt stub called (Story 4.8 not implemented)');
-
-  return `${agent.fullContent}
-
-ENVIRONMENT VARIABLES:
-- {project-root} or {project_root} = ${env.PROJECT_ROOT}
-- Agent directory = ${agent.path}
-- BMAD Core path = ${env.PROJECT_ROOT}/bmad/core
-- BMAD SN path = ${env.PROJECT_ROOT}/bmad/sn
-
-You have access to the following tools:
-- read_file: Read files from your instruction folder or output directory
-- write_file: Write content to files in the output directory
-- list_files: List files and directories in a given path
-
-CRITICAL EFFICIENCY RULE:
-- Once you have loaded a file (workflow.yaml, instructions.md, templates, etc.) in this conversation, that content is ALREADY in your context
-- DO NOT re-load files you have already read in previous messages unless the file has been modified
-- Check the conversation history before calling read_file - if you already loaded the file, use the cached content from your context
-
-CRITICAL USER COMMUNICATION RULE:
-- When you write content to a file using write_file, ALWAYS display what you wrote to the user
-- The write_file function returns a contentPreview field - show this to the user so they can see what was saved
-- Users cannot see function calls - you must explicitly show them the content in your response
-- For workflow template-output sections: display the generated content with a separator line, then save it
-
-Use these tools to help users accomplish their tasks effectively.
-When you see {project-root} or {project_root} in workflow paths or config files, replace it with: ${env.PROJECT_ROOT}
-When you see bmad/core/ or bmad/sn/ without a full path, prepend: ${env.PROJECT_ROOT}/`;
-}
+// buildSystemPrompt is now imported from systemPromptBuilder.ts (Story 4.8)
 
 /**
  * Gets tool definitions for OpenAI function calling.
@@ -115,7 +85,7 @@ function getToolDefinitions() {
  * @param bundleName - Bundle name for path resolution
  * @returns Tool execution result
  */
-async function executeToolCall(toolCall: any, bundleName: string): Promise<any> {
+async function executeToolCall(toolCall: any, bundleName?: string): Promise<any> {
   const functionName = toolCall.function.name;
   const functionArgs = JSON.parse(toolCall.function.arguments);
 
