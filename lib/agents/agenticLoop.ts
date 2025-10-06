@@ -62,39 +62,30 @@ import { processCriticalActions } from './criticalActions';
 /**
  * Gets tool definitions for OpenAI function calling.
  *
- * STUB: This is a placeholder for Story 4.5 - File Operation Tools Refactor
- * TODO: Replace with actual implementation when Story 4.5 is complete
- *
- * For now, imports FUNCTION_TOOLS from existing implementation
+ * Story 4.9: Import all tool definitions including execute_workflow
  */
 function getToolDefinitions() {
-  // Stub implementation - imports from existing code
-  const { FUNCTION_TOOLS } = require('@/lib/openai/function-tools');
-  return FUNCTION_TOOLS;
+  const { readFileTool, saveOutputTool, executeWorkflowTool } = require('@/lib/tools/toolDefinitions');
+  return [readFileTool, saveOutputTool, executeWorkflowTool];
 }
 
 /**
  * Executes a single tool call with path resolution.
  *
- * STUB: This is a placeholder for Story 4.5 - File Operation Tools Refactor
- * TODO: Replace with actual implementation when Story 4.5 is complete
- *
- * For now, delegates to existing file operation functions
+ * Story 4.9: Updated to use Story 4.5 file operation tools with PathContext
  *
  * @param toolCall - Tool call from OpenAI
- * @param bundleName - Bundle name for path resolution
+ * @param context - Path resolution context (bundleRoot, coreRoot, etc.)
  * @returns Tool execution result
  */
-async function executeToolCall(toolCall: any, bundleName?: string): Promise<any> {
+async function executeToolCall(toolCall: any, context: any): Promise<any> {
   const functionName = toolCall.function.name;
   const functionArgs = JSON.parse(toolCall.function.arguments);
 
   console.log(`[agenticLoop] Executing tool: ${functionName}`, functionArgs);
 
-  // Delegate to existing file operations (from Epic 2)
-  const { readFileContent } = require('@/lib/files/reader');
-  const { writeFileContent } = require('@/lib/files/writer');
-  const { listFiles } = require('@/lib/files/lister');
+  // Import new file operation functions from Story 4.5
+  const { executeReadFile, executeSaveOutput, executeWorkflow } = require('@/lib/tools/fileOperations');
 
   let result: any;
 
@@ -102,33 +93,33 @@ async function executeToolCall(toolCall: any, bundleName?: string): Promise<any>
     switch (functionName) {
       case 'read_file':
         const timestamp = new Date().toISOString();
-        console.log(`[read_file] 📂 Loading: ${functionArgs.path} at ${timestamp}`);
-        result = await readFileContent(functionArgs.path);
-        const contentLength = typeof result === 'string' ? result.length : JSON.stringify(result).length;
-        console.log(`[read_file] ✅ Loaded ${contentLength} bytes from: ${functionArgs.path}`);
+        console.log(`[read_file #${context.toolCallCount || 1}] 📂 Loading: ${functionArgs.file_path} at ${timestamp}`);
+        result = await executeReadFile(functionArgs, context);
+        if (result.success) {
+          console.log(`[read_file #${context.toolCallCount || 1}] ✅ Loaded ${result.size} bytes from: ${result.path}`);
+        } else {
+          console.error(`[read_file #${context.toolCallCount || 1}] ❌ Failed: ${result.error}`);
+        }
         break;
 
-      case 'write_file':
-        console.log(`[write_file] 💾 Writing to: ${functionArgs.path}`);
-        await writeFileContent(functionArgs.path, functionArgs.content);
-        const contentPreview = functionArgs.content.length > 500
-          ? functionArgs.content.substring(0, 500) + '...\n\n[Content truncated - full content saved to file]'
-          : functionArgs.content;
-        result = {
-          success: true,
-          path: functionArgs.path,
-          bytesWritten: functionArgs.content.length,
-          message: `Successfully wrote ${functionArgs.content.length} bytes to ${functionArgs.path}`,
-          contentPreview: contentPreview
-        };
-        console.log(`[write_file] ✅ Written ${functionArgs.content.length} bytes to: ${functionArgs.path}`);
+      case 'save_output':
+        console.log(`[save_output] 💾 Writing to: ${functionArgs.file_path}`);
+        result = await executeSaveOutput(functionArgs, context);
+        if (result.success) {
+          console.log(`[save_output] ✅ Written ${result.size} bytes to: ${result.path}`);
+        } else {
+          console.error(`[save_output] ❌ Failed: ${result.error}`);
+        }
         break;
 
-      case 'list_files':
-        console.log(`[list_files] 📋 Listing: ${functionArgs.path} (recursive: ${functionArgs.recursive || false})`);
-        result = await listFiles(functionArgs.path, functionArgs.recursive || false);
-        const fileCount = Array.isArray(result) ? result.length : 0;
-        console.log(`[list_files] ✅ Found ${fileCount} items in: ${functionArgs.path}`);
+      case 'execute_workflow':
+        console.log(`[execute_workflow] 🔄 Loading workflow: ${functionArgs.workflow_path}`);
+        result = await executeWorkflow(functionArgs, context);
+        if (result.success) {
+          console.log(`[execute_workflow] ✅ Workflow loaded: ${result.workflow?.name || 'unknown'}`);
+        } else {
+          console.error(`[execute_workflow] ❌ Failed: ${result.error}`);
+        }
         break;
 
       default:
@@ -212,6 +203,16 @@ export async function executeAgent(
   const model = env.OPENAI_MODEL || 'gpt-4';
   const tools = getToolDefinitions();
 
+  // Story 4.9: Build PathContext for tool execution
+  // Use agent.bundlePath (from bundleScanner) or fall back to effectiveBundleRoot
+  const pathContext = {
+    bundleRoot: agent.bundlePath || effectiveBundleRoot,
+    coreRoot: 'bmad/core',
+    projectRoot: process.cwd(),
+    bundleConfig: criticalContext.config,
+    toolCallCount: 0
+  };
+
   // AC-4.1.5: Initialize iteration counter
   let iterations = 0;
 
@@ -263,7 +264,8 @@ export async function executeAgent(
           console.log(`[agenticLoop] Tool call: ${functionName}`, functionArgs);
 
           // Task 4.2: Execute each tool call
-          const result = await executeToolCall(toolCall, bundleRoot);
+          pathContext.toolCallCount++;
+          const result = await executeToolCall(toolCall, pathContext);
 
           // AC-4.1.6: Log tool result status
           const success = result && (!result.error || result.success !== false);

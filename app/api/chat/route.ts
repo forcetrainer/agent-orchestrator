@@ -3,7 +3,7 @@ import { ApiResponse, ChatRequest, ChatResponse } from '@/types/api';
 import { Message } from '@/lib/types';
 import { handleApiError, NotFoundError } from '@/lib/utils/errors';
 import { getAgentById } from '@/lib/agents/loader';
-import { executeChatCompletion } from '@/lib/openai/chat';
+import { executeAgent } from '@/lib/agents/agenticLoop'; // Story 4.9: Use Epic 4 agentic loop instead of Epic 2
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import {
   getConversation,
@@ -87,28 +87,44 @@ export async function POST(request: NextRequest) {
         }
       });
 
-    // Execute chat completion with full conversation history
-    const result = await executeChatCompletion(agent, messages);
+    // Story 4.9: Execute using Epic 4 agentic loop with bundlePath support
+    const result = await executeAgent(
+      agent.id,
+      body.message,
+      messages,
+      agent.bundlePath || agent.path // Pass bundle root for path resolution
+    );
 
-    // Store all new messages from the completion (assistant messages and tool messages)
-    // Skip the system message (first message) and any messages we already have
+    // Store all new messages from the execution (assistant messages and tool messages)
+    // The executeAgent result includes the complete messages array with system, user, assistant, and tool messages
+    // We need to add only the NEW messages that aren't already in the conversation
     const existingMessageCount = conversation.messages.length;
-    const newMessages = result.allMessages.slice(1 + existingMessageCount); // Skip system message + existing messages
 
-    // Add all new messages to conversation
-    for (const msg of newMessages) {
-      if (msg.role === 'assistant') {
-        addMessage(conversation.id, {
-          role: 'assistant',
-          content: typeof msg.content === 'string' ? msg.content : '',
-          functionCalls: 'tool_calls' in msg ? (msg.tool_calls as any) : undefined,
-        });
-      } else if (msg.role === 'tool' && 'tool_call_id' in msg) {
-        addMessage(conversation.id, {
-          role: 'tool' as any,
-          content: typeof msg.content === 'string' ? msg.content : '',
-          toolCallId: msg.tool_call_id as string,
-        } as any);
+    // Result.messages includes: [system message, critical context messages, conversation history, new messages]
+    // We want only the messages that came AFTER the user's message we just added
+    // Find where the user's current message appears in result.messages and take everything after it
+    const userMessageIndex = result.messages.findIndex(
+      (msg) => msg.role === 'user' && msg.content === body.message
+    );
+
+    if (userMessageIndex !== -1) {
+      const newMessages = result.messages.slice(userMessageIndex + 1);
+
+      // Add all new messages to conversation
+      for (const msg of newMessages) {
+        if (msg.role === 'assistant') {
+          addMessage(conversation.id, {
+            role: 'assistant',
+            content: typeof msg.content === 'string' ? msg.content : '',
+            functionCalls: 'tool_calls' in msg ? (msg.tool_calls as any) : undefined,
+          });
+        } else if (msg.role === 'tool' && 'tool_call_id' in msg) {
+          addMessage(conversation.id, {
+            role: 'tool' as any,
+            content: typeof msg.content === 'string' ? msg.content : '',
+            toolCallId: msg.tool_call_id as string,
+          } as any);
+        }
       }
     }
 

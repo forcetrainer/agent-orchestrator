@@ -294,8 +294,10 @@ export async function executeWorkflow(
 /**
  * Resolves variables in workflow configuration
  *
- * Recursively processes workflow config object and resolves path variables
- * in string values. Handles nested objects and arrays.
+ * Handles nested variable resolution where workflow variables reference other workflow variables.
+ * Example: installed_path: "{bundle-root}/workflows/intake" → instructions: "{installed_path}/instructions.md"
+ *
+ * Uses multiple passes to resolve variables that depend on other workflow-defined variables.
  *
  * @param config - Workflow configuration object
  * @param context - PathContext with resolved variables
@@ -305,47 +307,106 @@ async function resolveWorkflowVariables(
   config: Record<string, any>,
   context: PathContext
 ): Promise<Record<string, any>> {
-  const resolved: Record<string, any> = {};
+  const MAX_PASSES = 5; // Prevent infinite loops
+  let currentConfig = { ...config };
+  let hasUnresolvedVars = true;
+  let passCount = 0;
 
-  for (const [key, value] of Object.entries(config)) {
-    if (typeof value === 'string') {
-      // Attempt to resolve path variables in strings
-      // Only resolve if the string contains variable syntax
-      if (value.includes('{')) {
-        try {
-          resolved[key] = resolvePath(value, context);
-        } catch {
-          // If resolution fails (not a valid path), keep original value
+  // Multi-pass resolution for nested workflow variables
+  while (hasUnresolvedVars && passCount < MAX_PASSES) {
+    passCount++;
+    hasUnresolvedVars = false;
+    const resolved: Record<string, any> = {};
+
+    // Create extended context that includes already-resolved workflow variables
+    const extendedContext: PathContext = {
+      ...context,
+      // Add workflow variables to context for nested resolution
+      // This allows {installed_path} to be resolved if it's already been processed
+    };
+
+    for (const [key, value] of Object.entries(currentConfig)) {
+      if (typeof value === 'string') {
+        // Attempt to resolve path variables in strings
+        if (value.includes('{')) {
+          try {
+            // First try to replace workflow-defined variables
+            let resolvedValue = value;
+
+            // Replace references to other workflow variables (e.g., {installed_path})
+            for (const [varKey, varValue] of Object.entries(currentConfig)) {
+              if (typeof varValue === 'string' && !varValue.includes('{')) {
+                // This variable is already resolved, can be used for substitution
+                const varPattern = new RegExp(`\\{${varKey}\\}`, 'g');
+                resolvedValue = resolvedValue.replace(varPattern, varValue);
+              }
+            }
+
+            // Then resolve path variables ({bundle-root}, {core-root}, etc.)
+            if (resolvedValue.includes('{')) {
+              resolvedValue = resolvePath(resolvedValue, context);
+            }
+
+            resolved[key] = resolvedValue;
+
+            // Check if this value still has unresolved variables
+            if (resolvedValue.includes('{')) {
+              hasUnresolvedVars = true;
+            }
+          } catch (error) {
+            // If resolution fails, keep original value and mark as unresolved
+            resolved[key] = value;
+            if (value.includes('{')) {
+              hasUnresolvedVars = true;
+            }
+          }
+        } else {
           resolved[key] = value;
         }
-      } else {
-        resolved[key] = value;
-      }
-    } else if (Array.isArray(value)) {
-      // Recursively resolve arrays
-      resolved[key] = await Promise.all(
-        value.map(async (item) => {
-          if (typeof item === 'string' && item.includes('{')) {
-            try {
-              return resolvePath(item, context);
-            } catch {
+      } else if (Array.isArray(value)) {
+        // Recursively resolve arrays
+        resolved[key] = await Promise.all(
+          value.map(async (item) => {
+            if (typeof item === 'string' && item.includes('{')) {
+              try {
+                // Same multi-pass logic for array items
+                let resolvedItem = item;
+                for (const [varKey, varValue] of Object.entries(currentConfig)) {
+                  if (typeof varValue === 'string' && !varValue.includes('{')) {
+                    const varPattern = new RegExp(`\\{${varKey}\\}`, 'g');
+                    resolvedItem = resolvedItem.replace(varPattern, varValue);
+                  }
+                }
+                if (resolvedItem.includes('{')) {
+                  resolvedItem = resolvePath(resolvedItem, context);
+                }
+                return resolvedItem;
+              } catch {
+                return item;
+              }
+            } else if (typeof item === 'object' && item !== null) {
+              return resolveWorkflowVariables(item, context);
+            } else {
               return item;
             }
-          } else if (typeof item === 'object' && item !== null) {
-            return resolveWorkflowVariables(item, context);
-          } else {
-            return item;
-          }
-        })
-      );
-    } else if (typeof value === 'object' && value !== null) {
-      // Recursively resolve nested objects
-      resolved[key] = await resolveWorkflowVariables(value, context);
-    } else {
-      // Keep primitive values as-is
-      resolved[key] = value;
+          })
+        );
+      } else if (typeof value === 'object' && value !== null) {
+        // Recursively resolve nested objects
+        resolved[key] = await resolveWorkflowVariables(value, context);
+      } else {
+        // Keep primitive values as-is
+        resolved[key] = value;
+      }
     }
+
+    currentConfig = resolved;
   }
 
-  return resolved;
+  // If we still have unresolved variables after MAX_PASSES, log warning but return what we have
+  if (hasUnresolvedVars) {
+    console.warn('[resolveWorkflowVariables] Some variables could not be resolved after', MAX_PASSES, 'passes');
+  }
+
+  return currentConfig;
 }

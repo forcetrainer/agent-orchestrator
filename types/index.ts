@@ -38,6 +38,10 @@ export interface Agent {
   mainFile: string;
   /** Full content of the agent markdown file for LLM system message */
   fullContent: string;
+  /** Absolute path to bundle root directory (for bundle-based agents) */
+  bundlePath?: string;
+  /** Bundle name (for bundle-based agents) */
+  bundleName?: string;
 }
 
 /**

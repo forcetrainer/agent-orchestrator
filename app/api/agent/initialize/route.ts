@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError(`Agent not found: ${body.agentId}`);
     }
 
-    console.log(`[agent_initialize] Initializing agent: ${agent.id} from bundle: ${body.bundlePath || agent.path}`);
+    console.log(`[agent_initialize] Initializing agent: ${agent.id} from bundle: ${body.bundlePath || agent.bundlePath || agent.path}`);
 
     // Determine bundle root path
-    // Use bundlePath from request if provided, otherwise use agent.path
-    const bundleRoot = body.bundlePath || agent.path;
+    // Story 4.9: Use bundlePath from agent metadata (via bundleScanner), fallback to request body or agent.path
+    const bundleRoot = body.bundlePath || agent.bundlePath || agent.path;
 
     // AC-4.7.2, AC-4.7.3: Process critical actions to get initialized context
     // This loads config.yaml if specified and injects system messages

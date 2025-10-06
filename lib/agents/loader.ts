@@ -155,6 +155,12 @@ export async function getAgentById(agentId: string): Promise<Agent | null> {
   // Load full agent content from file
   const agent = await parseAgentFile(metadata.filePath);
 
+  // Add bundle context from metadata (Story 4.9: Fix bundlePath resolution)
+  if (agent) {
+    agent.bundlePath = metadata.bundlePath;
+    agent.bundleName = metadata.bundleName;
+  }
+
   return agent;
 }
 
