@@ -487,4 +487,48 @@ user_name: TestUser
       expect(result).toBe(resolve(coreRoot, 'tasks/workflow.md'));
     });
   });
+
+  describe('Core Root Path Security (AC-4.11.2, AC-4.11.5)', () => {
+    let context: PathContext;
+
+    beforeEach(() => {
+      context = createPathContext('test-bundle');
+    });
+
+    it('should resolve {core-root} to correct path (AC-4.11.2)', () => {
+      const result = resolvePath('{core-root}/tasks/workflow.md', context);
+
+      expect(result).toBe(resolve(coreRoot, 'tasks/workflow.md'));
+      expect(result).toContain('bmad/core/tasks/workflow.md');
+    });
+
+    it('should block path traversal from core-root (AC-4.11.5)', () => {
+      expect(() => {
+        resolvePath('{core-root}/../../../etc/passwd', context);
+      }).toThrow('Security violation');
+    });
+
+    it('should block path traversal using .. segments (AC-4.11.5)', () => {
+      expect(() => {
+        resolvePath('{core-root}/tasks/../../bmad/custom/bundles/evil/config.yaml', context);
+      }).toThrow('Security violation');
+    });
+
+    it('should allow nested paths within core-root', () => {
+      const result = resolvePath('{core-root}/workflows/test/deep/nested/file.md', context);
+
+      expect(result).toBe(resolve(coreRoot, 'workflows/test/deep/nested/file.md'));
+      expect(() => {
+        validatePathSecurity(result, context);
+      }).not.toThrow();
+    });
+
+    it('should validate core-root paths are within coreRoot directory', () => {
+      const validCorePath = resolve(coreRoot, 'tasks/workflow.md');
+
+      expect(() => {
+        validatePathSecurity(validCorePath, context);
+      }).not.toThrow();
+    });
+  });
 });

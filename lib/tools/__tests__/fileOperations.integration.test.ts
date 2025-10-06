@@ -429,4 +429,118 @@ template: "{bundle-root}/workflows/e2e-workflow/template.md"`;
       expect(content).toBe('auto-created directories');
     });
   });
+
+  describe('Core File Support (AC-4.11.1, AC-4.11.3, AC-4.11.4, AC-4.11.7)', () => {
+    it('should read files from {core-root} directory (AC-4.11.1, AC-4.11.7)', async () => {
+      // Create test file in core tasks directory (simulating bmad/core/tasks/workflow.md)
+      const tasksDir = resolve(coreRoot, 'tasks');
+      await mkdir(tasksDir, { recursive: true });
+      const workflowFile = resolve(tasksDir, 'workflow.md');
+      const content = '# BMAD Workflow Task\n\nCore workflow execution instructions...';
+      await writeFile(workflowFile, content, 'utf-8');
+
+      const context = createPathContext('test-bundle', {});
+      context.bundleRoot = bundleRoot;
+      context.coreRoot = coreRoot;
+      context.projectRoot = testDir;
+
+      const result = await executeReadFile(
+        { file_path: '{core-root}/tasks/workflow.md' },
+        context
+      );
+
+      expect(result.success).toBe(true);
+      expect(result.content).toBe(content);
+      expect(result.path).toContain('core/tasks/workflow.md');
+    });
+
+    it('should reject write attempts to {core-root} paths (AC-4.11.4)', async () => {
+      const context = createPathContext('test-bundle', {});
+      context.bundleRoot = bundleRoot;
+      context.coreRoot = coreRoot;
+      context.projectRoot = testDir;
+
+      const result = await executeSaveOutput(
+        {
+          file_path: '{core-root}/tasks/malicious.md',
+          content: 'Attempting to write to core directory',
+        },
+        context
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Write operation denied');
+      expect(result.error).toContain('read-only');
+    });
+
+    it('should reject writes to resolved core-root paths (AC-4.11.4)', async () => {
+      const context = createPathContext('test-bundle', {});
+      context.bundleRoot = bundleRoot;
+      context.coreRoot = coreRoot;
+      context.projectRoot = testDir;
+
+      // Test with absolute path that resolves to coreRoot
+      const result = await executeSaveOutput(
+        {
+          file_path: '{core-root}/workflows/test.yaml',
+          content: 'Should not be written',
+        },
+        context
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('Core files are read-only');
+    });
+
+    it('should allow reading multiple core files in sequence (AC-4.11.3)', async () => {
+      // Create multiple core files
+      const tasksDir = resolve(coreRoot, 'tasks');
+      await mkdir(tasksDir, { recursive: true });
+
+      await writeFile(
+        resolve(tasksDir, 'workflow.md'),
+        'Workflow content',
+        'utf-8'
+      );
+      await writeFile(
+        resolve(tasksDir, 'adv-elicit.md'),
+        'Elicit content',
+        'utf-8'
+      );
+
+      const context = createPathContext('test-bundle', {});
+      context.bundleRoot = bundleRoot;
+      context.coreRoot = coreRoot;
+      context.projectRoot = testDir;
+
+      const result1 = await executeReadFile(
+        { file_path: '{core-root}/tasks/workflow.md' },
+        context
+      );
+      const result2 = await executeReadFile(
+        { file_path: '{core-root}/tasks/adv-elicit.md' },
+        context
+      );
+
+      expect(result1.success).toBe(true);
+      expect(result1.content).toBe('Workflow content');
+      expect(result2.success).toBe(true);
+      expect(result2.content).toBe('Elicit content');
+    });
+
+    it('should handle non-existent core files gracefully (AC-4.11.1)', async () => {
+      const context = createPathContext('test-bundle', {});
+      context.bundleRoot = bundleRoot;
+      context.coreRoot = coreRoot;
+      context.projectRoot = testDir;
+
+      const result = await executeReadFile(
+        { file_path: '{core-root}/tasks/nonexistent.md' },
+        context
+      );
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('File not found');
+    });
+  });
 });

@@ -12,7 +12,7 @@
  */
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
-import { dirname, resolve } from 'path';
+import { dirname, resolve, sep } from 'path';
 import { load as parseYaml } from 'js-yaml';
 import { resolvePath, PathContext, loadBundleConfig } from '@/lib/pathResolver';
 
@@ -142,6 +142,19 @@ export async function executeSaveOutput(
   try {
     // Resolve path variables (includes security validation)
     resolvedPath = resolvePath(params.file_path, context);
+
+    // Check if path is within core-root (read-only directory)
+    const normalizedCoreRoot = resolve(context.coreRoot);
+    const normalizedPath = resolve(resolvedPath);
+    const isInCore = normalizedPath.startsWith(normalizedCoreRoot + sep) || normalizedPath === normalizedCoreRoot;
+
+    if (isInCore) {
+      return {
+        success: false,
+        error: 'Write operation denied: Core files are read-only. Attempted to write to core-root directory.',
+        path: resolvedPath,
+      };
+    }
 
     // Extract directory and create if doesn't exist
     const dir = dirname(resolvedPath);

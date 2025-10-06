@@ -1,0 +1,189 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>11</storyId>
+    <title>Add Core BMAD Files Volume Mount Support</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.11.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to ensure core BMAD files are accessible from bundles</iWant>
+    <soThat>agents can use {core-root} to load shared workflow files</soThat>
+    <tasks>
+      - Task 1: Verify Core Directory Structure and Files (AC: 4.11.1, 4.11.6, 4.11.7)
+      - Task 2: Validate {core-root} Path Resolution (AC: 4.11.2)
+      - Task 3: Implement Read-Only Core File Access (AC: 4.11.3, 4.11.4)
+      - Task 4: Implement Core Directory Path Security (AC: 4.11.5)
+      - Task 5: Test Core File Loading with Real Bundled Agent (AC: 4.11.1, 4.11.3, 4.11.6)
+      - Task 6: Prepare for Docker Volume Mount (AC: 4.11.4)
+      - Task 7: Integration Testing and Documentation (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.11.1">System can read files from `bmad/core/` directory</criterion>
+    <criterion id="AC-4.11.2">{core-root} variable resolves to correct path</criterion>
+    <criterion id="AC-4.11.3">Agents can execute: `read_file({core-root}/tasks/workflow.md)`</criterion>
+    <criterion id="AC-4.11.4">Core files are read-only (writes to core-root rejected)</criterion>
+    <criterion id="AC-4.11.5">Path security prevents access outside core directory via traversal</criterion>
+    <criterion id="AC-4.11.6">Document core dependencies in bundle.yaml are accessible</criterion>
+    <criterion id="AC-4.11.7">Test with actual core file: load `bmad/core/tasks/workflow.md`</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="BMAD Agent Execution Architecture Specification" section="Section 5: Path Resolution System">
+        - Defines {core-root} variable resolution to `bmad/core/`
+        - Path variables: {bundle-root}, {core-root}, {project-root}
+        - Security: Core files are read-only system resources
+        - Example: read_file({core-root}/tasks/workflow.md)
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="BMAD Agent Bundle Specification" section="Path Variables">
+        - {core-root} resolves to `bmad/core/` (system-scoped, read-only)
+        - Use for: Core BMAD tasks and workflows (read-only)
+        - Example: {core-root}/tasks/workflow.md
+        - Scope: BMAD core system files
+        - core_dependencies in bundle.yaml list required core files
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="BMAD Agent Bundle Specification" section="Security Model">
+        - Protected Directories (Read-Only): bmad/core/, bmad/bmm/, bmad/cis/, bmad/bmb/
+        - Bundles can only read from {core-root} (never write)
+        - Server enforces path restrictions
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture Document" section="Section 17.1: File System Security">
+        - Path traversal prevention via validatePath function
+        - Read/Write boundaries: Agents folder read-only, Output folder read-write
+        - No access: Any path outside designated directories
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 4.11">
+        - Core files exist at `bmad/core/` directory
+        - Will be mounted read-only in Docker: ./bmad/core:/app/bmad/core:ro
+        - Prepares for Epic 6 Docker deployment
+      </doc>
+      <doc path="docs/EPIC4-TECH-SPEC.md" title="Epic 4 Technical Specification" section="Section 3.2: Path Variable Resolution">
+        - {core-root} → bmad/core/ (absolute path in development)
+        - Resolution order: config references → system variables → path variables
+        - All resolved paths validated to be within bundleRoot or coreRoot
+      </doc>
+      <doc path="bmad/core/tasks/workflow.md" title="BMAD Workflow Execution Task" section="Core Task File">
+        - Primary test file for core loading validation
+        - Referenced by bundled agents in workflows
+        - Contains workflow execution instructions
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="PathContext" lines="28-40" reason="Defines PathContext interface with coreRoot property for {core-root} resolution">
+        export interface PathContext {
+          bundleRoot: string;
+          coreRoot: string;  // Path to core directory: bmad/core
+          projectRoot: string;
+          bundleConfig?: Record&lt;string, any&gt;;
+        }
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="function" symbol="createPathContext" lines="66-80" reason="Creates PathContext with coreRoot set to resolve(projectRoot, 'bmad/core')">
+        export function createPathContext(
+          bundleName: string,
+          bundleConfig?: Record&lt;string, any&gt;
+        ): PathContext {
+          const projectRoot = env.PROJECT_ROOT;
+          const bundleRoot = resolve(projectRoot, 'bmad/custom/bundles', bundleName);
+          const coreRoot = resolve(projectRoot, 'bmad/core');
+
+          return { bundleRoot, coreRoot, projectRoot, bundleConfig };
+        }
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="function" symbol="resolvePath" lines="145-250" reason="Resolves {core-root} path variable and validates security constraints">
+        - Replaces {core-root} with context.coreRoot
+        - Validates resolved path is within bundleRoot or coreRoot
+        - Prevents path traversal attacks
+        - Returns absolute resolved path
+      </artifact>
+      <artifact path="lib/tools/fileOperations.ts" kind="function" symbol="executeReadFile" lines="76-110" reason="Read file tool that uses resolvePath for {core-root} variable resolution">
+        export async function executeReadFile(
+          params: ReadFileParams,
+          context: PathContext
+        ): Promise&lt;ToolResult&gt; {
+          // Resolves path variables including {core-root}
+          const resolvedPath = resolvePath(params.file_path, context);
+          const content = await readFile(resolvedPath, 'utf-8');
+          return { success: true, path: resolvedPath, content, size: content.length };
+        }
+      </artifact>
+      <artifact path="lib/tools/fileOperations.ts" kind="function" symbol="executeSaveOutput" lines="145-185" reason="Save output tool - must reject writes to core-root paths">
+        - Currently allows writes to any resolved path
+        - MUST ADD: Check if resolvedPath is within coreRoot and reject with error
+        - Write protection for core files needed for AC-4.11.4
+      </artifact>
+      <artifact path="lib/files/security.ts" kind="function" symbol="validatePath" lines="25-80" reason="LEGACY - Path security validation, now handled by resolvePath">
+        - Validates paths are within allowed directories
+        - Prevents path traversal via normalization
+        - Used by Epic 2 code (deprecated but security patterns still relevant)
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="fs/promises" version="built-in">File system operations (readFile for core files)</package>
+        <package name="path" version="built-in">Path resolution and validation</package>
+        <package name="js-yaml" version="^4.1.0">Parse bundle.yaml core_dependencies</package>
+      </node>
+      <testing>
+        <package name="jest" version="^30.2.0">Test framework</package>
+        <package name="ts-jest" version="^29.4.4">TypeScript support for Jest</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Core files are READ-ONLY system resources - bundles can load but never modify
+    - {core-root} must resolve to `bmad/core/` in all environments (development and Docker)
+    - Path security must prevent access outside bmad/core/ via traversal attacks
+    - Write attempts to core-root paths must be rejected with clear error messages
+    - Core file loading uses same path resolution and security as bundle files
+    - Docker deployment (Epic 6) will mount core as read-only volume: ./bmad/core:/app/bmad/core:ro
+    - All core file access goes through resolvePath function for security validation
+    - bundle.yaml core_dependencies must be validated at bundle load time
+  </constraints>
+
+  <interfaces>
+    <interface name="PathContext" kind="interface" signature="{ bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig?: Record&lt;string, any&gt; }" path="lib/pathResolver.ts">
+      Required context for path resolution. coreRoot property must be set to bmad/core/ path.
+    </interface>
+    <interface name="resolvePath" kind="function" signature="(pathTemplate: string, context: PathContext) =&gt; string" path="lib/pathResolver.ts">
+      Resolves {core-root} and other path variables. Must be called before any file operations.
+    </interface>
+    <interface name="executeReadFile" kind="function" signature="(params: ReadFileParams, context: PathContext) =&gt; Promise&lt;ToolResult&gt;" path="lib/tools/fileOperations.ts">
+      Reads files from bundle or core. Already supports {core-root} resolution via resolvePath.
+    </interface>
+    <interface name="executeSaveOutput" kind="function" signature="(params: SaveOutputParams, context: PathContext) =&gt; Promise&lt;ToolResult&gt;" path="lib/tools/fileOperations.ts">
+      Saves output files. MUST ADD write protection check for core-root paths.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses Jest with TypeScript (ts-jest). Unit tests are in `lib/{module}/__tests__/{module}.test.ts`. Integration tests are in `lib/{module}/__tests__/{module}.integration.test.ts`. Path resolution tests follow patterns from Story 4.2. File operation tests follow patterns from Story 4.5. Security tests verify path traversal prevention and directory isolation.
+    </standards>
+    <locations>
+      - lib/__tests__/pathResolver.test.ts (unit tests for path resolution)
+      - lib/__tests__/pathResolver.integration.test.ts (integration tests)
+      - lib/tools/__tests__/fileOperations.integration.test.ts (file operation tests)
+      - lib/tools/__tests__/fileOperations.test.ts (add unit tests for write protection)
+    </locations>
+    <ideas>
+      <test ac="AC-4.11.1" idea="Unit test: createPathContext sets coreRoot to {projectRoot}/bmad/core" />
+      <test ac="AC-4.11.2" idea="Unit test: resolvePath replaces {core-root} with context.coreRoot" />
+      <test ac="AC-4.11.2" idea="Integration test: resolve {core-root}/tasks/workflow.md to absolute path" />
+      <test ac="AC-4.11.3" idea="Integration test: executeReadFile successfully reads {core-root}/tasks/workflow.md" />
+      <test ac="AC-4.11.4" idea="Unit test: executeSaveOutput rejects write to {core-root}/tasks/test.md with error" />
+      <test ac="AC-4.11.4" idea="Integration test: save_output tool call to core-root returns error result" />
+      <test ac="AC-4.11.5" idea="Security test: {core-root}/../../../etc/passwd blocked by path validation" />
+      <test ac="AC-4.11.5" idea="Security test: path traversal from core-root via ../ returns error" />
+      <test ac="AC-4.11.6" idea="Integration test: load bundle with core_dependencies, verify files accessible" />
+      <test ac="AC-4.11.7" idea="End-to-end test: agent loads bmad/core/tasks/workflow.md via read_file tool" />
+    </ideas>
+  </tests>
+</story-context>
