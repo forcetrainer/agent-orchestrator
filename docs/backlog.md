@@ -13,3 +13,6 @@ Routing guidance:
 | 2025-10-05 | 4.6 | 4 | Tech Debt | Low | TBD | Open | Add JSDoc documentation for bundle metadata flow - types/api.ts, AgentSelector.tsx, ChatPanel.tsx |
 | 2025-10-05 | 4.6 | 4 | Tech Debt | Low | TBD | Open | Review InitializeRequest bundle params usage - app/api/agent/initialize/route.ts:15-19. Document or implement in Story 4.7 |
 | 2025-10-05 | 4.6 | 4 | Enhancement | Low | TBD | Open | Enhance empty state message with developer guidance - AgentSelector.tsx:145-148. Link to BUNDLE-SPEC.md |
+| 2025-10-05 | 4.12 | 4 | TechDebt | Low | TBD | Open | Validate internal markdown links (e.g., #3-agentic-execution-loop) resolve correctly in GitHub renderer and other common viewers. Files: README.md, ARCHITECTURE.md, TROUBLESHOOTING.md |
+| 2025-10-05 | 4.12 | 4 | TechDebt | Low | TBD | Open | Replace user-specific path `/Users/bryan/agent-orchestrator/` with `{project-root}` placeholder in examples. File: ARCHITECTURE.md:517 |
+| 2025-10-05 | 4.12 | 4 | TechDebt | Low | TBD | Open | Add language tags to remaining code blocks for consistent syntax highlighting (e.g., ```bash, ```typescript). File: TROUBLESHOOTING.md |

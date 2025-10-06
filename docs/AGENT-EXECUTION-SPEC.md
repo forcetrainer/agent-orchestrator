@@ -1185,6 +1185,542 @@ For questions about this specification:
 
 ---
 
+## Appendix: Detailed Execution Flow Examples
+
+This appendix provides step-by-step execution flow examples demonstrating the pause-load-continue pattern in action.
+
+### Complete Example: User Invokes Agent Workflow
+
+This example shows the complete flow of a user invoking an agent workflow, demonstrating the pause-load-continue pattern from initialization through final response.
+
+#### Scenario
+
+User loads the "Alex" agent (Requirements Facilitator) from a bundle and invokes the `*intake-workflow` command to gather project requirements.
+
+#### Step-by-Step Execution
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 1: AGENT INITIALIZATION                                   │
+└─────────────────────────────────────────────────────────────────┘
+
+User Action: Selects "Alex - Requirements Facilitator" agent
+
+1. Load agent.md file
+   • Path: bmad/custom/bundles/requirements-workflow/agents/alex.md
+   • Parse XML structure:
+     - name: "Alex"
+     - title: "Requirements Facilitator"
+     - <critical-actions> section extracted
+
+2. Process Critical Actions (lib/agents/criticalActions.ts)
+   • Action 1: "Load into memory {bundle-root}/config.yaml and set variables: user_name, output_folder"
+     - Resolve path: {bundle-root} → bmad/custom/bundles/requirements-workflow
+     - Read file: bmad/custom/bundles/requirements-workflow/config.yaml
+     - Parse YAML:
+       {
+         user_name: "Bryan",
+         output_folder: "{project-root}/docs",
+         communication_language: "English"
+       }
+     - Inject as system message: "[Critical Action] Loaded file: config.yaml\n\n<file contents>"
+
+   • Action 2: "Remember the user's name is {user_name}"
+     - Resolve variable: {user_name} → "Bryan" (from config)
+     - Inject as system message: "[Critical Instruction] Remember the user's name is Bryan"
+
+   • Action 3: "ALWAYS communicate in {communication_language}"
+     - Resolve variable: {communication_language} → "English" (from config)
+     - Inject as system message: "[Critical Instruction] ALWAYS communicate in English"
+
+3. Build System Prompt (lib/agents/systemPromptBuilder.ts)
+   • Agent persona: "You are Alex, Requirements Facilitator..."
+   • Tool usage instructions: "When you need to load files, you MUST use the read_file tool"
+   • Available commands: *help, *intake-workflow, *deep-dive-workflow, etc.
+   • Workflow execution pattern explained
+
+4. Initialize Message Context
+   messages = [
+     { role: 'system', content: 'You are Alex, Requirements Facilitator...' },
+     { role: 'system', content: '[Critical Action] Loaded file: config.yaml...' },
+     { role: 'system', content: '[Critical Instruction] Remember the user's name is Bryan' },
+     { role: 'system', content: '[Critical Instruction] ALWAYS communicate in English' }
+   ]
+
+Agent initialized and ready for user interaction.
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 2: USER MESSAGE & AGENTIC EXECUTION LOOP                  │
+└─────────────────────────────────────────────────────────────────┘
+
+User Message: "*intake-workflow"
+
+5. Add User Message to Context
+   messages.push({ role: 'user', content: '*intake-workflow' })
+
+6. Start Agentic Execution Loop (lib/agents/agenticLoop.ts)
+   Iteration 1:
+
+   6a. Call OpenAI API
+       POST https://api.openai.com/v1/chat/completions
+       {
+         model: "gpt-4",
+         messages: [<system prompts>, <critical context>, <user message>],
+         tools: [read_file, execute_workflow, save_output],
+         tool_choice: "auto"
+       }
+
+   6b. LLM Response (with tool call)
+       {
+         role: 'assistant',
+         content: null,
+         tool_calls: [
+           {
+             id: 'call_abc123',
+             function: {
+               name: 'execute_workflow',
+               arguments: '{"workflow_path": "{bundle-root}/workflows/intake-workflow/workflow.yaml"}'
+             }
+           }
+         ]
+       }
+
+   6c. Add Assistant Message to Context
+       messages.push(assistantMessage)
+
+   6d. EXECUTION PAUSES - Tool call detected
+       console.log('[agenticLoop] Processing 1 tool calls')
+       console.log('[agenticLoop] Tool call: execute_workflow')
+
+   6e. Execute Tool (lib/tools/fileOperations.ts)
+       • Resolve path: {bundle-root}/workflows/intake-workflow/workflow.yaml
+         → bmad/custom/bundles/requirements-workflow/workflows/intake-workflow/workflow.yaml
+
+       • Read workflow.yaml:
+         {
+           name: "intake-workflow",
+           config_source: "{bundle-root}/config.yaml",
+           instructions: "{bundle-root}/workflows/intake-workflow/instructions.md",
+           template: "{bundle-root}/templates/initial-requirements.md"
+         }
+
+       • Resolve variables in workflow config:
+         {config_source}:output_folder → {project-root}/docs → /path/to/project/docs
+
+       • Load instructions.md (contains workflow steps)
+       • Load template.md (contains document template)
+
+       • Return tool result:
+         {
+           success: true,
+           workflow: {
+             name: "intake-workflow",
+             description: "Gather initial project requirements",
+             instructions: "<file contents>",
+             template: "<file contents>",
+             config: { ... }
+           }
+         }
+
+   6f. INJECT RESULT - Add Tool Result to Context
+       messages.push({
+         role: 'tool',
+         tool_call_id: 'call_abc123',
+         content: JSON.stringify(toolResult)
+       })
+
+       console.log('[agenticLoop] Tool result: ✅ success')
+       console.log('[agenticLoop] Iteration 1 completed, looping back to LLM')
+
+   6g. CONTINUE - Loop back (continue statement)
+
+7. Agentic Loop - Iteration 2
+
+   7a. Call OpenAI API (with tool result in context)
+       POST https://api.openai.com/v1/chat/completions
+       {
+         model: "gpt-4",
+         messages: [
+           <system prompts>,
+           <critical context>,
+           <user message: "*intake-workflow">,
+           <assistant message: tool call>,
+           <tool result: workflow loaded>
+         ],
+         tools: [read_file, execute_workflow, save_output]
+       }
+
+   7b. LLM Response (processing workflow, no tool calls)
+       {
+         role: 'assistant',
+         content: "I've loaded the intake workflow. Let me guide you through gathering initial requirements...\n\n**Step 1: Problem Statement**\n\nWhat problem are you trying to solve with this project?"
+       }
+
+   7c. Add Assistant Message to Context
+       messages.push(assistantMessage)
+
+   7d. No Tool Calls Detected - Loop Exits
+       console.log('[agenticLoop] Completed successfully in 2 iterations')
+
+       return {
+         success: true,
+         response: assistantMessage.content,
+         iterations: 2,
+         messages: messages  // Full conversation history
+       }
+
+┌─────────────────────────────────────────────────────────────────┐
+│ PHASE 3: RESPONSE TO USER                                       │
+└─────────────────────────────────────────────────────────────────┘
+
+8. Display Response to User
+
+   Agent: "I've loaded the intake workflow. Let me guide you through gathering initial requirements...
+
+   **Step 1: Problem Statement**
+
+   What problem are you trying to solve with this project?"
+
+9. Conversation Continues
+
+   User can now respond to questions, and the cycle repeats:
+   - User message → Agentic loop → Tool calls (if needed) → Response
+```
+
+### Key Execution Patterns
+
+#### Pause-Load-Continue Pattern
+
+The execution flow demonstrates the three critical phases:
+
+1. **PAUSE** (Step 6d)
+   - LLM generates tool call
+   - Execution cannot continue without tool result
+   - Loop waits for tool execution to complete
+
+2. **LOAD** (Step 6e)
+   - Tool executes (read_file, execute_workflow, save_output)
+   - File content or workflow configuration loaded
+   - Result prepared for injection
+
+3. **CONTINUE** (Step 6f-6g)
+   - Tool result injected into conversation context
+   - Loop continues with next iteration
+   - LLM processes loaded content in next call
+
+#### Message Context Growth
+
+The messages array grows throughout execution:
+
+**Initial State (4 messages):**
+```javascript
+[
+  { role: 'system', content: 'System prompt...' },
+  { role: 'system', content: 'Critical context 1...' },
+  { role: 'system', content: 'Critical context 2...' },
+  { role: 'system', content: 'Critical context 3...' }
+]
+```
+
+**After User Message (5 messages):**
+```javascript
+[
+  ...previous,
+  { role: 'user', content: '*intake-workflow' }
+]
+```
+
+**After First LLM Call (6 messages):**
+```javascript
+[
+  ...previous,
+  { role: 'assistant', tool_calls: [...] }
+]
+```
+
+**After Tool Execution (7 messages):**
+```javascript
+[
+  ...previous,
+  { role: 'tool', tool_call_id: 'call_abc123', content: '{...}' }
+]
+```
+
+**After Second LLM Call (8 messages):**
+```javascript
+[
+  ...previous,
+  { role: 'assistant', content: 'Final response...' }
+]
+```
+
+This growth maintains full conversation context across iterations.
+
+### Sample Log Output
+
+Here's what the console logs look like during successful execution:
+
+```
+[agenticLoop] Starting execution for agent: alex
+[criticalActions] Processing 3 critical actions
+[criticalActions] Loading file: {bundle-root}/config.yaml
+[criticalActions] Parsed config.yaml with variables: user_name, output_folder, communication_language
+[criticalActions] Non-file instruction: Remember the user's name is Bryan
+[criticalActions] Non-file instruction: ALWAYS communicate in English
+[criticalActions] Completed successfully: 3 messages, config loaded
+[agenticLoop] Iteration 1/50
+[agenticLoop] Processing 1 tool calls
+[agenticLoop] Tool call: execute_workflow { workflow_path: '{bundle-root}/workflows/intake-workflow/workflow.yaml' }
+[execute_workflow] 🔄 Loading workflow: {bundle-root}/workflows/intake-workflow/workflow.yaml
+[pathResolver] Resolving: {bundle-root}/workflows/intake-workflow/workflow.yaml
+[pathResolver] Resolved: bmad/custom/bundles/requirements-workflow/workflows/intake-workflow/workflow.yaml
+[execute_workflow] ✅ Workflow loaded: intake-workflow
+[agenticLoop] Tool result: ✅ success
+[agenticLoop] Iteration 1 completed in 1243.56ms, looping back to LLM
+[agenticLoop] Iteration 2/50
+[agenticLoop] Completed successfully in 2 iterations (2567.89ms)
+```
+
+### Architecture Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         USER INTERFACE                           │
+└────────────────────────┬─────────────────────────────────────────┘
+                         │
+                         ├─── Agent Selection
+                         │    │
+                         ↓    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│              AGENT INITIALIZATION (One-Time)                     │
+├─────────────────────────────────────────────────────────────────┤
+│ 1. Load agent.md (bundle/agents/agent.md)                       │
+│ 2. Process Critical Actions (criticalActions.ts)                │
+│    • Load config.yaml → Parse variables                         │
+│    • Inject system messages                                     │
+│ 3. Build System Prompt (systemPromptBuilder.ts)                 │
+│ 4. Create Initial Message Context                               │
+└────────────────────────┬────────────────────────────────────────┘
+                         │
+                         ├─── Agent Ready
+                         │    │
+                         ↓    ↓
+┌─────────────────────────────────────────────────────────────────┐
+│          AGENTIC EXECUTION LOOP (Per User Message)              │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ START: Add user message to context                   │      │
+│  └──────────────┬───────────────────────────────────────┘      │
+│                 │                                                │
+│                 ↓                                                │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ Call OpenAI API                                      │      │
+│  │ • Send messages (system + context + history)        │      │
+│  │ • Include tool definitions                           │      │
+│  │ • tool_choice: "auto"                                │      │
+│  └──────────────┬───────────────────────────────────────┘      │
+│                 │                                                │
+│                 ↓                                                │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ Receive LLM Response                                 │      │
+│  │ • Add assistant message to context                   │      │
+│  └──────────────┬───────────────────────────────────────┘      │
+│                 │                                                │
+│        ┌────────┴─────────┐                                     │
+│        │ Tool calls?      │                                     │
+│        └────┬────────┬────┘                                     │
+│          Yes│        │No                                        │
+│             ↓        ↓                                           │
+│  ┌──────────────┐  ┌─────────────────────────┐                │
+│  │ PAUSE        │  │ RETURN RESPONSE         │                │
+│  │ Execute Tools│  │ • success: true         │                │
+│  │ 1. read_file │  │ • response: content     │                │
+│  │ 2. exec_flow │  │ • iterations: N         │                │
+│  │ 3. save_out  │  │ • messages: [...]       │                │
+│  └──────┬───────┘  └─────────────────────────┘                │
+│         │                                                        │
+│         ↓                                                        │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ LOAD: Execute tool via pathResolver                  │      │
+│  │ • Resolve path variables                             │      │
+│  │ • Read file or execute workflow                      │      │
+│  │ • Return result                                      │      │
+│  └──────────────┬───────────────────────────────────────┘      │
+│                 │                                                │
+│                 ↓                                                │
+│  ┌──────────────────────────────────────────────────────┐      │
+│  │ CONTINUE: Inject result into context                 │      │
+│  │ • Add tool result message (role: 'tool')             │      │
+│  │ • Loop back to OpenAI call                           │      │
+│  └──────────────┬───────────────────────────────────────┘      │
+│                 │                                                │
+│                 └─────────────┐                                 │
+│                               ↓                                  │
+│                  (Back to "Call OpenAI API")                    │
+│                                                                  │
+│  Safety: MAX_ITERATIONS = 50 (prevents infinite loops)          │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Path Resolution Flow
+
+```
+Input Path: "{config_source}:output_folder/requirements-{date}.md"
+             └─── From workflow.yaml or agent instructions
+
+↓
+
+Step 1: Resolve Config References
+  {config_source}:output_folder → Read from config.yaml
+  Result: "{project-root}/docs/requirements-{date}.md"
+
+↓
+
+Step 2: Resolve System Variables
+  {date} → Current date (e.g., "2025-10-05")
+  Result: "{project-root}/docs/requirements-2025-10-05.md"
+
+↓
+
+Step 3: Resolve Path Variables
+  {project-root} → Absolute path (e.g., "/path/to/project")
+  Result: "/path/to/project/docs/requirements-2025-10-05.md"
+
+↓
+
+Step 4: Security Validation
+  • Check for path traversal (..)
+  • Verify path is within bundleRoot OR coreRoot OR projectRoot
+  • Resolve symlinks and validate real path
+  • Reject if security violations found
+
+↓
+
+Output: "/path/to/project/docs/requirements-2025-10-05.md"
+        └─── Fully resolved, validated absolute path
+```
+
+### Critical Actions Sequence
+
+```
+<critical-actions>
+  <i>Load into memory {bundle-root}/config.yaml and set variables: user_name</i>
+  <i>Remember the user's name is {user_name}</i>
+</critical-actions>
+
+↓
+
+1. Parse <critical-actions> XML section
+   Extract: [
+     "Load into memory {bundle-root}/config.yaml and set variables: user_name",
+     "Remember the user's name is {user_name}"
+   ]
+
+↓
+
+2. Process Action 1: "Load into memory {bundle-root}/config.yaml..."
+   a. Detect: This is a file load instruction
+   b. Resolve path: {bundle-root}/config.yaml
+      → bmad/custom/bundles/requirements-workflow/config.yaml
+   c. Read file: await readFile(resolvedPath)
+   d. Parse YAML: { user_name: "Bryan", ... }
+   e. Inject as system message:
+      { role: 'system', content: '[Critical Action] Loaded file: config.yaml\n\n...' }
+   f. Store config for subsequent actions
+
+↓
+
+3. Process Action 2: "Remember the user's name is {user_name}"
+   a. Detect: This is a non-file instruction
+   b. Resolve variables: {user_name} → "Bryan" (from config loaded in step 2)
+   c. Inject as system message:
+      { role: 'system', content: '[Critical Instruction] Remember the user's name is Bryan' }
+
+↓
+
+Result: System messages array ready for agent initialization
+[
+  { role: 'system', content: '[Critical Action] Loaded file: config.yaml\n\n...' },
+  { role: 'system', content: '[Critical Instruction] Remember the user's name is Bryan' }
+]
+```
+
+### Error Handling Examples
+
+#### Critical Action Failure
+
+```
+Critical Action: "Load into memory {bundle-root}/config.yaml"
+↓
+File not found: bmad/custom/bundles/requirements-workflow/config.yaml
+↓
+Error: "Critical action failed: Load into memory {bundle-root}/config.yaml
+        Error: ENOENT: no such file or directory"
+↓
+Agent initialization HALTED
+Agent NOT available for user interaction
+```
+
+#### Path Resolution Failure
+
+```
+Path Template: "{config_source}:invalid_var/file.md"
+↓
+Config loaded: { user_name: "Bryan", output_folder: "/docs" }
+↓
+Error: "Config variable not found: invalid_var
+        Available variables: user_name, output_folder"
+↓
+Path resolution FAILED
+File operation ABORTED
+```
+
+#### Security Violation
+
+```
+Path Template: "{bundle-root}/../../../etc/passwd"
+↓
+Resolved: /path/to/project/bmad/custom/bundles/bundle-name/../../../etc/passwd
+          → /etc/passwd
+↓
+Security Check: Path outside allowed directories (bundleRoot, coreRoot, projectRoot)
+↓
+Error: "Security violation: Access denied"
+↓
+File read BLOCKED
+```
+
+### Performance Characteristics
+
+**Initialization (One-Time Per Agent):**
+- Time: 100-500ms
+- Operations:
+  - Read agent.md file (~10KB)
+  - Read config.yaml file (~1KB)
+  - Parse YAML
+  - Build system prompt
+
+**Execution Loop (Per User Message):**
+- Typical Iterations: 1-3
+- Time Per Iteration: 500-2000ms (depends on OpenAI API latency)
+- Total Time: 1-5 seconds for simple workflows
+
+**Tool Execution:**
+- read_file: 10-50ms (local file read)
+- execute_workflow: 50-200ms (load workflow + instructions + template)
+- save_output: 20-100ms (write file + create directories)
+
+**Context Growth:**
+- System Prompt: ~2000 tokens
+- Critical Context: ~500 tokens (config.yaml content)
+- User Message: ~50-200 tokens
+- Tool Results: ~500-2000 tokens (per file loaded)
+- Total Per Iteration: +1000-3000 tokens
+
+---
+
 **Specification Version**: 1.0
 **Date**: 2025-10-05
 **Author**: BMAD Architecture Team

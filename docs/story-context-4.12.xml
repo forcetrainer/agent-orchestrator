@@ -1,0 +1,209 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.12</storyId>
+    <title>Update Documentation for Epic 4 Architecture</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.12.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to document the new architecture in code comments and README</iWant>
+    <soThat>future developers understand the agentic execution pattern</soThat>
+    <tasks>
+      - Task 1: Update README with Epic 4 Architecture Overview (AC: 1, 4)
+      - Task 2: Add Code Comments to Agentic Execution Loop (AC: 2, 5)
+      - Task 3: Add Code Comments to Path Resolver (AC: 3, 5)
+      - Task 4: Document Critical Actions Processor (AC: 5)
+      - Task 5: Create Troubleshooting Guide (AC: 6)
+      - Task 6: Add Execution Flow Example (AC: 7)
+      - Task 7: Update Developer Documentation (AC: 1, 4)
+      - Task 8: Review and Validate Documentation (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.12.1">README updated with architecture overview (agentic loop + bundle structure)</criterion>
+    <criterion id="AC-4.12.2">Code comments in agentic loop explain execution flow</criterion>
+    <criterion id="AC-4.12.3">Code comments in path resolver explain variable resolution order</criterion>
+    <criterion id="AC-4.12.4">Developer notes explain differences from original Epic 2 approach</criterion>
+    <criterion id="AC-4.12.5">Link to AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md in relevant files</criterion>
+    <criterion id="AC-4.12.6">Quick troubleshooting guide for common agent execution issues</criterion>
+    <criterion id="AC-4.12.7">Example of successful agent execution flow in comments or docs</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="BMAD Agent Execution Architecture Specification">
+        Complete specification for agentic execution loop, critical actions processor, path resolution system, and system prompt builder.
+        Key sections:
+        - Section 3: Agentic Execution Loop (pause-load-continue pattern)
+        - Section 4: Critical Actions Processor (initialization sequence)
+        - Section 5: Path Resolution System ({bundle-root}, {core-root}, {project-root})
+        - Section 6: System Prompt Builder (tool usage instructions)
+      </doc>
+
+      <doc path="docs/BUNDLE-SPEC.md" title="BMAD Bundle Structure Specification">
+        Specification for bundle structure, manifest format (bundle.yaml), and path variables.
+        Defines required bundle components: agents/, config.yaml, bundle.yaml manifest.
+      </doc>
+
+      <doc path="docs/prd.md" title="Product Requirements Document" section="Epic 4">
+        Epic 4 product requirements explaining the architectural pivot from Epic 2 to Epic 4.
+        Context: Epic 2 implemented simple function calling loop (deprecated).
+        Epic 4 implements correct agentic execution with pause-load-continue pattern.
+      </doc>
+
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Epic 2 and Epic 4">
+        Epic 2 (DEPRECATED): Original OpenAI integration approach that didn't implement agentic loop.
+        Epic 4 (IN PROGRESS): Correct agent execution architecture with bundle system support.
+        Story 4.12 is the final story in Epic 4, completing the architectural implementation.
+      </doc>
+
+      <doc path="docs/solution-architecture.md" title="Solution Architecture Document">
+        Overall system architecture including technology stack, application architecture, API design.
+        Needs update to reflect Epic 4 changes (agentic loop, bundle structure, path resolution).
+      </doc>
+
+      <doc path="docs/stories/story-4.1.md" title="Story 4.1: Implement Agentic Execution Loop">
+        Implementation details for agentic execution loop (pause-load-continue pattern).
+      </doc>
+
+      <doc path="docs/stories/story-4.2.md" title="Story 4.2: Implement Path Variable Resolution System">
+        Implementation details for path variable resolution ({bundle-root}, {core-root}, {project-root}).
+      </doc>
+
+      <doc path="docs/stories/story-4.3.md" title="Story 4.3: Implement Critical Actions Processor">
+        Implementation details for critical actions execution during agent initialization.
+      </doc>
+
+      <doc path="docs/stories/story-4.8.md" title="Story 4.8: Implement System Prompt Builder">
+        Implementation details for system prompt builder with tool usage instructions.
+      </doc>
+
+      <doc path="README.md" title="Project README">
+        Current README covers basic setup and project structure.
+        Needs Epic 4 architecture section, troubleshooting guide link, and developer documentation.
+      </doc>
+    </docs>
+
+    <code>
+      <file path="lib/agents/agenticLoop.ts" kind="implementation" symbol="executeAgenticLoop" lines="1-100" reason="PRIMARY TARGET: Agentic execution loop implementation. Needs comprehensive code comments explaining pause-load-continue pattern, tool call handling, context injection, safety limits. Already has basic header comments but needs detailed inline documentation per AC-4.12.2">
+        Key functions to document:
+        - executeAgenticLoop: Main loop function with iteration control
+        - executeToolCall: Tool execution with path resolution
+        - MAX_ITERATIONS: Safety limit constant
+        Reference to add: AGENT-EXECUTION-SPEC.md Section 3
+      </file>
+
+      <file path="lib/pathResolver.ts" kind="implementation" symbol="resolvePath" lines="1-100" reason="PRIMARY TARGET: Path variable resolution system. Needs code comments explaining variable resolution order (config refs → system vars → path vars), security validation, nested resolution. Has basic header but needs detailed inline documentation per AC-4.12.3">
+        Key functions to document:
+        - resolvePath: Main resolution function with variable replacement
+        - createPathContext: Context creation for bundle/core/project roots
+        - loadBundleConfig: Config loading and caching
+        Resolution order (critical): config references → system variables → path variables → nested
+        Reference to add: AGENT-EXECUTION-SPEC.md Section 5
+      </file>
+
+      <file path="lib/agents/criticalActions.ts" kind="implementation" symbol="processCriticalActions" reason="PRIMARY TARGET: Critical actions processor. Needs overview comments explaining initialization sequence, file loading pattern during critical actions. Reference to add: AGENT-EXECUTION-SPEC.md Section 4 per AC-4.12.5">
+        Documents initialization sequence for agents on selection/load.
+      </file>
+
+      <file path="lib/agents/systemPromptBuilder.ts" kind="implementation" symbol="buildSystemPrompt" reason="System prompt builder with tool usage instructions. Should reference AGENT-EXECUTION-SPEC.md Section 6">
+        Builds system prompts that instruct LLM to actively use tools (not just acknowledge).
+      </file>
+
+      <file path="lib/tools/fileOperations.ts" kind="implementation" reason="File operation tools (read_file, save_output, execute_workflow) that use path resolution">
+        Uses PathContext from pathResolver.ts to resolve variables before file operations.
+      </file>
+
+      <file path="README.md" kind="documentation" reason="PRIMARY TARGET: Main project documentation. Needs Epic 4 architecture overview section per AC-4.12.1, AC-4.12.4, AC-4.12.7">
+        Current content: Basic setup, project structure, development commands.
+        Needs additions:
+        - Architecture section explaining agentic loop + bundle structure
+        - "What Changed from Epic 2" explaining architectural pivot
+        - Links to AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md
+        - Link to TROUBLESHOOTING.md (when created)
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">Next.js framework for React with App Router</package>
+        <package name="react" version="^18">React UI library</package>
+        <package name="typescript" version="^5">TypeScript for type safety</package>
+        <package name="openai" version="^4.104.0">OpenAI SDK for API integration and function calling</package>
+        <package name="js-yaml" version="^4.1.0">YAML parsing for bundle configs</package>
+        <package name="react-markdown" version="^10.1.0">Markdown rendering for agent responses</package>
+        <package name="jest" version="^30.2.0">Testing framework</package>
+        <package name="@testing-library/react" version="^16.3.0">React testing utilities</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="documentation-only">This story is DOCUMENTATION ONLY. No code changes except adding comments to existing files. Do not refactor or change functionality.</constraint>
+    <constraint type="comment-style">Use JSDoc-style comments for functions and modules. Use inline // comments for complex logic explanation.</constraint>
+    <constraint type="existing-implementation">All Epic 4 implementation (Stories 4.1-4.11) is complete. Documentation must accurately reflect existing code behavior.</constraint>
+    <constraint type="epic-context">Must explain Epic 2 → Epic 4 transition: Epic 2 used simple function calling loop (deprecated), Epic 4 implements agentic execution with pause-load-continue pattern.</constraint>
+    <constraint type="spec-references">Link to AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md in relevant code files per AC-4.12.5</constraint>
+    <constraint type="troubleshooting-guide">Create new TROUBLESHOOTING.md covering common agent execution issues: file loading failures, path variable resolution errors, critical actions failures</constraint>
+    <constraint type="execution-flow-example">Provide concrete example of successful agent execution flow showing: user message → tool call → pause → execute → inject result → continue → final response</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="PathContext" kind="type" path="lib/pathResolver.ts">
+      /**
+       * Context for path variable resolution
+       */
+      export interface PathContext {
+        bundleRoot: string;    // bmad/custom/bundles/{bundle-name}
+        coreRoot: string;      // bmad/core
+        projectRoot: string;   // Project root directory
+        bundleConfig?: Record<string, any>;  // Parsed config.yaml
+      }
+
+      Usage: Create via createPathContext(bundleName), pass to resolvePath() and file operation tools
+    </interface>
+
+    <interface name="ExecutionResult" kind="type" path="lib/agents/agenticLoop.ts">
+      /**
+       * Result of executing an agentic loop
+       */
+      export interface ExecutionResult {
+        success: boolean;      // Whether execution completed successfully
+        response: string;      // Final response from assistant
+        iterations: number;    // Number of loop iterations
+        messages: Array<ChatCompletionMessageParam>;  // Full conversation history
+      }
+
+      Usage: Returned by executeAgenticLoop(), contains final response and conversation context
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with TypeScript support (ts-jest). Tests located in __tests__ directories adjacent to source files. Integration tests use .integration.test.ts suffix. All Epic 4 implementation has comprehensive test coverage (Stories 4.1-4.11 each have unit and integration tests). Documentation story (4.12) does not require new tests - validation is manual review of documentation quality and accuracy.
+    </standards>
+
+    <locations>
+      - lib/**/__tests__/*.test.ts (unit tests)
+      - lib/**/__tests__/*.integration.test.ts (integration tests)
+      - Existing test suites for Epic 4:
+        - lib/agents/__tests__/agenticLoop.test.ts (Story 4.1)
+        - lib/__tests__/pathResolver.test.ts (Story 4.2)
+        - lib/agents/__tests__/criticalActions.test.ts (Story 4.3)
+    </locations>
+
+    <ideas>
+      <idea ac="AC-4.12.8">Manual validation: Review README for clarity and completeness</idea>
+      <idea ac="AC-4.12.8">Manual validation: Verify all code references in docs are accurate</idea>
+      <idea ac="AC-4.12.6">Manual validation: Test troubleshooting guide scenarios to ensure they work</idea>
+      <idea ac="AC-4.12.7">Manual validation: Ensure execution flow example matches actual implementation behavior</idea>
+      <idea>No automated tests needed - this is documentation-only story. Validation is manual review.</idea>
+    </ideas>
+  </tests>
+</story-context>

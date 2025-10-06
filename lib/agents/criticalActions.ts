@@ -2,13 +2,40 @@
  * Critical Actions Processor Module
  * Story 4.3: Implement Critical Actions Processor
  *
- * Processes agent critical-actions during initialization to:
- * - Load bundle config.yaml files
- * - Set up initial context with user preferences
- * - Inject system messages before user interaction
+ * Processes agent critical actions during initialization to set up the agent's
+ * initial context BEFORE any user interaction or agentic loop execution begins.
  *
+ * WHAT ARE CRITICAL ACTIONS?
+ * Critical actions are initialization instructions defined in an agent's <critical-actions>
+ * XML section. They specify which files must be loaded and what context must be set up
+ * before the agent can begin processing user messages.
+ *
+ * INITIALIZATION SEQUENCE:
+ * 1. Agent selected/loaded by user
+ * 2. Parse <critical-actions> section from agent.md XML
+ * 3. Execute each critical action in sequence:
+ *    - File load instructions → Read file and inject as system message
+ *    - Config files (config.yaml) → Parse YAML and store variables
+ *    - Other instructions → Inject as system messages
+ * 4. All critical actions complete successfully
+ * 5. Agent ready for user interaction
+ *
+ * TIMING:
  * Critical actions run BEFORE the agentic execution loop starts.
- * Failure during critical actions halts initialization.
+ * They happen during agent initialization, not during message processing.
+ * Failure during critical actions HALTS initialization - agent won't be available.
+ *
+ * EXAMPLE CRITICAL ACTIONS:
+ * <critical-actions>
+ *   <i>Load into memory {bundle-root}/config.yaml and set variables: user_name, output_folder</i>
+ *   <i>Remember the user's name is {user_name}</i>
+ *   <i>ALWAYS communicate in {communication_language}</i>
+ * </critical-actions>
+ *
+ * Result: config.yaml loaded, variables parsed, instructions injected as system messages
+ *
+ * For complete specification, see: docs/AGENT-EXECUTION-SPEC.md Section 4
+ * @see https://github.com/your-repo/docs/AGENT-EXECUTION-SPEC.md#4-critical-actions-processor
  */
 
 import { readFile } from 'fs/promises';
@@ -73,35 +100,44 @@ export async function processCriticalActions(
     bundleConfig: undefined,
   };
 
-  // Process each critical action in sequence
+  // SEQUENTIAL PROCESSING
+  // Process each critical action in sequence (order matters!)
   // AC-4.3.7: All critical actions complete before agent accepts first user message
+  // This loop is the heart of the initialization sequence
   for (let i = 0; i < criticalActions.length; i++) {
     const instruction = criticalActions[i].trim();
 
     try {
       // AC-4.3.2: Extract file load instructions
+      // Pattern: "Load into memory {bundle-root}/config.yaml and set variables: var1, var2"
       const fileLoadMatch = instruction.match(
         /Load (?:into memory )?(.+?)(?: and set variables: (.+?))?$/i
       );
 
       if (fileLoadMatch) {
-        // This is a file load instruction
+        // FILE LOAD PATTERN
+        // This is a file load instruction - most critical actions are file loads
         const filePath = fileLoadMatch[1].trim();
         const variables = fileLoadMatch[2]?.trim();
 
         console.log(`[criticalActions] Loading file: ${filePath}`);
 
-        // AC-4.3.3: Execute file loads via read_file function
+        // AC-4.3.3: Execute file loads via path resolution + read_file
+        // Path resolution handles {bundle-root}, {core-root}, etc.
         const resolvedPath = resolvePath(filePath, context);
         const fileContent = await readFile(resolvedPath, 'utf-8');
 
-        // AC-4.3.4: Inject loaded file contents as system messages
+        // AC-4.3.4: INJECT FILE CONTENT - Inject loaded file contents as system messages
+        // This makes the file content available to the agent before any user interaction
+        // The LLM will see this content in the initial conversation context
         messages.push({
           role: 'system',
           content: `[Critical Action] Loaded file: ${resolvedPath}\n\n${fileContent}`,
         });
 
-        // AC-4.3.5: Parse config.yaml files and store variables
+        // AC-4.3.5: PARSE CONFIG - Parse config.yaml files and store variables
+        // Special handling for config files: parse YAML and make variables available
+        // for path resolution in subsequent critical actions
         if (filePath.includes('config.yaml')) {
           bundleConfig = parseYaml(fileContent) as Record<string, any>;
           context.bundleConfig = bundleConfig;
@@ -115,8 +151,14 @@ export async function processCriticalActions(
           }
         }
       } else {
+        // NON-FILE INSTRUCTION PATTERN
         // AC-4.3.6: Execute non-file instructions as system messages
+        // Examples: "Remember the user's name is {user_name}"
+        //          "ALWAYS communicate in {communication_language}"
+        // These become system-level instructions for the agent
+
         // Resolve any config variables in the instruction text
+        // If config was loaded in previous actions, variables like {user_name} will be replaced
         let resolvedInstruction = instruction;
 
         if (context.bundleConfig) {
@@ -134,6 +176,7 @@ export async function processCriticalActions(
 
         console.log(`[criticalActions] Non-file instruction: ${resolvedInstruction}`);
 
+        // Inject as system message
         messages.push({
           role: 'system',
           content: `[Critical Instruction] ${resolvedInstruction}`,

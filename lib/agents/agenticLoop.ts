@@ -2,13 +2,27 @@
  * Agentic Execution Loop Module
  * Story 4.1: Implement Agentic Execution Loop
  *
- * Implements the foundational agentic execution pattern for BMAD agents:
- * - User message → LLM call → Tool calls? → Execute tools → Loop back → Final response
+ * Implements the foundational agentic execution pattern for BMAD agents using the
+ * pause-load-continue pattern inspired by Claude Code.
+ *
+ * EXECUTION FLOW:
+ * 1. User message → LLM generates tool call (e.g., read_file)
+ * 2. Execution PAUSES - cannot continue without tool result
+ * 3. Tool executes, file content loaded
+ * 4. Result injected into conversation context
+ * 5. Execution CONTINUES - LLM processes loaded content
+ * 6. Repeat until LLM returns final response without tool calls
+ *
+ * KEY FEATURES:
  * - Execution BLOCKS on tool calls (pause-load-continue pattern)
  * - Maintains conversation context across all iterations
  * - Safety limit of MAX_ITERATIONS to prevent infinite loops
+ * - Each iteration grows message context with tool results
  *
  * This replaces the Epic 2 simple function calling loop with blocking execution.
+ *
+ * For complete specification, see: docs/AGENT-EXECUTION-SPEC.md Section 3
+ * @see https://github.com/your-repo/docs/AGENT-EXECUTION-SPEC.md#3-agentic-execution-loop
  */
 
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
@@ -216,7 +230,12 @@ export async function executeAgent(
   // AC-4.1.5: Initialize iteration counter
   let iterations = 0;
 
-  // AC-4.1.1: While loop that continues until no tool calls
+  // AC-4.1.1: AGENTIC LOOP - While loop that continues until no tool calls
+  // This is the core of the pause-load-continue pattern:
+  // - Each iteration represents one LLM call
+  // - If LLM returns tool calls, we execute them and loop back
+  // - If LLM returns text response, we're done
+  // - Safety limit prevents infinite loops
   while (iterations < MAX_ITERATIONS) {
     iterations++;
 
@@ -227,6 +246,13 @@ export async function executeAgent(
     try {
       // AC-4.1.2: Call OpenAI with messages and tools
       // Task 3: OpenAI Integration
+      // PAUSE POINT: We send the current conversation state to OpenAI
+      // The messages array contains:
+      // - System prompt with tool usage instructions
+      // - Critical context (config files loaded during initialization)
+      // - Conversation history from previous iterations
+      // - Tool results from previous iterations (if any)
+      // - Current user message
       const response = await client.chat.completions.create({
         model,
         messages,
@@ -245,15 +271,21 @@ export async function executeAgent(
 
       // Task 3.3: Append assistant message to messages array
       // AC-4.1.3: Messages array grows with each response
+      // This preserves the full conversation context for the next iteration
       messages.push(assistantMessage);
 
       // Task 3.4: Check for presence of tool_calls
       // AC-4.1.2: Check for tool calls
+      // DECISION POINT: Does LLM want to load files or return final response?
       if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
         // AC-4.1.6: Log tool call information
         console.log(`[agenticLoop] Processing ${assistantMessage.tool_calls.length} tool calls`);
 
-        // AC-4.1.8: Execution blocks on tool calls
+        // AC-4.1.8: EXECUTION PAUSES - Execution blocks on tool calls
+        // This is the "pause" part of pause-load-continue:
+        // - LLM requested file(s) to be loaded
+        // - We MUST execute these tools before continuing
+        // - LLM cannot proceed without the tool results
         // Task 4: Tool Execution and Result Injection
         // Task 4.1: Iterate through each tool call
         for (const toolCall of assistantMessage.tool_calls) {
@@ -263,7 +295,9 @@ export async function executeAgent(
           // AC-4.1.6: Log tool call names and parameters
           console.log(`[agenticLoop] Tool call: ${functionName}`, functionArgs);
 
-          // Task 4.2: Execute each tool call
+          // Task 4.2: EXECUTE TOOL - This is the "load" part of pause-load-continue
+          // Tool executes (e.g., reads file from disk using path resolution)
+          // Result contains file content or workflow configuration
           pathContext.toolCallCount++;
           const result = await executeToolCall(toolCall, pathContext);
 
@@ -272,7 +306,9 @@ export async function executeAgent(
           console.log(`[agenticLoop] Tool result: ${success ? '✅ success' : '❌ error'}`);
 
           // Task 4.3: Create tool result message with role: 'tool'
-          // AC-4.1.4: Tool results injected as 'tool' role messages with tool_call_id
+          // AC-4.1.4: INJECT RESULT - Tool results injected as 'tool' role messages with tool_call_id
+          // The tool_call_id links this result to the specific tool call that requested it
+          // This is how OpenAI knows which tool result corresponds to which tool call
           const toolMessage: ChatCompletionMessageParam = {
             role: 'tool',
             tool_call_id: toolCall.id,
@@ -281,15 +317,21 @@ export async function executeAgent(
 
           // Task 4.4: Append tool result message to messages array
           // AC-4.1.3: Messages array grows with each tool result
+          // Now the file content is in the conversation context for next iteration
           messages.push(toolMessage);
         }
 
         // Task 4.5: Continue loop only after ALL tool results injected
         // AC-4.1.8: Execution blocks - cannot continue without tool results
+        // All tool results are now in context, ready for next iteration
         const iterationDuration = performance.now() - iterationStartTime;
         console.log(`[agenticLoop] Iteration ${iterations} completed in ${iterationDuration.toFixed(2)}ms, looping back to LLM`);
 
-        // AC-4.1.2: Loop back to LLM with tool results
+        // AC-4.1.2: CONTINUE - Loop back to LLM with tool results
+        // This is the "continue" part of pause-load-continue:
+        // - Tool results now in messages array
+        // - Next iteration: LLM processes loaded content
+        // - LLM may generate more tool calls or return final response
         continue;
       }
 

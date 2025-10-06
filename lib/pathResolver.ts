@@ -2,21 +2,36 @@
  * Path Variable Resolution System
  *
  * Resolves BMAD path variables in file paths to enable portable agent workflows.
- * Supports:
+ * This system allows agents and workflows to reference files using variables instead
+ * of hardcoded paths, making bundles portable across different installations.
+ *
+ * SUPPORTED VARIABLES:
  * - Path variables: {bundle-root}, {core-root}, {project-root}
  * - Config references: {config_source}:variable_name
  * - System variables: {date}, {user_name}
- * - Nested variable resolution
+ * - Nested variable resolution (variables can reference other variables)
  *
- * Resolution order (critical):
- * 1. Config references ({config_source}:variable_name)
- * 2. System variables ({date}, {user_name})
- * 3. Path variables ({bundle-root}, {core-root}, {project-root})
- * 4. Nested resolution (if replaced values contain variables, re-run)
+ * RESOLUTION ORDER (CRITICAL - order matters!):
+ * 1. Config references ({config_source}:variable_name) - Load values from bundle config.yaml
+ * 2. System variables ({date}, {user_name}) - Generate runtime values
+ * 3. Path variables ({bundle-root}, {core-root}, {project-root}) - Replace with actual paths
+ * 4. Nested resolution - If replaced values contain variables, repeat steps 1-3 (max 10 iterations)
  *
- * Security:
- * All resolved paths are validated to be within bundleRoot or coreRoot.
- * Path traversal attempts are blocked.
+ * EXAMPLE:
+ * Input:  "{config_source}:output_folder/report-{date}.md"
+ * Step 1: "{project-root}/docs/report-{date}.md" (config says output_folder = "{project-root}/docs")
+ * Step 2: "{project-root}/docs/report-2025-10-05.md" (date resolved)
+ * Step 3: "/Users/bryan/agent-orchestrator/docs/report-2025-10-05.md" (project-root resolved)
+ * Output: "/Users/bryan/agent-orchestrator/docs/report-2025-10-05.md"
+ *
+ * SECURITY:
+ * - All resolved paths validated to be within bundleRoot, coreRoot, or projectRoot
+ * - Path traversal attempts (..) are blocked
+ * - Symbolic links resolved to real paths and validated
+ * - Null bytes and invalid characters rejected
+ *
+ * For complete specification, see: docs/AGENT-EXECUTION-SPEC.md Section 5
+ * @see https://github.com/your-repo/docs/AGENT-EXECUTION-SPEC.md#5-path-resolution-system
  */
 
 import { resolve, normalize, isAbsolute, sep } from 'path';
@@ -291,11 +306,31 @@ function hasUnresolvedVariables(str: string): boolean {
 /**
  * Resolves BMAD path variables in file paths
  *
- * Resolution order:
- * 1. Config references ({config_source}:variable_name)
- * 2. System variables ({date}, {user_name})
- * 3. Path variables ({bundle-root}, {core-root}, {project-root})
- * 4. Nested resolution (repeat if variables remain, max 10 iterations)
+ * This is the main entry point for path resolution. It takes a path template with
+ * variables (like "{bundle-root}/workflows/intake.yaml") and returns a fully resolved
+ * absolute path by replacing all variables with their actual values.
+ *
+ * RESOLUTION ORDER (CRITICAL - order matters!):
+ * 1. Config references ({config_source}:variable_name) - Must resolve first because
+ *    config values may contain other variables (e.g., output_folder = "{project-root}/docs")
+ * 2. System variables ({date}, {user_name}) - Runtime-generated values
+ * 3. Path variables ({bundle-root}, {core-root}, {project-root}) - Actual directory paths
+ * 4. Nested resolution - If any replaced value contains variables, repeat steps 1-3
+ *    (max 10 iterations to prevent infinite loops)
+ *
+ * WHY THIS ORDER?
+ * - Config vars first: They may reference system/path vars, so resolve them early
+ * - System vars second: They're simple runtime values with no dependencies
+ * - Path vars last: They're concrete paths, unlikely to need further resolution
+ * - Nested resolution: Handles cases like config value = "{project-root}/docs/{date}"
+ *
+ * EXAMPLE NESTED RESOLUTION:
+ * Input:  "{config_source}:output_folder/report-{date}.md"
+ * Iteration 1:
+ *   Step 1: "{project-root}/docs/report-{date}.md" (config: output_folder = "{project-root}/docs")
+ *   Step 2: "{project-root}/docs/report-2025-10-05.md" (date = "2025-10-05")
+ *   Step 3: "/path/to/project/docs/report-2025-10-05.md" (project-root = "/path/to/project")
+ * Iteration 2: No variables remain → done
  *
  * @param pathTemplate - Path template with variables (e.g., "{bundle-root}/workflows/intake/workflow.yaml")
  * @param context - PathContext with directory paths and optional bundleConfig
@@ -307,9 +342,13 @@ export function resolvePath(pathTemplate: string, context: PathContext): string 
   let iterations = 0;
   const seenValues = new Set<string>();
 
-  // Iterative resolution for nested variables
+  // NESTED RESOLUTION LOOP
+  // Iterative resolution for nested variables (e.g., config value contains another variable)
+  // We keep looping while unresolved variables exist AND we haven't hit max iterations
   while (hasUnresolvedVariables(result) && iterations < MAX_RESOLUTION_ITERATIONS) {
-    // Detect circular references
+    // CIRCULAR REFERENCE DETECTION
+    // If we've seen this exact value before, we're in a circular reference
+    // Example: var1 = "{var2}", var2 = "{var1}" → infinite loop
     if (seenValues.has(result)) {
       throw new Error(
         `Circular variable reference detected in path resolution: ${result}`
@@ -317,16 +356,17 @@ export function resolvePath(pathTemplate: string, context: PathContext): string 
     }
     seenValues.add(result);
 
-    // Resolution order (critical)
+    // Track if anything changed during this iteration
     const beforeResolution = result;
 
-    // 1. Config variables
+    // RESOLUTION ORDER (CRITICAL - DO NOT CHANGE ORDER!)
+    // 1. Config variables FIRST - may contain system/path variables
     result = resolveConfigVariables(result, context);
 
-    // 2. System variables
+    // 2. System variables SECOND - runtime-generated values
     result = resolveSystemVariables(result, context);
 
-    // 3. Path variables
+    // 3. Path variables LAST - concrete directory paths
     result = resolvePathVariables(result, context);
 
     // If nothing changed, we have unresolvable variables
