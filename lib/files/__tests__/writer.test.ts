@@ -1,5 +1,13 @@
 /**
- * File Writer Module Tests
+ * LEGACY EPIC 2 TEST
+ *
+ * File Writer Module Tests (writeFileContent)
+ *
+ * NOTE: This test covers the Epic 2 writeFileContent helper function.
+ * Retained for legacy coverage. Story 4.5 refactored file operations to use PathContext.
+ *
+ * For Epic 4 tests, see:
+ * - lib/tools/__tests__/fileOperations.integration.test.ts
  *
  * Tests for writing files to output folder:
  * - Auto-create parent directories

@@ -1,5 +1,13 @@
 /**
- * File Reader Module Tests
+ * LEGACY EPIC 2 TEST
+ *
+ * File Reader Module Tests (readFileContent)
+ *
+ * NOTE: This test covers the Epic 2 readFileContent helper function.
+ * Retained for legacy coverage. Story 4.5 refactored file operations to use PathContext.
+ *
+ * For Epic 4 tests, see:
+ * - lib/tools/__tests__/fileOperations.integration.test.ts
  *
  * Tests for reading files from agents and output folders:
  * - Dual-folder search pattern

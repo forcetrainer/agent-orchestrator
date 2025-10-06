@@ -1,6 +1,15 @@
 /**
- * Tests for OpenAI Chat Service Module
+ * LEGACY EPIC 2 TEST
+ *
+ * Tests for OpenAI Chat Service Module (executeChatCompletion)
  * Story 2.5: Chat API Route with Function Calling Loop
+ *
+ * NOTE: This test covers the deprecated executeChatCompletion function from Epic 2.
+ * Retained for legacy coverage until Epic 2 is fully removed from the codebase.
+ *
+ * For Epic 4 tests, see:
+ * - lib/agents/__tests__/agenticLoop.test.ts (agentic execution loop)
+ * - lib/agents/__tests__/agenticLoop.integration.test.ts (integration tests)
  */
 
 import { executeChatCompletion } from '../chat';

@@ -1,6 +1,18 @@
 /**
  * OpenAI Chat Service Module
  *
+ * @deprecated EPIC 2 - Replaced by Epic 4 agentic execution loop (lib/agents/agenticLoop.ts)
+ *
+ * This module implements the simple function calling loop from Epic 2.
+ * It has been superseded by the Epic 4 agentic execution architecture which supports:
+ * - Bundled agent execution
+ * - Path variable resolution ({bundle-root}, {core-root}, {project-root})
+ * - Critical actions processing
+ * - Proper tool result injection with tool_call_id
+ * - Higher MAX_ITERATIONS (50 vs 10)
+ *
+ * Use lib/agents/agenticLoop.ts (executeAgent) for new code.
+ *
  * Implements the chat completion flow with function calling loop:
  * 1. Build system message from agent metadata
  * 2. Call OpenAI API with function tools

@@ -1,5 +1,13 @@
 /**
- * File Lister Module Tests
+ * LEGACY EPIC 2 TEST
+ *
+ * File Lister Module Tests (listFiles)
+ *
+ * NOTE: This test covers the Epic 2 listFiles helper function.
+ * Retained for legacy coverage. Story 4.5 refactored file operations to use PathContext.
+ *
+ * For Epic 4 tests, see:
+ * - lib/tools/__tests__/fileOperations.integration.test.ts
  *
  * Tests for listing files and directories:
  * - Dual-folder search pattern

@@ -1,6 +1,17 @@
 /**
  * Path Security Module
  *
+ * @deprecated EPIC 2 - Replaced by Epic 4 pathResolver (lib/pathResolver.ts)
+ *
+ * This module implements basic path security from Epic 2.
+ * It has been superseded by Epic 4's pathResolver which provides:
+ * - PathContext for bundle-aware path resolution
+ * - Path variable support ({bundle-root}, {core-root}, {project-root})
+ * - Config variable resolution ({config_source}:variable_name)
+ * - Enhanced security validation
+ *
+ * Use lib/pathResolver.ts (resolvePath, validatePathSecurity) for new code.
+ *
  * Validates file paths to prevent directory traversal attacks and unauthorized access.
  * All file operations MUST use these validation functions before accessing the filesystem.
  *

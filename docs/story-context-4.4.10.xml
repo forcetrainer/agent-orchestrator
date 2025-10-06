@@ -1,0 +1,205 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>4</epicId>
+    <storyId>4.10</storyId>
+    <title>Refactor Epic 2 and Epic 3 Tests</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-05</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-4.10.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to refactor existing tests for new architecture</iWant>
+    <soThat>test suite validates correct agentic execution pattern</soThat>
+    <tasks>
+      - Task 1: Audit Existing Test Suite (AC: 4.10.7, 4.10.8)
+      - Task 2: Create Unit Tests for Agentic Execution Loop (AC: 4.10.1)
+      - Task 3: Create Unit Tests for Path Variable Resolution (AC: 4.10.2)
+      - Task 4: Create Unit Tests for Critical Actions Processor (AC: 4.10.3)
+      - Task 5: Create Unit Tests for Bundle Discovery and Parsing (AC: 4.10.4)
+      - Task 6: Create Integration Tests for Agent Initialization (AC: 4.10.5)
+      - Task 7: Create Integration Tests for File Loading During Execution (AC: 4.10.6)
+      - Task 8: Migrate Relevant Epic 2 Tests (AC: 4.10.7)
+      - Task 9: Delete Obsolete Epic 2 Tests (AC: 4.10.8)
+      - Task 10: Verify All Tests Pass (AC: 4.10.9)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-4.10.1">Unit tests for agentic execution loop (iterations, tool injection, safety limits)</criterion>
+    <criterion id="AC-4.10.2">Unit tests for path variable resolution (all variable types)</criterion>
+    <criterion id="AC-4.10.3">Unit tests for critical actions processor</criterion>
+    <criterion id="AC-4.10.4">Unit tests for bundle discovery and parsing</criterion>
+    <criterion id="AC-4.10.5">Integration tests for complete agent initialization flow</criterion>
+    <criterion id="AC-4.10.6">Integration tests for file loading during agent execution</criterion>
+    <criterion id="AC-4.10.7">Update Epic 2 tests that are still relevant (file security, error handling)</criterion>
+    <criterion id="AC-4.10.8">Delete Epic 2 tests that are obsolete (simple function calling loop)</criterion>
+    <criterion id="AC-4.10.9">All tests passing with new architecture</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/EPIC4-TECH-SPEC.md" section="8">
+        <title>Testing Strategy</title>
+        <snippet>Defines unit testing requirements for path resolution, bundle discovery, critical actions, and tool execution. Integration tests cover agent initialization, agentic loop behavior, and end-to-end workflow execution. Includes test coverage targets: agentic loop 90%+, path resolver 95%+, bundle scanner 85%+.</snippet>
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" section="1-3">
+        <title>Agentic Execution Loop Specification</title>
+        <snippet>Specifies how agentic execution loop should work: User message → LLM call → Tool calls? → Execute tools, inject results, loop back. Includes critical actions processing, tool definitions, and execution blocking behavior.</snippet>
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" section="all">
+        <title>Bundle Structure and Discovery</title>
+        <snippet>Defines bundle.yaml structure, path variable system ({bundle-root}, {core-root}, {project-root}), and security model for path resolution. Essential for testing bundle discovery and path variable resolution.</snippet>
+      </doc>
+      <doc path="docs/validation-report-story-4.9.md" section="all">
+        <title>Story 4.9 End-to-End Validation Results</title>
+        <snippet>Documents real-world validation of bundled agent execution, including 7-iteration agentic loop, 5 file loads, pause-load-continue pattern verification. Provides baseline expected behavior for integration tests.</snippet>
+      </doc>
+      <doc path="docs/epics.md" section="Epic 4">
+        <title>Epic 4 Stories and Acceptance Criteria</title>
+        <snippet>Source of truth for all Epic 4 story acceptance criteria, including Story 4.10 testing requirements.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/agents/agenticLoop.ts" kind="module" symbol="executeAgent">
+        <lines>1-250</lines>
+        <reason>Core agentic execution loop implementation - primary module under test for AC-4.10.1. Implements pause-load-continue pattern, tool injection, and safety limits.</reason>
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath, createPathContext">
+        <lines>1-200</lines>
+        <reason>Path variable resolution system - primary module for AC-4.10.2. Resolves {bundle-root}, {core-root}, {project-root}, {config_source}:variable references.</reason>
+      </artifact>
+      <artifact path="lib/agents/criticalActions.ts" kind="module" symbol="processCriticalActions">
+        <lines>1-150</lines>
+        <reason>Critical actions processor - primary module for AC-4.10.3. Executes critical-actions section during agent initialization.</reason>
+      </artifact>
+      <artifact path="lib/agents/bundleScanner.ts" kind="module" symbol="discoverBundles, validateBundleManifest">
+        <lines>1-200</lines>
+        <reason>Bundle discovery and parsing - primary module for AC-4.10.4. Scans bundles/ directory, parses bundle.yaml files.</reason>
+      </artifact>
+      <artifact path="lib/tools/fileOperations.ts" kind="module" symbol="handleReadFile, handleSaveOutput">
+        <lines>1-150</lines>
+        <reason>File operation tools refactored in Story 4.5 - used by agentic loop during execution. Needs integration testing with PathContext.</reason>
+      </artifact>
+      <artifact path="lib/agents/systemPromptBuilder.ts" kind="module" symbol="buildSystemPrompt">
+        <lines>1-100</lines>
+        <reason>System prompt builder from Story 4.8 - constructs agent initialization prompts. Integration test subject for AC-4.10.5.</reason>
+      </artifact>
+      <artifact path="app/api/agent/initialize/route.ts" kind="api-route" symbol="POST">
+        <lines>1-100</lines>
+        <reason>Agent initialization endpoint - integration test target for AC-4.10.5. Orchestrates bundle loading, critical actions, and greeting generation.</reason>
+      </artifact>
+      <artifact path="app/api/chat/route.ts" kind="api-route" symbol="POST">
+        <lines>1-150</lines>
+        <reason>Chat endpoint using executeAgent - integration test target for AC-4.10.6. Main entry point for agentic loop execution.</reason>
+      </artifact>
+      <artifact path="lib/agents/__tests__/agenticLoop.test.ts" kind="test" symbol="existing">
+        <lines>all</lines>
+        <reason>Existing unit tests for agenticLoop - need verification/enhancement per AC-4.10.1.</reason>
+      </artifact>
+      <artifact path="lib/__tests__/pathResolver.test.ts" kind="test" symbol="existing">
+        <lines>all</lines>
+        <reason>Existing unit tests for pathResolver - need verification/enhancement per AC-4.10.2.</reason>
+      </artifact>
+      <artifact path="lib/agents/__tests__/criticalActions.test.ts" kind="test" symbol="existing">
+        <lines>all</lines>
+        <reason>Existing unit tests for criticalActions - need verification/enhancement per AC-4.10.3.</reason>
+      </artifact>
+      <artifact path="lib/agents/__tests__/bundleScanner.test.ts" kind="test" symbol="existing">
+        <lines>all</lines>
+        <reason>Existing unit tests for bundleScanner - need verification/enhancement per AC-4.10.4.</reason>
+      </artifact>
+      <artifact path="app/api/chat/__tests__/route.test.ts" kind="test" symbol="epic2-legacy">
+        <lines>all</lines>
+        <reason>Epic 2 legacy test - needs migration to executeAgent pattern per AC-4.10.7, AC-4.10.8.</reason>
+      </artifact>
+      <artifact path="lib/openai/__tests__/chat.test.ts" kind="test" symbol="epic2-legacy">
+        <lines>all</lines>
+        <reason>Epic 2 chat tests - mark as legacy coverage or delete if obsolete per AC-4.10.7, AC-4.10.8.</reason>
+      </artifact>
+      <artifact path="lib/files/__tests__/security.test.ts" kind="test" symbol="epic2-relevant">
+        <lines>all</lines>
+        <reason>File security tests from Epic 2 - migrate to new path resolver per AC-4.10.7.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <framework name="jest" version="^30.2.0">Unit testing framework</framework>
+        <framework name="ts-jest" version="^29.4.4">TypeScript support for Jest</framework>
+        <framework name="@testing-library/react" version="^16.3.0">React component testing</framework>
+        <framework name="@testing-library/jest-dom" version="^6.9.1">Custom Jest matchers for DOM</framework>
+        <package name="openai" version="^4.104.0">OpenAI API client (must mock in tests)</package>
+        <package name="js-yaml" version="^4.1.0">YAML parsing for config/bundle files</package>
+        <package name="next" version="14.2.0">Next.js framework for API routes</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="testing-framework">All tests must use Jest with TypeScript (ts-jest configuration already in place)</constraint>
+    <constraint type="test-organization">Unit tests in lib/{module}/__tests__/{module}.test.ts, integration tests in app/api/{route}/__tests__/{route}.integration.test.ts</constraint>
+    <constraint type="mocking">Must mock OpenAI API calls using jest.mock() to avoid rate limits and ensure deterministic test results</constraint>
+    <constraint type="coverage">Target coverage: agentic loop 90%+, path resolver 95%+ (security-critical), bundle scanner 85%+, critical actions 85%+</constraint>
+    <constraint type="migration">Epic 2 tests: Keep security/error handling tests (migrate to new architecture), delete obsolete function calling loop tests</constraint>
+    <constraint type="test-data">Use realistic test fixtures from __tests__/fixtures/ (sample bundles, configs, agent files)</constraint>
+    <constraint type="validation">All tests must pass with new Epic 4 architecture - Story 4.9 validation patterns should work consistently</constraint>
+    <constraint type="legacy-marking">Tests marked as "Epic 2 legacy" should have clear comments indicating they provide legacy coverage until full migration</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="ExecutionResult" kind="type" path="lib/agents/agenticLoop.ts">
+      <signature>interface ExecutionResult { success: boolean; response: string; iterations: number; messages: ChatCompletionMessageParam[] }</signature>
+      <purpose>Return type from executeAgent function - tests must verify all fields populated correctly</purpose>
+    </interface>
+    <interface name="PathContext" kind="type" path="lib/pathResolver.ts">
+      <signature>interface PathContext { bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig?: Record&lt;string, any&gt; }</signature>
+      <purpose>Context object for path resolution - required parameter for all file operation tests</purpose>
+    </interface>
+    <interface name="AgentMetadata" kind="type" path="lib/agents/bundleScanner.ts">
+      <signature>interface AgentMetadata { id: string; name: string; title: string; description: string; icon?: string; bundlePath: string; agentFilePath: string; entryPoint: boolean }</signature>
+      <purpose>Agent discovery result type - bundle scanner tests must return this structure</purpose>
+    </interface>
+    <interface name="BundleManifest" kind="type" path="lib/agents/bundleScanner.ts">
+      <signature>interface BundleManifest { type: 'multi-agent' | 'standalone'; version: string; agents?: Array; dependencies?: string[] }</signature>
+      <purpose>bundle.yaml structure - validation tests must verify schema compliance</purpose>
+    </interface>
+    <interface name="executeAgent" kind="function" path="lib/agents/agenticLoop.ts">
+      <signature>async function executeAgent(agentId: string, messages: ChatCompletionMessageParam[]): Promise&lt;ExecutionResult&gt;</signature>
+      <purpose>Main agentic loop entry point - integration tests call this to simulate agent execution</purpose>
+    </interface>
+    <interface name="resolvePath" kind="function" path="lib/pathResolver.ts">
+      <signature>async function resolvePath(inputPath: string, context: PathContext): Promise&lt;string&gt;</signature>
+      <purpose>Path variable resolution - tests must verify all variable types resolve correctly and security validates</purpose>
+    </interface>
+    <interface name="processCriticalActions" kind="function" path="lib/agents/criticalActions.ts">
+      <signature>async function processCriticalActions(agentContent: string, context: PathContext): Promise&lt;CriticalContext&gt;</signature>
+      <purpose>Critical actions processor - tests verify file loads, config parsing, system message generation</purpose>
+    </interface>
+    <interface name="discoverBundles" kind="function" path="lib/agents/bundleScanner.ts">
+      <signature>async function discoverBundles(bundlesRoot: string): Promise&lt;AgentMetadata[]&gt;</signature>
+      <purpose>Bundle discovery - tests verify correct parsing of bundle.yaml files and filtering of entry_point agents</purpose>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Jest testing framework with TypeScript (ts-jest). Mock OpenAI API calls for deterministic testing. Use descriptive test names following pattern: "should [expected behavior] when [condition]". Group related tests with describe() blocks. Test both happy paths and error scenarios. Use realistic fixtures from __tests__/fixtures/ directory. Follow existing test patterns from Stories 4.1-4.8. Integration tests should use real file system operations where safe, mocking only external APIs. Test coverage targets enforced via Jest configuration.</standards>
+    <locations>
+      <location>lib/agents/__tests__/ - Unit tests for agent modules (agenticLoop, criticalActions, bundleScanner, systemPromptBuilder)</location>
+      <location>lib/__tests__/ - Unit tests for core utilities (pathResolver, errorMapping)</location>
+      <location>lib/tools/__tests__/ - Integration tests for tool handlers (fileOperations)</location>
+      <location>app/api/**/__tests__/ - Integration tests for API routes (initialize, chat)</location>
+      <location>__tests__/fixtures/ - Test data (sample bundles, configs, agent files, workflows)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-4.10.1">Test agentic loop: basic execution (no tools), single tool call, multiple iterations, MAX_ITERATIONS safety limit, message context growth, error handling for API failures and tool errors. Mock OpenAI to return predictable tool_calls in response.</idea>
+      <idea ac="AC-4.10.2">Test path resolution: {bundle-root} to bundle dir, {core-root} to bmad/core, {project-root} to app root, {config_source}:variable from config.yaml, nested variable resolution, path traversal attack blocking, invalid variable error messages.</idea>
+      <idea ac="AC-4.10.3">Test critical actions: parse critical-actions XML, extract file load instructions, load config.yaml and extract variables, create system messages for loaded files, handle missing config files and YAML parse errors.</idea>
+      <idea ac="AC-4.10.4">Test bundle discovery: find bundle.yaml in bundles/, parse multi-agent bundles, parse standalone bundles, extract agent metadata (id, name, title, icon, entry_point), filter only entry_point:true agents, handle malformed bundle.yaml gracefully, return empty array for empty bundles folder.</idea>
+      <idea ac="AC-4.10.5">Integration test initialization: GET /api/agents returns bundle-discovered agents, POST /api/agent/initialize loads agent.md from bundle, executes critical actions with config loading, builds system prompt with persona/commands, returns greeting message, handles invalid agent_id and missing bundle errors.</idea>
+      <idea ac="AC-4.10.6">Integration test file loading: send workflow command message, verify execute_workflow tool called, load workflow.yaml then instructions.md then template.md in sequence, verify path variables resolved during loads, verify agentic loop blocks on each tool call, verify message context maintained across iterations. Mock OpenAI for predictable responses.</idea>
+      <idea ac="AC-4.10.7">Migrate Epic 2 security tests: update lib/files/__tests__/security.test.ts to use PathContext and resolvePath, keep path traversal blocking tests, keep symlink validation tests, update to new error types from Story 4.6.</idea>
+      <idea ac="AC-4.10.8">Delete obsolete tests: remove simple function calling loop tests from lib/openai/__tests__/chat.test.ts if they test deprecated executeChatCompletion, remove Epic 2 file operation tests replaced by Story 4.5, delete or update scripts/test-openai-smoke.ts to use executeAgent.</idea>
+      <idea ac="AC-4.10.9">Verify all tests pass: run npm test, fix any failures from migration, update snapshots if needed, verify coverage meets thresholds, document any known gaps or limitations in test-migration-plan.md.</idea>
+    </ideas>
+  </tests>
+</story-context>
