@@ -1,0 +1,428 @@
+/**
+ * DirectoryTree Component Tests
+ *
+ * Story 5.2: Display Directory Tree Structure
+ * Tests for AC-1, AC-2, AC-3, AC-4, AC-5, AC-7
+ */
+
+import { render, screen, fireEvent } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { DirectoryTree, FileTreeNode } from '../DirectoryTree';
+
+describe('DirectoryTree', () => {
+  // Test fixture: Sample tree structure
+  const mockTree: FileTreeNode = {
+    name: 'root',
+    path: '',
+    type: 'directory',
+    children: [
+      {
+        name: 'folder1',
+        path: 'folder1',
+        type: 'directory',
+        children: [
+          {
+            name: 'file1.txt',
+            path: 'folder1/file1.txt',
+            type: 'file',
+            size: 1024,
+          },
+          {
+            name: 'nested',
+            path: 'folder1/nested',
+            type: 'directory',
+            children: [
+              {
+                name: 'deep.md',
+                path: 'folder1/nested/deep.md',
+                type: 'file',
+                size: 512,
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: 'file2.txt',
+        path: 'file2.txt',
+        type: 'file',
+        size: 2048,
+      },
+      {
+        name: 'empty-folder',
+        path: 'empty-folder',
+        type: 'directory',
+        children: [],
+      },
+    ],
+  };
+
+  describe('AC-1: Directory tree displays output folder structure', () => {
+    it('renders tree structure correctly', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Top-level items should be visible
+      expect(screen.getByText('folder1')).toBeInTheDocument();
+      expect(screen.getByText('file2.txt')).toBeInTheDocument();
+      expect(screen.getByText('empty-folder')).toBeInTheDocument();
+    });
+
+    it('does not render nested items until folder is expanded', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Nested items should not be visible initially
+      expect(screen.queryByText('file1.txt')).not.toBeInTheDocument();
+      expect(screen.queryByText('nested')).not.toBeInTheDocument();
+      expect(screen.queryByText('deep.md')).not.toBeInTheDocument();
+    });
+
+    it('shows "No files available" when root is null', () => {
+      render(<DirectoryTree root={null} />);
+
+      expect(screen.getByText('No files available')).toBeInTheDocument();
+    });
+
+    it('shows "No files yet" when root has no children', () => {
+      const emptyRoot: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [],
+      };
+
+      render(<DirectoryTree root={emptyRoot} />);
+
+      expect(screen.getByText('No files yet')).toBeInTheDocument();
+    });
+  });
+
+  describe('AC-2: Folders can be expanded/collapsed via click interaction', () => {
+    it('expands folder when clicked', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      const folder1 = screen.getByText('folder1');
+
+      // Initially collapsed - children not visible
+      expect(screen.queryByText('file1.txt')).not.toBeInTheDocument();
+
+      // Click to expand
+      fireEvent.click(folder1);
+
+      // Children now visible
+      expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      expect(screen.getByText('nested')).toBeInTheDocument();
+    });
+
+    it('collapses folder when clicked again', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      const folder1 = screen.getByText('folder1');
+
+      // Expand first
+      fireEvent.click(folder1);
+      expect(screen.getByText('file1.txt')).toBeInTheDocument();
+
+      // Collapse
+      fireEvent.click(folder1);
+      expect(screen.queryByText('file1.txt')).not.toBeInTheDocument();
+    });
+
+    it('supports nested folder expand/collapse', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Expand folder1
+      fireEvent.click(screen.getByText('folder1'));
+      expect(screen.getByText('nested')).toBeInTheDocument();
+
+      // Expand nested
+      fireEvent.click(screen.getByText('nested'));
+      expect(screen.getByText('deep.md')).toBeInTheDocument();
+
+      // Collapse nested
+      fireEvent.click(screen.getByText('nested'));
+      expect(screen.queryByText('deep.md')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('AC-3: Files are distinguishable from folders', () => {
+    it('renders folder icons for directories', () => {
+      const { container } = render(<DirectoryTree root={mockTree} />);
+
+      // Folders should have blue folder icon
+      const folder1Element = screen.getByText('folder1').parentElement;
+      const folderIcon = folder1Element?.querySelector('svg');
+
+      expect(folderIcon).toBeInTheDocument();
+      expect(folderIcon).toHaveClass('text-blue-500');
+    });
+
+    it('renders file icons for files', () => {
+      const { container } = render(<DirectoryTree root={mockTree} />);
+
+      // Files should have gray file icon
+      const file2Element = screen.getByText('file2.txt').parentElement;
+      const fileIcon = file2Element?.querySelector('svg');
+
+      expect(fileIcon).toBeInTheDocument();
+      expect(fileIcon).toHaveClass('text-gray-400');
+    });
+
+    it('shows file size for files', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // File size should be displayed (2048 bytes = 2 KB)
+      expect(screen.getByText('2 KB')).toBeInTheDocument();
+    });
+
+    it('formats file sizes correctly', () => {
+      const treeWithSizes: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'small.txt',
+            path: 'small.txt',
+            type: 'file',
+            size: 512, // 512 B
+          },
+          {
+            name: 'medium.txt',
+            path: 'medium.txt',
+            type: 'file',
+            size: 1024 * 50, // 50 KB
+          },
+          {
+            name: 'large.txt',
+            path: 'large.txt',
+            type: 'file',
+            size: 1024 * 1024 * 2, // 2 MB
+          },
+        ],
+      };
+
+      render(<DirectoryTree root={treeWithSizes} />);
+
+      expect(screen.getByText('512 B')).toBeInTheDocument();
+      expect(screen.getByText('50 KB')).toBeInTheDocument();
+      expect(screen.getByText('2 MB')).toBeInTheDocument();
+    });
+  });
+
+  describe('AC-4: Nested directories display with proper indentation', () => {
+    it('applies correct indentation for nested items', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Expand folder1
+      fireEvent.click(screen.getByText('folder1'));
+
+      // Top-level: 8px padding (depth 0)
+      const folder1Element = screen.getByText('folder1').parentElement;
+      expect(folder1Element).toHaveStyle({ paddingLeft: '8px' });
+
+      // First nesting: 24px padding (depth 1: 16px + 8px)
+      const file1Element = screen.getByText('file1.txt').parentElement;
+      expect(file1Element).toHaveStyle({ paddingLeft: '24px' });
+
+      // Expand nested folder
+      fireEvent.click(screen.getByText('nested'));
+
+      // Second nesting: 40px padding (depth 2: 32px + 8px)
+      const deepElement = screen.getByText('deep.md').parentElement;
+      expect(deepElement).toHaveStyle({ paddingLeft: '40px' });
+    });
+  });
+
+  describe('AC-5: Empty folders show as empty (not hidden from tree)', () => {
+    it('displays empty folder in tree', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Empty folder should be visible
+      expect(screen.getByText('empty-folder')).toBeInTheDocument();
+    });
+
+    it('shows "Empty folder" message when expanded', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Expand empty folder
+      fireEvent.click(screen.getByText('empty-folder'));
+
+      // Should show empty state
+      expect(screen.getByText('Empty folder')).toBeInTheDocument();
+    });
+
+    it('does not show "Empty folder" for folders with children', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // Expand folder1 (has children)
+      fireEvent.click(screen.getByText('folder1'));
+
+      // Should NOT show empty state
+      expect(screen.queryByText('Empty folder')).not.toBeInTheDocument();
+    });
+  });
+
+  describe('AC-7: Clicking file selects it for viewing', () => {
+    it('calls onFileSelect callback when file is clicked', () => {
+      const mockOnFileSelect = jest.fn();
+      render(<DirectoryTree root={mockTree} onFileSelect={mockOnFileSelect} />);
+
+      // Click file
+      fireEvent.click(screen.getByText('file2.txt'));
+
+      // Callback should be invoked with file path
+      expect(mockOnFileSelect).toHaveBeenCalledWith('file2.txt');
+      expect(mockOnFileSelect).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not call onFileSelect when folder is clicked', () => {
+      const mockOnFileSelect = jest.fn();
+      render(<DirectoryTree root={mockTree} onFileSelect={mockOnFileSelect} />);
+
+      // Click folder
+      fireEvent.click(screen.getByText('folder1'));
+
+      // Callback should NOT be invoked (folders toggle expand/collapse)
+      expect(mockOnFileSelect).not.toHaveBeenCalled();
+    });
+
+    it('highlights selected file', () => {
+      render(<DirectoryTree root={mockTree} selectedFile="file2.txt" />);
+
+      const file2Element = screen.getByText('file2.txt').parentElement;
+
+      // Selected file should have blue background
+      expect(file2Element).toHaveClass('bg-blue-50', 'text-blue-700');
+    });
+
+    it('does not highlight non-selected files', () => {
+      render(<DirectoryTree root={mockTree} selectedFile="file2.txt" />);
+
+      // Expand folder1
+      fireEvent.click(screen.getByText('folder1'));
+
+      const file1Element = screen.getByText('file1.txt').parentElement;
+
+      // Non-selected file should not have blue background
+      expect(file1Element).not.toHaveClass('bg-blue-50', 'text-blue-700');
+    });
+  });
+
+  describe('Performance: React.memo optimization', () => {
+    it('renders large tree without performance issues', () => {
+      // Create tree with 100 files
+      const largeTree: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: Array.from({ length: 100 }, (_, i) => ({
+          name: `file-${i}.txt`,
+          path: `file-${i}.txt`,
+          type: 'file' as const,
+          size: 1024,
+        })),
+      };
+
+      const startTime = performance.now();
+      render(<DirectoryTree root={largeTree} />);
+      const endTime = performance.now();
+
+      // Should render within 1 second (NFR-1)
+      expect(endTime - startTime).toBeLessThan(1000);
+
+      // Verify first and last files are rendered
+      expect(screen.getByText('file-0.txt')).toBeInTheDocument();
+      expect(screen.getByText('file-99.txt')).toBeInTheDocument();
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('handles deeply nested structures', () => {
+      const deepTree: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'level1',
+            path: 'level1',
+            type: 'directory',
+            children: [
+              {
+                name: 'level2',
+                path: 'level1/level2',
+                type: 'directory',
+                children: [
+                  {
+                    name: 'level3',
+                    path: 'level1/level2/level3',
+                    type: 'directory',
+                    children: [
+                      {
+                        name: 'deep-file.txt',
+                        path: 'level1/level2/level3/deep-file.txt',
+                        type: 'file',
+                        size: 100,
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      render(<DirectoryTree root={deepTree} />);
+
+      // Expand all levels
+      fireEvent.click(screen.getByText('level1'));
+      fireEvent.click(screen.getByText('level2'));
+      fireEvent.click(screen.getByText('level3'));
+
+      // Deep file should be accessible
+      expect(screen.getByText('deep-file.txt')).toBeInTheDocument();
+    });
+
+    it('handles files with zero size', () => {
+      const treeWithZeroSize: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'empty.txt',
+            path: 'empty.txt',
+            type: 'file',
+            size: 0,
+          },
+        ],
+      };
+
+      render(<DirectoryTree root={treeWithZeroSize} />);
+
+      expect(screen.getByText('0 B')).toBeInTheDocument();
+    });
+
+    it('handles missing size metadata gracefully', () => {
+      const treeNoSize: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'no-size.txt',
+            path: 'no-size.txt',
+            type: 'file',
+            // size omitted
+          },
+        ],
+      };
+
+      render(<DirectoryTree root={treeNoSize} />);
+
+      // Should render without errors (size not displayed)
+      expect(screen.getByText('no-size.txt')).toBeInTheDocument();
+    });
+  });
+});

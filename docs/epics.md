@@ -1283,6 +1283,46 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
+#### Story 5.2.1: Session Metadata Display Enhancement
+
+**As an** end user
+**I want** to see human-readable session names instead of UUIDs
+**So that** I can easily identify which agent created which outputs
+
+**Prerequisites:** Story 5.2 (Directory Tree Structure), Story 5.0 (Session-Based Output Management)
+
+**Acceptance Criteria:**
+1. Session folders display as "{Agent Title} - {Workflow Name} ({Date})" instead of UUID
+2. manifest.json files hidden from directory tree (internal metadata only)
+3. Clicking session folder shows agent metadata (agent name, workflow, user, timestamps)
+4. Internal technical paths (UUIDs) still used for file operations and security validation
+5. Empty sessions (no outputs yet) show as "Agent Name - Workflow (In Progress)"
+6. Display names update when manifest.json is modified
+7. Sessions without manifest.json fall back to showing UUID (graceful degradation)
+
+**Technical Notes:**
+- Create `lib/files/manifestReader.ts` to load and parse manifest.json
+- Extend FileTreeNode interface: add `displayName?: string` and `metadata?: SessionMetadata`
+- Update tree builder to read manifest.json from each session folder
+- Generate display name: `${agent.title} - ${workflow.name} (${formatDate(execution.started_at)})`
+- Filter files: exclude `manifest.json` from tree (add `isInternal?: boolean` flag)
+- DirectoryTree component renders `node.displayName || node.name` (fallback to UUID)
+- Cache manifest data to avoid repeated file reads (session metadata rarely changes)
+
+**Implementation Tasks:**
+- [ ] Create SessionMetadata TypeScript interface matching Story 5.0 manifest schema
+- [ ] Implement manifestReader.ts with parseManifest() and generateDisplayName() functions
+- [ ] Extend FileTreeNode interface with displayName and metadata fields
+- [ ] Update treeBuilder.ts to load manifests and generate display names
+- [ ] Add file filtering logic to exclude manifest.json from tree
+- [ ] Update DirectoryTree component to render displayName
+- [ ] Add metadata panel or tooltip showing full session details
+- [ ] Write unit tests for manifest parsing and display name generation
+- [ ] Write integration tests for tree with metadata-enhanced display
+- [ ] Update tech-spec-epic-5.md with new data models and module descriptions
+
+---
+
 #### Story 5.3: Display File Contents
 
 **As an** end user

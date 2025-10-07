@@ -180,6 +180,8 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 **FR-8: File Viewer (Read-Only)**
 - Simple file browser for output directory only
 - Directory traversal to navigate multiple folders created by agents
+- Human-readable session names derived from agent metadata (hides technical UUIDs)
+- Internal metadata files (manifest.json) hidden from user view but used for navigation enhancement
 - Display file contents in browser with basic formatting
 - View-only interface - no editing, no downloads in MVP
 - Restricted to agent output directory for security

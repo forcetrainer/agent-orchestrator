@@ -288,12 +288,13 @@ agent_outputs_folder: '{output_folder}'
 
 | Module | Responsibility | Inputs | Outputs | Owner/Location |
 |--------|---------------|--------|---------|----------------|
-| **FileTreeAPI** | Provides directory tree structure for output folder | `GET /api/files/tree` → output directory path | JSON tree structure with file/folder nodes | `app/api/files/tree/route.ts` |
+| **FileTreeAPI** | Provides directory tree structure for output folder with metadata-enhanced display names | `GET /api/files/tree` → output directory path | JSON tree structure with file/folder nodes, session metadata, human-readable names | `app/api/files/tree/route.ts` |
 | **FileContentAPI** | Retrieves file contents for display | `GET /api/files/content?path={relative_path}` → file path | File contents as text, mime type, metadata | `app/api/files/content/route.ts` |
 | **FileViewerPanel** | React component rendering file browser UI | Selected agent context, output directory path | File tree navigation, selected file display | `components/FileViewerPanel.tsx` |
 | **DirectoryTree** | Tree view component with expand/collapse | Tree data structure from API | Interactive tree UI with selection | `components/DirectoryTree.tsx` |
 | **FileContentDisplay** | Renders file contents with formatting | File content, mime type | Formatted display (markdown, text, code) | `components/FileContentDisplay.tsx` |
 | **PathSecurityValidator** | Validates file paths are within output directory | Requested file path | Validated absolute path or security error | `lib/files/pathValidator.ts` (reuses Epic 4 logic) |
+| **ManifestReader** | Parses manifest.json and generates display names for sessions | Session folder path | SessionMetadata object, human-readable display name | `lib/files/manifestReader.ts` |
 | **RefreshManager** | Handles manual/automatic file list updates | User trigger or agent completion event | Updated tree data, refresh state | Integrated in `FileViewerPanel.tsx` |
 
 ### Data Models and Contracts
@@ -301,12 +302,40 @@ agent_outputs_folder: '{output_folder}'
 **FileTreeNode:**
 ```typescript
 interface FileTreeNode {
-  name: string;              // File or folder name
-  path: string;              // Relative path from output root
+  name: string;              // Technical file/folder name (UUID for sessions)
+  path: string;              // Relative path from output root (technical path)
   type: 'file' | 'directory';
   children?: FileTreeNode[]; // Present if type === 'directory'
   size?: number;             // File size in bytes (for files only)
   modified?: string;         // ISO 8601 timestamp
+  displayName?: string;      // Human-readable name for UI display (Story 5.2.1)
+  metadata?: SessionMetadata; // Session metadata from manifest.json (Story 5.2.1)
+  isInternal?: boolean;      // True for files like manifest.json (hidden from UI)
+}
+
+interface SessionMetadata {
+  session_id: string;
+  agent: {
+    name: string;
+    title: string;
+    bundle: string;
+  };
+  workflow: {
+    name: string;
+    description: string;
+  };
+  execution: {
+    started_at: string;      // ISO 8601
+    completed_at?: string;   // ISO 8601
+    status: 'running' | 'completed' | 'failed';
+    user: string;
+  };
+  outputs?: Array<{
+    file: string;
+    type: string;
+    description: string;
+    created_at: string;
+  }>;
 }
 ```
 

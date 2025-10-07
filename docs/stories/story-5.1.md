@@ -1,6 +1,6 @@
 # Story 5.1: File Viewer UI Component
 
-Status: Completed
+Status: Done
 
 ## Story
 

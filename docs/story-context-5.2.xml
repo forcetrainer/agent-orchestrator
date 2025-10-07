@@ -1,0 +1,123 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.2</storyId>
+    <title>Display Directory Tree Structure</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-06</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>to see the directory structure of output files</iWant>
+    <soThat>I can navigate folders created by the agent</soThat>
+    <tasks>
+      - Task 1: Create API endpoint to get directory tree structure (AC: 1, 5)
+      - Task 2: Implement PathSecurityValidator for output directory (AC: 1)
+      - Task 3: Create DirectoryTree React component (AC: 1, 2, 3, 4, 5)
+      - Task 4: Implement file/folder click handlers (AC: 2, 7)
+      - Task 5: Integrate DirectoryTree into FileViewerPanel (AC: 1)
+      - Task 6: Implement auto-refresh after agent output (AC: 6)
+      - Task 7: Add manual refresh button (AC: 6)
+      - Task 8: Write tests for DirectoryTree component
+      - Task 9: Write tests for /api/files/tree endpoint
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC1: Directory tree displays output folder structure
+    AC2: Folders can be expanded/collapsed via click interaction
+    AC3: Files are distinguishable from folders (icons or distinct styling)
+    AC4: Nested directories display with proper indentation
+    AC5: Empty folders show as empty (not hidden from tree)
+    AC6: Tree updates when new files are created (auto-refresh after agent response)
+    AC7: Clicking file selects it for viewing (triggers content load)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-5.md" title="Technical Specification: File Management and Viewer" section="Story 5.2: Display Directory Tree Structure" snippet="Directory tree displays output folder structure. Folders can be expanded/collapsed. Files are distinguishable from folders (icons or styling). Nested directories display with proper indentation. Empty folders show as empty (not hidden from tree). Tree updates when new files are created (auto-refresh after agent response). Clicking file selects it for viewing (triggers content load)." />
+      <doc path="docs/tech-spec-epic-5.md" title="Data Models and Contracts" section="FileTreeNode" snippet="interface FileTreeNode { name: string; path: string; type: 'file' | 'directory'; children?: FileTreeNode[]; size?: number; modified?: string; }" />
+      <doc path="docs/tech-spec-epic-5.md" title="APIs and Interfaces" section="GET /api/files/tree" snippet="Purpose: Return directory tree structure for output folder. Returns FileTreeResponse with recursive tree structure. Response includes { success: boolean, root: FileTreeNode, error?: string }" />
+      <doc path="docs/tech-spec-epic-5.md" title="Workflows and Sequencing" section="Workflow 1: Initial File Viewer Load" snippet="1. FileViewerPanel component mounts. 2. Component calls GET /api/files/tree. 3. Backend reads output directory structure. 4. Backend builds FileTreeNode hierarchy. 5. Response returns to frontend. 6. DirectoryTree component renders with root collapsed. 7. Empty state shows if no files exist." />
+      <doc path="docs/tech-spec-epic-5.md" title="Workflows and Sequencing" section="Workflow 3: Directory Navigation" snippet="1. User clicks folder in directory tree. 2. DirectoryTree toggles expanded state. 3. Children nodes render with indentation. 4. User can collapse by clicking again. 5. Nested folders support recursive expand/collapse." />
+      <doc path="docs/tech-spec-epic-5.md" title="NFR > Performance" snippet="File viewer loads directory tree within 1 second (PRD requirement). Directory tree with up to 100 files loads without performance degradation. Tree expand/collapse operations are instant (<100ms). Use React.memo() for tree nodes to prevent unnecessary re-renders." />
+      <doc path="docs/tech-spec-epic-5.md" title="NFR > Security" section="Path Traversal Prevention" snippet="All file paths validated against output directory boundary. Reject paths containing ../ or absolute paths. Use path.normalize() and path.resolve() for validation. Symbolic links resolved and validated (reuse Epic 4 Story 4.2 logic)." />
+      <doc path="docs/prd.md" title="Product Requirements Document" section="FR-8: File Viewer (Read-Only)" snippet="Simple file browser for output directory only. Directory traversal to navigate multiple folders created by agents. Display file contents in browser with basic formatting. View-only interface - no editing, no downloads in MVP. Restricted to agent output directory for security." />
+      <doc path="docs/epics.md" title="Epic 5: File Management and Viewer" section="Story 5.2: Display Directory Tree Structure" snippet="As an end user I want to see the directory structure of output files so that I can navigate folders created by the agent. Prerequisites: Story 5.1 (File Viewer UI)." />
+    </docs>
+    <code>
+      <artifact path="components/FileViewerPanel.tsx" kind="component" symbol="FileViewerPanel" lines="1-50" reason="Main container component where DirectoryTree will be integrated. Contains FileViewerState interface and state management pattern to follow." />
+      <artifact path="components/FileViewerPanel.tsx" kind="interface" symbol="FileTreeNode" lines="18-23" reason="Data model already defined for directory tree structure - reuse this exact interface." />
+      <artifact path="components/FileViewerPanel.tsx" kind="interface" symbol="FileViewerState" lines="31-38" reason="State management structure - treeData property stores directory tree, isLoading tracks API calls." />
+      <artifact path="lib/files/lister.ts" kind="module" symbol="listFiles" lines="30-149" reason="Existing file listing function with recursive support. Reference for directory traversal patterns and security validation. Shows dual-folder search pattern (agents/bmad/output)." />
+      <artifact path="lib/files/security.ts" kind="module" symbol="validatePath" lines="N/A" reason="Security validation function used by lister.ts. Reuse for path security validation in new API endpoint." />
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="PathContext" lines="44-55" reason="Path resolution system from Epic 4. Reference for understanding path security patterns and bundle/core/project root resolution." />
+      <artifact path="lib/utils/env.ts" kind="module" symbol="env.OUTPUT_PATH" lines="N/A" reason="Environment variable for output directory path - use as base path for tree traversal." />
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18" />
+        <package name="react-dom" version="^18" />
+        <package name="next" version="14.2.0" />
+        <package name="tailwindcss" version="^3.4.0" />
+        <package name="@testing-library/react" version="^16.3.0" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" />
+        <package name="@testing-library/user-event" version="^14.6.1" />
+        <package name="jest" version="^30.2.0" />
+        <package name="ts-jest" version="^29.4.4" />
+        <package name="typescript" version="^5" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Custom tree implementation using Tailwind CSS + React state management (no external tree libraries like react-arborist or react-folder-tree for MVP)
+    - Reuse Epic 4 path validation patterns (lib/files/security.ts validatePath function)
+    - Read-only access to output directory only - no access to bundle/core/source directories
+    - All paths must be validated before file system access (security requirement from Epic 4)
+    - Recursive component pattern for nested directory rendering
+    - Follow Epic 3 styling conventions using Tailwind CSS for consistency
+    - API route follows Next.js App Router conventions: app/api/files/tree/route.ts
+    - Component naming: PascalCase (DirectoryTree.tsx)
+    - Test files in __tests__/ subdirectories with .test.ts suffix
+    - Use fs/promises for non-blocking async file I/O
+    - Performance target: Tree loads within 1 second for 100 files (NFR-1)
+    - React.memo() optimization for tree nodes to prevent unnecessary re-renders
+  </constraints>
+
+  <interfaces>
+    <interface name="FileTreeNode" kind="TypeScript interface" signature="{ name: string; path: string; type: 'file' | 'directory'; children?: FileTreeNode[]; size?: number; modified?: string; }" path="components/FileViewerPanel.tsx:18-23" />
+    <interface name="FileTreeResponse" kind="API response" signature="{ success: boolean; root: FileTreeNode; error?: string; }" path="docs/tech-spec-epic-5.md" />
+    <interface name="listFiles" kind="function" signature="async function listFiles(relativePath: string = '', recursive: boolean = false): Promise<FileNode[]>" path="lib/files/lister.ts:30" />
+    <interface name="validatePath" kind="function" signature="function validatePath(relativePath: string, basePath: string): string" path="lib/files/security.ts" />
+    <interface name="GET /api/files/tree" kind="API endpoint" signature="GET /api/files/tree -> { success: boolean, root: FileTreeNode, error?: string }" path="app/api/files/tree/route.ts (to be created)" />
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Jest + React Testing Library patterns established in Epic 3 and Epic 4. Unit tests for components (DirectoryTree rendering, expand/collapse, click handlers) and API routes (tree building, error handling, security). Integration tests verify FileViewerPanel + DirectoryTree + API working together. Security tests validate path traversal blocking per Epic 4 patterns. Performance tests ensure tree loads within 1 second for 100 files. Use __tests__/ subdirectories with .test.ts suffix. Test coverage target: 80%+ for new code.
+    </standards>
+    <locations>
+      components/__tests__/DirectoryTree.test.tsx
+      app/api/files/tree/__tests__/route.test.ts
+      lib/files/__tests__/treeBuilder.test.ts (if tree builder utility created)
+    </locations>
+    <ideas>
+      AC1: Test directory tree renders output folder structure correctly (mock API response with nested structure)
+      AC2: Test folder click toggles expand/collapse state (simulate click, verify children visibility)
+      AC3: Test files have different styling/icons than folders (check className or icon element)
+      AC4: Test nested directories have proper indentation (verify CSS padding increases with depth)
+      AC5: Test empty folders render without children (mock empty directory, verify no children array)
+      AC6: Test tree refreshes after agent response (mock agent completion event, verify API re-called)
+      AC7: Test file click triggers selection callback (simulate file click, verify callback invoked)
+      Security: Test path traversal attempts blocked (request ../ path, verify 403 response)
+      Performance: Test tree with 100 files loads within 1 second (measure API + render time)
+      Integration: Test FileViewerPanel mount triggers GET /api/files/tree call
+      Integration: Test manual refresh button re-fetches tree data
+      Error Handling: Test API error displays in panel (mock API failure, verify error message)
+    </ideas>
+  </tests>
+</story-context>
