@@ -1,0 +1,445 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.6</storyId>
+    <title>File Viewer Navigation Polish</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>smooth navigation between files</iWant>
+    <soThat>I can efficiently review multiple generated files</soThat>
+    <tasks>
+      - Task 1: Implement Keyboard Navigation (AC: 1)
+        - Add keyboard event listeners to FileViewerPanel component
+        - Handle ArrowDown key: select next file in tree (flat traversal order)
+        - Handle ArrowUp key: select previous file in tree
+        - Skip directories in navigation (files only)
+        - Wrap around at tree ends (last file → first file)
+        - Automatically load file content when navigating via keyboard
+        - Focus indication shows which file is keyboard-selected
+        - Disable shortcuts when text input has focus (prevent interference)
+        - Write unit tests for keyboard navigation logic
+
+      - Task 2: Create Breadcrumb Component (AC: 2)
+        - Create new Breadcrumb.tsx component in components/file-viewer/
+        - Accept currentFilePath prop (e.g., "session-uuid/requirements/prd.md")
+        - Parse path into segments (["session-uuid", "requirements", "prd.md"])
+        - Render segments with separator (/ or >)
+        - Each segment clickable (navigate to parent directory)
+        - Display human-readable session names (from manifest metadata)
+        - Style breadcrumb with Tailwind: text-sm text-gray-600
+        - Integrate breadcrumb into FileContentDisplay header
+        - Write component tests for breadcrumb rendering and navigation
+
+      - Task 3: Add "Back to Tree" Functionality (AC: 3, Optional)
+        - Determine if full-file mode exists (or always split-pane)
+        - If split-pane: Skip this task (tree always visible)
+        - If full-file mode: Add back button to return to tree view
+
+      - Task 4: Implement Loading Indicator for Large Files (AC: 4)
+        - Add isLoadingContent state flag to FileViewerPanel
+        - Set isLoadingContent=true before calling GET /api/files/content
+        - Set isLoadingContent=false after content received
+        - Display loading spinner in FileContentDisplay while isLoadingContent=true
+        - Loading message: "Loading file..." or subtle spinner
+        - Prevent content flicker for fast loads (delay spinner 200ms)
+        - Write tests for loading state during file selection
+
+      - Task 5: Preserve Scroll Position When Switching Files (AC: 5)
+        - Implement Option A for MVP (scroll to top on file change)
+        - Add smooth scroll behavior for better UX
+        - Document decision in comments
+        - Write tests for scroll reset behavior
+
+      - Task 6: Distinguish Empty File vs Loading State (AC: 6)
+        - Loading state: Show "Loading..." message with spinner
+        - Empty file state: Show "This file is empty" message (no spinner)
+        - Check file content after load: if content === "" → empty file
+        - Different styling/messaging for each state
+        - Ensure binary files show "Cannot preview" (not "empty")
+        - Write tests for empty file display vs loading display
+
+      - Task 7: Update FileViewerPanel State Management (All ACs)
+        - Add isLoadingContent: boolean to FileViewerState
+        - Add selectedFileIndex: number for keyboard navigation
+        - Create flatFileList from treeData for keyboard navigation order
+        - Update handleFileSelect to set loading state
+        - Implement navigateToNextFile() and navigateToPreviousFile() functions
+        - Handle edge cases: no files, single file, navigation wrapping
+
+      - Task 8: Write Comprehensive Tests (Testing Requirements)
+        - Unit tests: Keyboard navigation (ArrowUp/ArrowDown key handlers)
+        - Unit tests: Breadcrumb path parsing and segment generation
+        - Component tests: Breadcrumb renders with correct segments
+        - Component tests: Loading indicator shows during file load
+        - Component tests: Empty file message displays correctly
+        - Integration tests: Keyboard navigation end-to-end
+        - Integration tests: Scroll reset when switching files
+        - Edge case tests: Keyboard navigation with empty tree, single file
+        - Accessibility tests: Keyboard shortcuts don't interfere with screen readers
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Keyboard shortcuts for navigation implemented (up/down arrows to navigate files)
+    2. Breadcrumb trail shows current file path
+    3. "Back" functionality to return to tree view if in full-file mode (if applicable)
+    4. Loading indicator appears when opening large files
+    5. Scroll position preserved when switching files
+    6. Clear indication when file is empty vs still loading
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md" title="Epic 5 Technical Specification" section="Overview" snippet="Epic 5 delivers a read-only file viewer and navigation system that enables users to browse and view agent-generated outputs. File viewer integrates into chat UI layout (Epic 3) and leverages Epic 4's path resolution and file operations." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md" title="File Viewer Architecture" section="System Architecture" snippet="File viewer operates as complementary output verification system. Leverages Epic 4 path resolution for security, uses existing file operations for viewer functionality, integrates with Epic 3 chat UI, respects read-only security boundaries." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md" title="FileTreeNode Interface" section="Data Models" snippet="interface FileTreeNode { name: string; path: string; type: 'file' | 'directory'; children?: FileTreeNode[]; size?: number; modified?: string; displayName?: string; metadata?: SessionMetadata; isInternal?: boolean; }" />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/prd.md" title="Product Requirements" section="FR-8: File Viewer" snippet="Simple file browser for output directory only. Directory traversal to navigate multiple folders. Display file contents with basic formatting. View-only interface - no editing, no downloads in MVP. Restricted to agent output directory for security." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/prd.md" title="Non-Functional Requirements" section="NFR-5: Usability" snippet="Zero learning curve for end users familiar with ChatGPT/Claude.ai. Keyboard shortcuts should be intuitive and not interfere with standard browser operations." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.1.md" title="Story 5.1: File Viewer UI Component" section="Foundation" snippet="Establishes FileViewerPanel component with split-pane layout, 'Output Files' label, empty state handling. Provides foundation for all subsequent file viewer stories." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.2.md" title="Story 5.2: Display Directory Tree" section="Tree Navigation" snippet="Directory tree displays folder structure with expand/collapse, file selection triggers content load, proper indentation for nested directories, icons distinguish files from folders." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.2.1.md" title="Story 5.2.1: Session Metadata Display" section="Human-Readable Names" snippet="Displays human-readable session names instead of UUIDs. Uses manifest.json metadata to show 'Agent Name - Workflow' instead of technical session IDs. Breadcrumb component will leverage this metadata." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.3.md" title="Story 5.3: Display File Contents" section="Content Display" snippet="Text files display with preserved formatting (whitespace-pre-wrap), binary files show 'Cannot preview', large files show truncation warning, file path shown above content area." />
+
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.5.md" title="Story 5.5: Refresh File List" section="Auto-Refresh" snippet="File list auto-refreshes after agent completes response, manual refresh button available, new files highlighted with visual indicators, refresh preserves selected file, debounced to max 1 refresh per 2 seconds." />
+    </docs>
+
+    <code>
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx" kind="component" symbol="FileViewerPanel" lines="1-420" reason="Main file viewer container. Story 5.6 will add keyboard event listeners, isLoadingContent state, selectedFileIndex state, flatFileList state, and navigation functions (navigateToNextFile, navigateToPreviousFile) to this component." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx" kind="interface" symbol="FileViewerState" lines="34-47" reason="Current state interface includes treeData, selectedFile, fileContent, isLoading, viewMode, error, contentError, isRefreshing, lastRefreshTimestamp, newFiles. Story 5.6 adds: isLoadingContent, selectedFileIndex, flatFileList." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx" kind="function" symbol="handleFileSelect" lines="211-214" reason="Currently updates selectedFile and calls loadFileContent. Story 5.6 will extend to update selectedFileIndex and set isLoadingContent=true." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx" kind="function" symbol="loadFileContent" lines="220-247" reason="Loads file content from API. Story 5.6 will update to set isLoadingContent state before/after API call." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx" kind="function" symbol="formatBreadcrumb" lines="385-409" reason="Existing breadcrumb formatting logic in FileViewerPanel. Shows how to traverse tree to get displayName for segments. Story 5.6 Breadcrumb component will extract and enhance this pattern." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileContentDisplay.tsx" kind="component" symbol="FileContentDisplay" lines="1-270" reason="Displays file content with loading/error/empty states. Story 5.6 will receive isLoadingContent prop and distinguish empty file state from loading state. Breadcrumb component will integrate into this component's header." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileContentDisplay.tsx" kind="jsx" symbol="Loading state" lines="88-98" reason="Current loading indicator shows 'Loading file...' with spinner. Story 5.6 will ensure this displays when isLoadingContent=true, with 200ms delay to prevent flicker." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileContentDisplay.tsx" kind="jsx" symbol="Empty state" lines="61-86" reason="Current empty state shows 'No file selected'. Story 5.6 will add separate state for empty files: 'This file is empty' (when content.length === 0 and not loading)." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/DirectoryTree.tsx" kind="component" symbol="DirectoryTree" lines="1-235" reason="Tree rendering component with file/folder icons, expand/collapse, file selection. Story 5.6 keyboard navigation will leverage this tree structure. selectedFile prop highlights current selection." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/DirectoryTree.tsx" kind="component" symbol="TreeNode" lines="82-187" reason="Recursive tree node component. Shows use of node.displayName for session folders. Keyboard navigation will traverse this tree structure in depth-first order." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/treeBuilder.ts" kind="interface" symbol="FileTreeNode" lines="28-38" reason="Core tree data structure with name, path, type, children, displayName, metadata, isInternal. Keyboard navigation will build flat file list from this structure." />
+
+      <artifact path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/api.ts" kind="interface" symbol="FileContentResponse" lines="92-102" reason="API response structure for file content. Includes isBinary, truncated flags. Story 5.6 empty file detection uses content.length === 0 and !isBinary." />
+    </code>
+
+    <dependencies>
+      <node>
+        <dependency name="react" version="^18">React framework for components and hooks (useState, useEffect for keyboard listeners)</dependency>
+        <dependency name="react-dom" version="^18">React DOM for rendering</dependency>
+        <dependency name="next" version="14.2.0">Next.js framework for app router and API routes</dependency>
+        <dependency name="react-markdown" version="^10.1.0">Markdown rendering for file content display</dependency>
+        <dependency name="remark-gfm" version="^4.0.1">GitHub Flavored Markdown support for tables, lists</dependency>
+        <dependency name="tailwindcss" version="^3.4.0">Utility-first CSS framework for styling breadcrumb and loading states</dependency>
+        <dependency name="@testing-library/react" version="^16.3.0">React component testing for keyboard navigation tests</dependency>
+        <dependency name="@testing-library/user-event" version="^14.6.1">User interaction simulation for keyboard event testing</dependency>
+        <dependency name="jest" version="^30.2.0">Testing framework for unit and component tests</dependency>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - **Architecture Pattern (FileViewerPanel):** Implement keyboard shortcuts at FileViewerPanel level using useEffect hook. Maintain flat file list for sequential navigation extracted from tree structure. Skip directories - only navigate between files.
+
+    - **Keyboard Event Handling:** Use window.addEventListener('keydown') in useEffect. Check document.activeElement before handling keys to prevent interference with text inputs. Return cleanup function to remove listener on unmount.
+
+    - **Navigation Order:** Build flat file list using depth-first traversal of tree (matches visual tree order). Wrap navigation at boundaries: last file + ArrowDown → first file, first file + ArrowUp → last file.
+
+    - **State Management:** Add three new fields to FileViewerState: isLoadingContent (boolean), selectedFileIndex (number, -1 for no selection), flatFileList (string[] of file paths).
+
+    - **Breadcrumb Component Pattern:** Create standalone component in components/file-viewer/Breadcrumb.tsx. Props: currentFilePath (string), onNavigate (optional function). Parse path into clickable segments. Use session metadata (displayName) for first segment instead of UUID.
+
+    - **Loading State Distinction:** Separate isLoading (tree load) from isLoadingContent (file content load). Delay spinner appearance by 200ms to prevent flicker for fast API responses. Use different messages: "Loading file..." vs "This file is empty".
+
+    - **Empty File Detection:** After content loaded, check content.length === 0 && !isBinary. Show "This file is empty" message with different icon than loading state. Binary files show "Cannot preview".
+
+    - **Scroll Position Handling:** Decision for MVP: Reset scroll to top when opening new file (Option A - simpler). Set scrollTop = 0 after loading new file content. Use behavior: 'smooth' for better UX. Document decision in code comments for future enhancement.
+
+    - **Accessibility:** Ensure keyboard shortcuts don't conflict with screen reader navigation (NVDA, JAWS). Add aria-labels to breadcrumb segments. Loading indicator announced to screen readers via aria-live regions.
+
+    - **Testing Requirements:** Write unit tests for keyboard navigation logic, breadcrumb path parsing. Component tests for breadcrumb rendering, loading indicator display, empty file message. Integration tests for end-to-end keyboard navigation. Edge case tests for empty tree, single file navigation.
+
+    - **React Patterns:** Use React hooks (useState, useEffect) per Epic 3 architecture. Component memoization (React.memo) for performance where appropriate. Follow existing Tailwind CSS styling patterns from FileViewerPanel and FileContentDisplay.
+
+    - **Security:** All file access remains read-only. Path validation enforced by existing Epic 4 security layer. No new security concerns introduced by keyboard navigation or breadcrumb features.
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>FileViewerState (Extended)</name>
+      <kind>interface</kind>
+      <signature>
+interface FileViewerState {
+  treeData: FileTreeNode | null;
+  selectedFile: string | null;
+  fileContent: FileContentResponse | null;
+  isLoading: boolean;
+  isLoadingContent: boolean;       // NEW: True during file content load
+  viewMode: 'rendered' | 'raw';
+  error: string | null;
+  contentError: string | null;
+  isRefreshing: boolean;
+  lastRefreshTimestamp: number;
+  newFiles: string[];
+  selectedFileIndex: number;       // NEW: Index in flat file list (-1 if no selection)
+  flatFileList: string[];          // NEW: Array of file paths for navigation order
+}
+      </signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>Extended state interface for Story 5.6. Add isLoadingContent for loading indicator, selectedFileIndex for keyboard navigation tracking, flatFileList for sequential file navigation order.</description>
+    </interface>
+
+    <interface>
+      <name>BreadcrumbProps</name>
+      <kind>interface</kind>
+      <signature>
+interface BreadcrumbProps {
+  currentFilePath: string;          // e.g., "uuid-123/requirements/prd.md"
+  onNavigate?: (path: string) => void; // Callback when segment clicked
+  sessionMetadata?: SessionMetadata; // From Story 5.2.1 for human-readable names
+}
+      </signature>
+      <path>components/file-viewer/Breadcrumb.tsx (to be created)</path>
+      <description>Props for new Breadcrumb component. Accepts file path, optional navigation handler, and session metadata for displaying human-readable session names.</description>
+    </interface>
+
+    <interface>
+      <name>buildFlatFileList</name>
+      <kind>function</kind>
+      <signature>
+function buildFlatFileList(node: FileTreeNode, result: string[] = []): string[] {
+  if (node.type === 'file') {
+    result.push(node.path);
+  }
+  if (node.children) {
+    node.children.forEach(child => buildFlatFileList(child, result));
+  }
+  return result;
+}
+      </signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>Helper function to extract all file paths from tree in depth-first order. Used to build flatFileList for keyboard navigation. Skips directories, only includes files.</description>
+    </interface>
+
+    <interface>
+      <name>navigateToNextFile</name>
+      <kind>function</kind>
+      <signature>
+function navigateToNextFile(): void {
+  if (flatFileList.length === 0) return;
+  const nextIndex = (selectedFileIndex + 1) % flatFileList.length; // Wrap around
+  const nextFilePath = flatFileList[nextIndex];
+  setSelectedFileIndex(nextIndex);
+  handleFileSelect(nextFilePath);
+}
+      </signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>Keyboard navigation function for ArrowDown. Selects next file in flat list with wrap-around from last to first file.</description>
+    </interface>
+
+    <interface>
+      <name>navigateToPreviousFile</name>
+      <kind>function</kind>
+      <signature>
+function navigateToPreviousFile(): void {
+  if (flatFileList.length === 0) return;
+  const prevIndex = (selectedFileIndex - 1 + flatFileList.length) % flatFileList.length;
+  const prevFilePath = flatFileList[prevIndex];
+  setSelectedFileIndex(prevIndex);
+  handleFileSelect(prevFilePath);
+}
+      </signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>Keyboard navigation function for ArrowUp. Selects previous file in flat list with wrap-around from first to last file.</description>
+    </interface>
+
+    <interface>
+      <name>Keyboard Event Handler</name>
+      <kind>effect</kind>
+      <signature>
+useEffect(() => {
+  const handleKeyDown = (e: KeyboardEvent) => {
+    // Ignore if typing in input field
+    if (document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA') {
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      navigateToNextFile();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      navigateToPreviousFile();
+    }
+  };
+  window.addEventListener('keydown', handleKeyDown);
+  return () => window.removeEventListener('keydown', handleKeyDown);
+}, [selectedFileIndex, flatFileList]);
+      </signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>useEffect hook for keyboard event listener. Checks if text input has focus before handling keys. Calls navigation functions on ArrowUp/ArrowDown. Cleanup function removes listener.</description>
+    </interface>
+
+    <interface>
+      <name>parsePath (Breadcrumb)</name>
+      <kind>function</kind>
+      <signature>
+function parsePath(filePath: string, metadata?: SessionMetadata): BreadcrumbSegment[] {
+  const segments = filePath.split('/');
+  return segments.map((segment, index) => {
+    // First segment is session UUID - replace with human name if metadata available
+    if (index === 0 && metadata) {
+      return {
+        name: `${metadata.agent.title} - ${metadata.workflow.name}`,
+        path: segments.slice(0, index + 1).join('/')
+      };
+    }
+    return {
+      name: segment,
+      path: segments.slice(0, index + 1).join('/')
+    };
+  });
+}
+      </signature>
+      <path>components/file-viewer/Breadcrumb.tsx</path>
+      <description>Parse file path into breadcrumb segments. Replaces first segment (session UUID) with human-readable name from metadata. Each segment has name and cumulative path for navigation.</description>
+    </interface>
+
+    <interface>
+      <name>GET /api/files/content</name>
+      <kind>api</kind>
+      <signature>GET /api/files/content?path={filePath} -> FileContentResponse</signature>
+      <path>app/api/files/content/route.ts</path>
+      <description>Existing API endpoint that returns file content. Story 5.6 loading indicator displays while this API call is in progress. Returns content, mimeType, size, isBinary, truncated flags.</description>
+    </interface>
+
+    <interface>
+      <name>GET /api/files/tree</name>
+      <kind>api</kind>
+      <signature>GET /api/files/tree -> { success: boolean; root: FileTreeNode; error?: string }</signature>
+      <path>app/api/files/tree/route.ts</path>
+      <description>Existing API endpoint that returns directory tree. Used to build flatFileList for keyboard navigation. Tree structure includes displayName and metadata from Story 5.2.1.</description>
+    </interface>
+
+    <interface>
+      <name>FileTreeNode</name>
+      <kind>interface</kind>
+      <signature>
+interface FileTreeNode {
+  name: string;
+  path: string;
+  type: 'file' | 'directory';
+  children?: FileTreeNode[];
+  size?: number;
+  modified?: string;
+  displayName?: string;
+  metadata?: SessionMetadata;
+  isInternal?: boolean;
+}
+      </signature>
+      <path>lib/files/treeBuilder.ts</path>
+      <description>Tree node data structure. Keyboard navigation builds flat list from this. Breadcrumb uses displayName for human-readable session names.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Jest + React Testing Library patterns established in Stories 5.1-5.5. Unit tests cover keyboard navigation logic (buildFlatFileList, navigateToNextFile, navigateToPreviousFile) and breadcrumb path parsing. Component tests verify breadcrumb rendering with correct segments, loading indicator display during file load, empty file message vs loading state distinction. Integration tests validate end-to-end keyboard navigation (select file, load content, navigate to next/previous, wrap-around). Edge case tests cover empty tree, single file, rapid key presses. Accessibility tests ensure keyboard shortcuts don't interfere with text inputs or screen readers.
+    </standards>
+
+    <locations>
+      - components/__tests__/FileViewerPanel.test.tsx (extend with keyboard navigation tests)
+      - components/__tests__/FileContentDisplay.test.tsx (extend with loading indicator and empty file tests)
+      - components/file-viewer/__tests__/Breadcrumb.test.tsx (new file for breadcrumb component tests)
+    </locations>
+
+    <ideas>
+      <idea ac="1">
+        **Keyboard Navigation Logic Tests:**
+        - Test buildFlatFileList extracts only files (skips directories) in depth-first order
+        - Test navigateToNextFile advances selectedFileIndex and calls handleFileSelect
+        - Test navigateToPreviousFile decrements selectedFileIndex with wrap-around
+        - Test keyboard handler ignores events when INPUT/TEXTAREA has focus
+        - Test ArrowDown key triggers navigateToNextFile
+        - Test ArrowUp key triggers navigateToPreviousFile
+        - Test navigation wraps from last file to first file (and vice versa)
+        - Test keyboard shortcuts disabled when typing in search box
+      </idea>
+
+      <idea ac="2">
+        **Breadcrumb Component Tests:**
+        - Test parsePath splits "session/folder/file.md" into correct segments
+        - Test first segment uses displayName from metadata instead of UUID
+        - Test each segment renders with correct name and separator
+        - Test clicking segment calls onNavigate with correct path
+        - Test breadcrumb renders with text-sm and text-gray-600 classes
+        - Test long paths (>5 segments) show truncation with "..."
+        - Test breadcrumb integration in FileContentDisplay header
+      </idea>
+
+      <idea ac="3">
+        **Back to Tree Functionality Tests:**
+        - Verify current implementation uses split-pane layout (tree always visible)
+        - Confirm this AC is not applicable for current architecture
+        - Document decision: No back button needed for split-pane layout
+      </idea>
+
+      <idea ac="4">
+        **Loading Indicator Tests:**
+        - Test isLoadingContent=true displays "Loading file..." spinner
+        - Test spinner appears with 200ms delay (prevents flicker)
+        - Test isLoadingContent=false hides spinner after content loads
+        - Test loading indicator shows during API call to /api/files/content
+        - Test error state during load shows error message (not spinner)
+      </idea>
+
+      <idea ac="5">
+        **Scroll Position Tests:**
+        - Test scroll resets to top (scrollTop = 0) when switching files
+        - Test smooth scroll behavior applied (behavior: 'smooth')
+        - Test scroll reset occurs after new file content loads
+        - Test scroll position not affected when refreshing same file
+      </idea>
+
+      <idea ac="6">
+        **Empty File vs Loading State Tests:**
+        - Test loading state shows "Loading file..." with spinner
+        - Test empty file (content.length === 0) shows "This file is empty" without spinner
+        - Test binary file shows "Cannot preview binary file" (not empty message)
+        - Test different icons for loading vs empty states
+        - Test empty markdown file shows empty state (not blank rendered view)
+      </idea>
+
+      <idea ac="all">
+        **Integration and Edge Case Tests:**
+        - Test end-to-end: render file viewer, press ArrowDown, verify next file selected and content loaded
+        - Test keyboard navigation with empty tree (no files) - navigation functions return early
+        - Test keyboard navigation with single file - wraps to same file
+        - Test rapid key presses don't break navigation state
+        - Test keyboard navigation preserves tree expansion state
+        - Test accessibility: screen reader announces file selection changes
+        - Test keyboard shortcuts work when file viewer has focus (not obscured by chat input)
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

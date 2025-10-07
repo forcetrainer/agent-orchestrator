@@ -310,7 +310,25 @@
 <ask>Does the BA/Developer want to revise anything before generating the final document?</ask>
 </step>
 
-<step n="16" goal="Generate detailed requirements document">
+<step n="16" goal="Review complete requirements document for cohesion">
+<action>Read all previously captured outputs from all prior steps</action>
+<action>Review the complete set of requirements holistically for logical flow and cohesion</action>
+
+<check>Does the summary align with all gathered details?</check>
+<check>Do the functional requirements map clearly to the user workflow?</check>
+<check>Are the data requirements consistent with the functional requirements?</check>
+<check>Do security and access requirements align with the user workflow?</check>
+<check>Are there any contradictions between different sections?</check>
+<check>Does the technical complexity estimate match the scope of requirements?</check>
+<check>Do all integrations have corresponding data sources identified?</check>
+<check>Does the workflow narrative flow logically from start to completion?</check>
+
+<action>If any issues are found, work with BA/Developer to resolve inconsistencies before generating final document</action>
+
+<ask>Review complete. Any final adjustments needed before generating the document?</ask>
+</step>
+
+<step n="17" goal="Generate detailed requirements document">
 <action>Set request_id = "APP-DETAIL-{{date}}"</action>
 <ask response="ba_developer_name">BA/Developer name:</ask>
 <ask response="requestor_name">Requestor name:</ask>
@@ -321,7 +339,7 @@
 <template-output>Complete detailed requirements document</template-output>
 </step>
 
-<step n="17" goal="Closing and next steps">
+<step n="18" goal="Closing and next steps">
 <action>Confirm completion and outline next steps</action>
 
 <example>

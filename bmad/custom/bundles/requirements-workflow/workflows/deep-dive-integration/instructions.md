@@ -191,7 +191,25 @@
 <ask>Any revisions needed before generating the document?</ask>
 </step>
 
-<step n="14" goal="Generate document">
+<step n="14" goal="Review complete requirements document for cohesion">
+<action>Read all previously captured outputs from all prior steps</action>
+<action>Review the complete set of requirements holistically for logical flow and cohesion</action>
+
+<check>Does the summary align with all gathered details?</check>
+<check>Do the functional requirements map clearly to the integration flow?</check>
+<check>Are the data requirements consistent with the functional requirements?</check>
+<check>Do security and access requirements align with both systems?</check>
+<check>Are there any contradictions between different sections?</check>
+<check>Does the technical complexity estimate match the scope of requirements?</check>
+<check>Are data mappings complete for all integrated fields?</check>
+<check>Does the integration flow logically handle both success and error scenarios?</check>
+
+<action>If any issues are found, work with BA/Developer to resolve inconsistencies before generating final document</action>
+
+<ask>Review complete. Any final adjustments needed before generating the document?</ask>
+</step>
+
+<step n="15" goal="Generate document">
 <action>Set request_id = "INT-DETAIL-{{date}}"</action>
 <ask response="ba_developer_name">BA/Developer name:</ask>
 <ask response="requestor_name">Requestor name:</ask>
@@ -199,7 +217,7 @@
 <template-output>Complete detailed requirements document</template-output>
 </step>
 
-<step n="15" goal="Closing">
+<step n="16" goal="Closing">
 <action>Confirm completion and next steps</action>
 <ask>Any final notes or follow-up items?</ask>
 </step>

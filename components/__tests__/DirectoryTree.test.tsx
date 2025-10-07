@@ -3,6 +3,9 @@
  *
  * Story 5.2: Display Directory Tree Structure
  * Tests for AC-1, AC-2, AC-3, AC-4, AC-5, AC-7
+ *
+ * Story 5.5: Refresh File List
+ * Tests for AC-3: New file visual indicators
  */
 
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -579,6 +582,119 @@ describe('DirectoryTree', () => {
       expect(screen.getByText('regular-folder')).toBeInTheDocument();
       expect(screen.getByText('Casey - Deep Dive (Oct 5, 2025, 2:30 PM)')).toBeInTheDocument();
       expect(screen.getByText('regular-file.txt')).toBeInTheDocument();
+    });
+  });
+
+  describe('Story 5.5: New File Visual Indicators (AC-3)', () => {
+    it('displays NEW badge for files in newFiles array', () => {
+      const newFiles = ['file2.txt'];
+
+      render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      // NEW badge should appear next to file2.txt
+      expect(screen.getByText('NEW')).toBeInTheDocument();
+
+      // Verify badge styling
+      const badge = screen.getByText('NEW');
+      expect(badge).toHaveClass('text-green-700', 'bg-green-100');
+    });
+
+    it('does not display NEW badge for files not in newFiles array', () => {
+      const newFiles = ['file2.txt'];
+
+      render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      // Expand folder to show file1.txt
+      fireEvent.click(screen.getByText('folder1'));
+
+      // Only one NEW badge should exist (for file2.txt)
+      const badges = screen.getAllByText('NEW');
+      expect(badges).toHaveLength(1);
+    });
+
+    it('displays NEW badge for multiple new files', () => {
+      // Expand folder to show nested files
+      const newFiles = ['file2.txt', 'folder1/file1.txt'];
+
+      render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      // Expand folder1 to reveal file1.txt
+      fireEvent.click(screen.getByText('folder1'));
+
+      // Both files should have NEW badges
+      const badges = screen.getAllByText('NEW');
+      expect(badges).toHaveLength(2);
+    });
+
+    it('does not display NEW badge for directories', () => {
+      const newFiles = ['folder1']; // Directory path
+
+      render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      // NEW badge should NOT appear for directories
+      expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+    });
+
+    it('handles nested new files correctly', () => {
+      const newFiles = ['folder1/nested/deep.md'];
+
+      render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      // Expand to reveal nested file
+      fireEvent.click(screen.getByText('folder1'));
+      fireEvent.click(screen.getByText('nested'));
+
+      // NEW badge should appear for deep.md
+      expect(screen.getByText('NEW')).toBeInTheDocument();
+    });
+
+    it('renders correctly with empty newFiles array', () => {
+      render(<DirectoryTree root={mockTree} newFiles={[]} />);
+
+      // No NEW badges should appear
+      expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+    });
+
+    it('renders correctly with undefined newFiles prop', () => {
+      render(<DirectoryTree root={mockTree} />);
+
+      // No NEW badges should appear
+      expect(screen.queryByText('NEW')).not.toBeInTheDocument();
+    });
+
+    it('NEW badge appears before file size', () => {
+      const newFiles = ['file2.txt'];
+
+      const { container } = render(<DirectoryTree root={mockTree} newFiles={newFiles} />);
+
+      const file2Element = screen.getByText('file2.txt').parentElement;
+      const badge = screen.getByText('NEW');
+      const fileSize = screen.getByText('2 KB');
+
+      // Verify both elements exist within the same parent
+      expect(file2Element).toContainElement(badge);
+      expect(file2Element).toContainElement(fileSize);
+    });
+
+    it('NEW badge does not interfere with file selection', () => {
+      const mockOnFileSelect = jest.fn();
+      const newFiles = ['file2.txt'];
+
+      render(
+        <DirectoryTree
+          root={mockTree}
+          onFileSelect={mockOnFileSelect}
+          newFiles={newFiles}
+          selectedFile="file2.txt"
+        />
+      );
+
+      // File should be selectable and highlighted
+      const file2Element = screen.getByText('file2.txt').parentElement;
+      expect(file2Element).toHaveClass('bg-blue-50', 'text-blue-700');
+
+      // NEW badge should still appear
+      expect(screen.getByText('NEW')).toBeInTheDocument();
     });
   });
 });

@@ -31,6 +31,8 @@ export interface DirectoryTreeProps {
   onFileSelect?: (path: string) => void;
   /** Currently selected file path */
   selectedFile?: string | null;
+  /** Array of newly added file paths (Story 5.5 AC-3) */
+  newFiles?: string[];
 }
 
 /**
@@ -83,16 +85,20 @@ const TreeNode = memo(
     depth,
     onFileSelect,
     selectedFile,
+    newFiles,
   }: {
     node: FileTreeNode;
     depth: number;
     onFileSelect?: (path: string) => void;
     selectedFile?: string | null;
+    newFiles?: string[];
   }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const isDirectory = node.type === 'directory';
     const hasChildren = isDirectory && node.children && node.children.length > 0;
     const isSelected = selectedFile === node.path;
+    // Story 5.5 AC-3: Check if this file is newly created
+    const isNewFile = !isDirectory && newFiles?.includes(node.path);
 
     // Story 5.2.1 AC-2: Filter out internal files (manifest.json)
     if (node.isInternal) {
@@ -130,6 +136,13 @@ const TreeNode = memo(
           {/* Story 5.2.1 AC-1: Display human-readable name */}
           <span className="text-sm truncate flex-1">{displayText}</span>
 
+          {/* Story 5.5 AC-3: Visual indicator for newly created files */}
+          {isNewFile && (
+            <span className="px-1.5 py-0.5 text-xs font-semibold text-green-700 bg-green-100 rounded">
+              NEW
+            </span>
+          )}
+
           {/* Show file size for files */}
           {!isDirectory && node.size !== undefined && (
             <span className="text-xs text-gray-400 flex-shrink-0">
@@ -152,6 +165,7 @@ const TreeNode = memo(
                     depth={depth + 1}
                     onFileSelect={onFileSelect}
                     selectedFile={selectedFile}
+                    newFiles={newFiles}
                   />
                 ))
             ) : (
@@ -175,7 +189,7 @@ TreeNode.displayName = 'TreeNode';
 /**
  * Main DirectoryTree component
  */
-export function DirectoryTree({ root, onFileSelect, selectedFile }: DirectoryTreeProps) {
+export function DirectoryTree({ root, onFileSelect, selectedFile, newFiles }: DirectoryTreeProps) {
   if (!root) {
     return (
       <div className="p-4 text-sm text-gray-500">
@@ -195,6 +209,7 @@ export function DirectoryTree({ root, onFileSelect, selectedFile }: DirectoryTre
             depth={0}
             onFileSelect={onFileSelect}
             selectedFile={selectedFile}
+            newFiles={newFiles}
           />
         ))
       ) : (

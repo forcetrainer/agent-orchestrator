@@ -40,6 +40,13 @@ interface FileViewerState {
   viewMode: 'rendered' | 'raw';
   error: string | null;
   contentError: string | null;
+  // Story 5.5: Refresh file list state additions
+  isRefreshing: boolean; // True during refresh operation
+  lastRefreshTimestamp: number; // Unix timestamp of last refresh
+  newFiles: string[]; // Array of file paths added since last refresh
+  // Story 5.6: Navigation polish state additions
+  selectedFileIndex: number; // Current file index in flatFileList (-1 if no selection)
+  flatFileList: string[]; // All file paths in navigation order (depth-first)
 }
 
 interface FileViewerPanelProps {
@@ -57,6 +64,13 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
     viewMode: 'rendered',
     error: null,
     contentError: null,
+    // Story 5.5 state initialization
+    isRefreshing: false,
+    lastRefreshTimestamp: 0,
+    newFiles: [],
+    // Story 5.6 state initialization
+    selectedFileIndex: -1,
+    flatFileList: [],
   });
 
   // Story 5.2 AC-1: Fetch directory tree on component mount
@@ -99,12 +113,24 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Story 5.5 AC-3: Auto-clear new file indicators after 10 seconds
+  useEffect(() => {
+    if (state.newFiles.length > 0) {
+      const timeout = setTimeout(() => {
+        setState((prev) => ({ ...prev, newFiles: [] }));
+      }, 10000); // Clear after 10 seconds
+
+      return () => clearTimeout(timeout);
+    }
+  }, [state.newFiles]);
+
   /**
    * Loads directory tree from API
    * Story 5.2 AC-1, AC-6: Initial load and refresh after agent output
+   * Story 5.5 AC-3: Detect new files and apply visual indicators
    */
   const loadDirectoryTree = async () => {
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    setState((prev) => ({ ...prev, isLoading: true, isRefreshing: true, error: null }));
 
     try {
       const response = await fetch('/api/files/tree');
@@ -117,11 +143,27 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
             ? fileExistsInTree(data.root, prev.selectedFile)
             : false;
 
+          // Story 5.5 AC-3: Detect new files by comparing old tree with new tree
+          const oldFilePaths = prev.treeData ? extractAllFilePaths(prev.treeData) : new Set<string>();
+          const newFilePaths = extractAllFilePaths(data.root);
+          const detectedNewFiles = Array.from(newFilePaths).filter(path => !oldFilePaths.has(path));
+
+          // Story 5.6: Build flat file list for keyboard navigation
+          const newFlatFileList = buildFlatFileList(data.root);
+          const newSelectedFileIndex = selectedFileStillExists && prev.selectedFile
+            ? newFlatFileList.indexOf(prev.selectedFile)
+            : -1;
+
           return {
             ...prev,
             treeData: data.root,
             isLoading: false,
+            isRefreshing: false,
             selectedFile: selectedFileStillExists ? prev.selectedFile : null,
+            lastRefreshTimestamp: Date.now(),
+            newFiles: detectedNewFiles,
+            flatFileList: newFlatFileList,
+            selectedFileIndex: newSelectedFileIndex,
           };
         });
       } else {
@@ -129,6 +171,7 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
           ...prev,
           error: data.error || 'Failed to load directory tree',
           isLoading: false,
+          isRefreshing: false,
         }));
       }
     } catch (error: any) {
@@ -136,6 +179,7 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
         ...prev,
         error: 'Network error loading directory tree',
         isLoading: false,
+        isRefreshing: false,
       }));
     }
   };
@@ -153,12 +197,53 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
   };
 
   /**
+   * Helper: Extract all file paths from tree (Story 5.5 AC-3)
+   * Recursively walks tree and collects all file paths
+   */
+  const extractAllFilePaths = (node: FileTreeNode): Set<string> => {
+    const paths = new Set<string>();
+
+    if (node.type === 'file') {
+      paths.add(node.path);
+    }
+
+    if (node.children) {
+      for (const child of node.children) {
+        const childPaths = extractAllFilePaths(child);
+        childPaths.forEach(path => paths.add(path));
+      }
+    }
+
+    return paths;
+  };
+
+  /**
+   * Helper: Build flat file list for keyboard navigation (Story 5.6 AC-1)
+   * Extracts all file paths from tree in depth-first order (matches visual tree order)
+   * Skips directories - only includes files
+   */
+  const buildFlatFileList = (node: FileTreeNode, result: string[] = []): string[] => {
+    if (node.type === 'file') {
+      result.push(node.path);
+    }
+    if (node.children) {
+      node.children.forEach((child) => buildFlatFileList(child, result));
+    }
+    return result;
+  };
+
+  /**
    * Handles file selection from directory tree
    * Story 5.2 AC-7: Clicking file selects it for viewing
    * Story 5.3 AC-1: Load file contents via API when file selected
+   * Story 5.6: Update selectedFileIndex for keyboard navigation
    */
   const handleFileSelect = (path: string) => {
-    setState((prev) => ({ ...prev, selectedFile: path }));
+    setState((prev) => ({
+      ...prev,
+      selectedFile: path,
+      selectedFileIndex: prev.flatFileList.indexOf(path),
+    }));
     loadFileContent(path);
   };
 
@@ -194,6 +279,84 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
       }));
     }
   };
+
+  /**
+   * Navigate to next file in flat file list (Story 5.6 AC-1)
+   * Wraps around from last file to first file
+   */
+  const navigateToNextFile = () => {
+    if (state.flatFileList.length === 0) return;
+
+    // If no file selected, start at first file (index 0)
+    // Otherwise, move to next file with wrap-around
+    const nextIndex = state.selectedFileIndex === -1
+      ? 0
+      : (state.selectedFileIndex + 1) % state.flatFileList.length;
+    const nextFilePath = state.flatFileList[nextIndex];
+
+    handleFileSelect(nextFilePath);
+  };
+
+  /**
+   * Navigate to previous file in flat file list (Story 5.6 AC-1)
+   * Wraps around from first file to last file
+   */
+  const navigateToPreviousFile = () => {
+    if (state.flatFileList.length === 0) return;
+
+    // If no file selected, start at last file
+    // Otherwise, move to previous file with wrap-around
+    const prevIndex = state.selectedFileIndex === -1
+      ? state.flatFileList.length - 1
+      : (state.selectedFileIndex - 1 + state.flatFileList.length) % state.flatFileList.length;
+    const prevFilePath = state.flatFileList[prevIndex];
+
+    handleFileSelect(prevFilePath);
+  };
+
+  /**
+   * Handle breadcrumb navigation (Story 5.6 AC-2)
+   * When user clicks a breadcrumb segment, expand tree to that directory
+   */
+  const handleBreadcrumbNavigate = (path: string) => {
+    // For now, this is a placeholder for directory expansion
+    // In a full implementation, this would:
+    // 1. Find the node in the tree at the given path
+    // 2. Expand all parent nodes to make it visible
+    // 3. Scroll the tree to show the directory
+    //
+    // Since DirectoryTree component doesn't expose expansion state control,
+    // this would require refactoring DirectoryTree to accept controlled expansion state
+    console.log('Navigate to directory:', path);
+  };
+
+  /**
+   * Story 5.6 AC-1: Keyboard navigation with ArrowUp/ArrowDown
+   * Prevents interference with text inputs and screen readers
+   */
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if typing in input field or textarea (accessibility)
+      const activeElement = document.activeElement;
+      if (
+        activeElement?.tagName === 'INPUT' ||
+        activeElement?.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        navigateToNextFile();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        navigateToPreviousFile();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [state.selectedFileIndex, state.flatFileList]);
 
   // AC-4: Empty state when no files yet
   const isEmpty = state.treeData === null ||
@@ -281,79 +444,26 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
               root={state.treeData}
               onFileSelect={handleFileSelect}
               selectedFile={state.selectedFile}
+              newFiles={state.newFiles}
             />
           </div>
 
           {/* Story 5.3: File content display (right pane) */}
           <div className="flex-1 flex flex-col overflow-hidden">
-            {/* Story 5.3 AC-7: File path breadcrumb */}
-            {state.selectedFile && (
-              <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
-                <div className="flex items-center text-sm text-gray-600">
-                  <svg
-                    className="h-4 w-4 mr-2 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <span className="font-mono truncate">{formatBreadcrumb(state.selectedFile, state.treeData)}</span>
-                  {state.fileContent && !state.fileContent.isBinary && (
-                    <span className="ml-2 text-xs text-gray-500">
-                      {formatFileSize(state.fileContent.size)}
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* File content display */}
+            {/* Story 5.6 AC-2: FileContentDisplay now includes breadcrumb */}
             <FileContentDisplay
               content={state.fileContent}
               isLoading={state.isLoadingContent}
               error={state.contentError}
+              currentFilePath={state.selectedFile || undefined}
+              treeData={state.treeData}
+              onBreadcrumbNavigate={handleBreadcrumbNavigate}
             />
           </div>
         </div>
       )}
     </div>
   );
-}
-
-/**
- * Format breadcrumb path with session display names
- * Story 5.3 AC-7: Use readable session names from Story 5.2.1 metadata
- */
-function formatBreadcrumb(path: string, treeData: FileTreeNode | null): string {
-  if (!path || !treeData) return path;
-
-  const segments = path.split('/');
-  const formatted: string[] = [];
-
-  // Walk the tree to find display names for session folders
-  let currentNode = treeData;
-  for (const segment of segments) {
-    if (currentNode.children) {
-      const child = currentNode.children.find((c) => c.name === segment);
-      if (child) {
-        // Use displayName for session folders, regular name otherwise
-        formatted.push(child.displayName || child.name);
-        currentNode = child;
-      } else {
-        formatted.push(segment);
-      }
-    } else {
-      formatted.push(segment);
-    }
-  }
-
-  return formatted.join(' / ');
 }
 
 /**

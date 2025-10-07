@@ -15,6 +15,7 @@
 
 import React from 'react';
 import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { FileContentDisplay } from '../FileContentDisplay';
 import type { FileContentResponse } from '@/types/api';
@@ -41,17 +42,31 @@ describe('FileContentDisplay', () => {
   });
 
   describe('Loading state', () => {
-    it('should show loading indicator when isLoading is true', () => {
+    it('should show loading indicator when isLoading is true', async () => {
       // Arrange & Act
       render(<FileContentDisplay content={null} isLoading={true} error={null} />);
 
-      // Assert
+      // Story 5.6: Loading spinner has 200ms delay
+      // Assert - Should not show immediately
+      expect(screen.queryByText('Loading file...')).not.toBeInTheDocument();
+
+      // Wait for 200ms delay
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      });
+
+      // Assert - Should show after delay
       expect(screen.getByText('Loading file...')).toBeInTheDocument();
     });
 
-    it('should show spinner animation during loading', () => {
+    it('should show spinner animation during loading', async () => {
       // Arrange & Act
       const { container } = render(<FileContentDisplay content={null} isLoading={true} error={null} />);
+
+      // Story 5.6: Loading spinner has 200ms delay
+      await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 250));
+      });
 
       // Assert
       const spinner = container.querySelector('.animate-spin');
@@ -176,12 +191,10 @@ describe('FileContentDisplay', () => {
       };
 
       // Act
-      const { container } = render(<FileContentDisplay content={mockContent} isLoading={false} error={null} />);
+      render(<FileContentDisplay content={mockContent} isLoading={false} error={null} />);
 
-      // Assert
-      const preElement = container.querySelector('pre');
-      expect(preElement).toBeInTheDocument();
-      expect(preElement?.textContent).toBe('');
+      // Assert - Story 5.6: Empty files show special message instead of empty pre tag
+      expect(screen.getByText('This file is empty')).toBeInTheDocument();
     });
   });
 
@@ -971,6 +984,402 @@ describe('FileContentDisplay', () => {
         const h1 = container.querySelector('h1');
         expect(h1?.textContent).toContain('世界');
       });
+    });
+  });
+
+  describe('Story 5.6: Loading Indicator with Delay', () => {
+    beforeEach(() => {
+      jest.useFakeTimers();
+    });
+
+    afterEach(() => {
+      jest.runOnlyPendingTimers();
+      jest.useRealTimers();
+    });
+
+    it('should delay loading spinner by 200ms to prevent flicker', () => {
+      // Arrange & Act - Start loading
+      const { rerender } = render(<FileContentDisplay content={null} isLoading={true} error={null} />);
+
+      // Assert - Spinner should NOT appear immediately
+      expect(screen.queryByText('Loading file...')).not.toBeInTheDocument();
+
+      // Act - Advance timers by 199ms (just before threshold)
+      act(() => {
+        jest.advanceTimersByTime(199);
+      });
+
+      // Assert - Still no spinner
+      expect(screen.queryByText('Loading file...')).not.toBeInTheDocument();
+
+      // Act - Advance to 200ms
+      act(() => {
+        jest.advanceTimersByTime(1);
+      });
+
+      // Assert - Spinner should now appear
+      expect(screen.getByText('Loading file...')).toBeInTheDocument();
+    });
+
+    it('should not show spinner if loading completes before 200ms', () => {
+      // Arrange & Act - Start loading
+      const { rerender } = render(<FileContentDisplay content={null} isLoading={true} error={null} />);
+
+      // Act - Complete loading before 200ms delay
+      act(() => {
+        jest.advanceTimersByTime(100);
+      });
+
+      const mockContent: FileContentResponse = {
+        success: true,
+        path: 'fast.txt',
+        content: 'Fast content',
+        mimeType: 'text/plain',
+        size: 12,
+        modified: '2025-10-07T12:00:00Z',
+      };
+
+      rerender(<FileContentDisplay content={mockContent} isLoading={false} error={null} />);
+
+      // Act - Advance remaining time
+      act(() => {
+        jest.advanceTimersByTime(100);
+      });
+
+      // Assert - Should show content, not spinner
+      expect(screen.getByText('Fast content')).toBeInTheDocument();
+      expect(screen.queryByText('Loading file...')).not.toBeInTheDocument();
+    });
+
+    it('should hide spinner immediately when loading completes', () => {
+      // Arrange - Start loading and wait for spinner
+      const { rerender } = render(<FileContentDisplay content={null} isLoading={true} error={null} />);
+
+      act(() => {
+        jest.advanceTimersByTime(200);
+      });
+
+      expect(screen.getByText('Loading file...')).toBeInTheDocument();
+
+      // Act - Complete loading
+      const mockContent: FileContentResponse = {
+        success: true,
+        path: 'file.txt',
+        content: 'Content',
+        mimeType: 'text/plain',
+        size: 7,
+        modified: '2025-10-07T12:00:00Z',
+      };
+
+      rerender(<FileContentDisplay content={mockContent} isLoading={false} error={null} />);
+
+      // Assert - Spinner should disappear immediately
+      expect(screen.queryByText('Loading file...')).not.toBeInTheDocument();
+      expect(screen.getByText('Content')).toBeInTheDocument();
+    });
+  });
+
+  describe('Story 5.6: Empty File State', () => {
+    it('should show "This file is empty" for empty text files', () => {
+      // Arrange
+      const emptyFileContent: FileContentResponse = {
+        success: true,
+        path: 'empty.txt',
+        content: '',
+        mimeType: 'text/plain',
+        size: 0,
+        modified: '2025-10-07T12:00:00Z',
+        isBinary: false,
+      };
+
+      // Act
+      render(<FileContentDisplay content={emptyFileContent} isLoading={false} error={null} />);
+
+      // Assert
+      expect(screen.getByText('This file is empty')).toBeInTheDocument();
+      expect(screen.getByText(/text\/plain.*0 B/i)).toBeInTheDocument();
+    });
+
+    it('should show different icon for empty files vs loading', () => {
+      // Arrange - Empty file
+      const emptyFileContent: FileContentResponse = {
+        success: true,
+        path: 'empty.txt',
+        content: '',
+        mimeType: 'text/plain',
+        size: 0,
+        modified: '2025-10-07T12:00:00Z',
+        isBinary: false,
+      };
+
+      // Act
+      const { container: emptyContainer } = render(
+        <FileContentDisplay content={emptyFileContent} isLoading={false} error={null} />
+      );
+
+      // Assert - Empty state should have document icon (different from loading spinner)
+      const emptyText = screen.getByText('This file is empty');
+      const emptySvg = emptyText.parentElement?.querySelector('svg');
+      expect(emptySvg).toBeInTheDocument();
+      expect(emptySvg?.querySelector('path[d*="M9 12h6m-6 4h6"]')).toBeInTheDocument(); // Document icon
+    });
+
+    it('should not show empty state for binary files', () => {
+      // Arrange - Binary file with 0 size
+      const binaryContent: FileContentResponse = {
+        success: true,
+        path: 'image.png',
+        content: '',
+        mimeType: 'image/png',
+        size: 0,
+        modified: '2025-10-07T12:00:00Z',
+        isBinary: true,
+      };
+
+      // Act
+      render(<FileContentDisplay content={binaryContent} isLoading={false} error={null} />);
+
+      // Assert - Should show binary preview message, not empty file message
+      expect(screen.getByText('Cannot preview binary file')).toBeInTheDocument();
+      expect(screen.queryByText('This file is empty')).not.toBeInTheDocument();
+    });
+
+    it('should distinguish empty markdown file from rendered empty markdown', () => {
+      // Arrange - Empty markdown file
+      const emptyMarkdown: FileContentResponse = {
+        success: true,
+        path: 'empty.md',
+        content: '',
+        mimeType: 'text/markdown',
+        size: 0,
+        modified: '2025-10-07T12:00:00Z',
+        isBinary: false,
+      };
+
+      // Act
+      render(<FileContentDisplay content={emptyMarkdown} isLoading={false} error={null} />);
+
+      // Assert - Should show empty file message, not blank rendered view
+      expect(screen.getByText('This file is empty')).toBeInTheDocument();
+    });
+  });
+
+  describe('Story 5.6: Breadcrumb Integration', () => {
+    it('should display breadcrumb when file is selected', () => {
+      // Arrange
+      const fileContent: FileContentResponse = {
+        success: true,
+        content: 'Test content',
+        mimeType: 'text/plain',
+        size: 12,
+        isBinary: false,
+        truncated: false,
+      };
+
+      const treeData = {
+        name: 'root',
+        path: '',
+        type: 'directory' as const,
+        children: [
+          {
+            name: 'session-123',
+            path: 'session-123',
+            type: 'directory' as const,
+            displayName: 'Alex - Intake Workflow',
+            children: [
+              {
+                name: 'test.txt',
+                path: 'session-123/test.txt',
+                type: 'file' as const,
+              },
+            ],
+          },
+        ],
+      };
+
+      // Act
+      render(
+        <FileContentDisplay
+          content={fileContent}
+          isLoading={false}
+          error={null}
+          currentFilePath="session-123/test.txt"
+          treeData={treeData}
+        />
+      );
+
+      // Assert
+      expect(screen.getByText('Alex - Intake Workflow')).toBeInTheDocument();
+      expect(screen.getByText('test.txt')).toBeInTheDocument();
+    });
+
+    it('should call onBreadcrumbNavigate when segment is clicked', async () => {
+      const user = userEvent.setup();
+      const onNavigate = jest.fn();
+
+      const fileContent: FileContentResponse = {
+        success: true,
+        content: 'Test content',
+        mimeType: 'text/plain',
+        size: 12,
+        isBinary: false,
+        truncated: false,
+      };
+
+      const treeData = {
+        name: 'root',
+        path: '',
+        type: 'directory' as const,
+        children: [
+          {
+            name: 'session-123',
+            path: 'session-123',
+            type: 'directory' as const,
+            displayName: 'Session Name',
+            children: [
+              {
+                name: 'folder',
+                path: 'session-123/folder',
+                type: 'directory' as const,
+                children: [
+                  {
+                    name: 'test.txt',
+                    path: 'session-123/folder/test.txt',
+                    type: 'file' as const,
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+
+      // Act
+      render(
+        <FileContentDisplay
+          content={fileContent}
+          isLoading={false}
+          error={null}
+          currentFilePath="session-123/folder/test.txt"
+          treeData={treeData}
+          onBreadcrumbNavigate={onNavigate}
+        />
+      );
+
+      // Click the session segment
+      const sessionSegment = screen.getByText('Session Name');
+      await user.click(sessionSegment);
+
+      // Assert
+      expect(onNavigate).toHaveBeenCalledWith('session-123');
+    });
+
+    it('should not display breadcrumb when no file path provided', () => {
+      // Arrange
+      const fileContent: FileContentResponse = {
+        success: true,
+        content: 'Test content',
+        mimeType: 'text/plain',
+        size: 12,
+        isBinary: false,
+        truncated: false,
+      };
+
+      // Act
+      render(
+        <FileContentDisplay
+          content={fileContent}
+          isLoading={false}
+          error={null}
+        />
+      );
+
+      // Assert - breadcrumb navigation should not be present
+      expect(screen.queryByRole('navigation', { name: 'Breadcrumb' })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Story 5.6: Scroll Position Reset', () => {
+    it('should reset scroll to top when new file loaded', async () => {
+      // Arrange - First file with content
+      const firstFile: FileContentResponse = {
+        success: true,
+        path: 'first.txt',
+        content: 'First file content\n'.repeat(100), // Long content
+        mimeType: 'text/plain',
+        size: 1900,
+        modified: '2025-10-07T12:00:00Z',
+      };
+
+      const { rerender, container } = render(
+        <FileContentDisplay content={firstFile} isLoading={false} error={null} />
+      );
+
+      const scrollContainer = container.querySelector('.overflow-auto');
+      expect(scrollContainer).toBeInTheDocument();
+
+      // Mock scrollTo
+      const mockScrollTo = jest.fn();
+      if (scrollContainer) {
+        scrollContainer.scrollTo = mockScrollTo;
+      }
+
+      // Act - Load new file
+      const secondFile: FileContentResponse = {
+        success: true,
+        path: 'second.txt',
+        content: 'Second file content',
+        mimeType: 'text/plain',
+        size: 19,
+        modified: '2025-10-07T12:00:00Z',
+      };
+
+      rerender(<FileContentDisplay content={secondFile} isLoading={false} error={null} />);
+
+      // Assert - scrollTo should be called with top: 0 and smooth behavior
+      expect(mockScrollTo).toHaveBeenCalledWith({
+        top: 0,
+        behavior: 'smooth',
+      });
+    });
+
+    it('should use smooth scroll behavior for better UX', async () => {
+      // Arrange
+      const mockContent: FileContentResponse = {
+        success: true,
+        path: 'file.txt',
+        content: 'Content',
+        mimeType: 'text/plain',
+        size: 7,
+        modified: '2025-10-07T12:00:00Z',
+      };
+
+      const { container, rerender } = render(
+        <FileContentDisplay content={null} isLoading={false} error={null} />
+      );
+
+      // Act - Load file
+      rerender(<FileContentDisplay content={mockContent} isLoading={false} error={null} />);
+
+      const scrollContainer = container.querySelector('.overflow-auto');
+      const mockScrollTo = jest.fn();
+      if (scrollContainer) {
+        scrollContainer.scrollTo = mockScrollTo;
+      }
+
+      // Trigger re-render with new content
+      const newContent: FileContentResponse = {
+        ...mockContent,
+        path: 'newfile.txt',
+      };
+      rerender(<FileContentDisplay content={newContent} isLoading={false} error={null} />);
+
+      // Assert
+      expect(mockScrollTo).toHaveBeenCalledWith(
+        expect.objectContaining({
+          behavior: 'smooth',
+        })
+      );
     });
   });
 });

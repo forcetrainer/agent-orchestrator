@@ -293,7 +293,25 @@ Is anything missing or needing clarification?
 <action>Allow BA/Developer to update any section</action>
 </step>
 
-<step n="13" goal="Generate detailed requirements document">
+<step n="13" goal="Review complete requirements document for cohesion">
+<action>Read all previously captured outputs from steps 2-12</action>
+<action>Review the complete set of requirements holistically for logical flow and cohesion</action>
+
+<check>Does the summary align with all gathered details?</check>
+<check>Do the functional requirements map clearly to the user workflow?</check>
+<check>Are the data requirements consistent with the functional requirements?</check>
+<check>Do security and access requirements align with the user workflow?</check>
+<check>Are there any contradictions between different sections?</check>
+<check>Does the technical complexity estimate match the scope of requirements?</check>
+<check>Do all integrations have corresponding data sources identified?</check>
+<check>Does the workflow narrative flow logically from start to completion?</check>
+
+<action>If any issues are found, work with BA/Developer to resolve inconsistencies before generating final document</action>
+
+<ask>Review complete. Any final adjustments needed before generating the document?</ask>
+</step>
+
+<step n="14" goal="Generate detailed requirements document">
 <action>Set request_id = "WF-DETAIL-{{date}}"</action>
 <action>Get BA/Developer name</action>
 <ask response="ba_developer_name">BA/Developer name for the document:</ask>
@@ -327,7 +345,7 @@ Is anything missing or needing clarification?
 <template-output>Complete detailed requirements document</template-output>
 </step>
 
-<step n="14" goal="Closing and next steps">
+<step n="15" goal="Closing and next steps">
 <action>Confirm completion with BA/Developer</action>
 
 <example>

@@ -217,7 +217,25 @@
 <ask>Any revisions needed?</ask>
 </step>
 
-<step n="17" goal="Generate document">
+<step n="17" goal="Review complete requirements document for cohesion">
+<action>Read all previously captured outputs from all prior steps</action>
+<action>Review the complete set of requirements holistically for logical flow and cohesion</action>
+
+<check>Does the summary align with all gathered details?</check>
+<check>Do the functional requirements map clearly to the reporting needs?</check>
+<check>Are the data requirements consistent with the functional requirements?</check>
+<check>Do security and access requirements align with the data visibility needs?</check>
+<check>Are there any contradictions between different sections?</check>
+<check>Does the technical complexity estimate match the scope of requirements?</check>
+<check>Do all data sources have corresponding field mappings identified?</check>
+<check>Does the reporting flow logically support the business questions?</check>
+
+<action>If any issues are found, work with BA/Developer to resolve inconsistencies before generating final document</action>
+
+<ask>Review complete. Any final adjustments needed before generating the document?</ask>
+</step>
+
+<step n="18" goal="Generate document">
 <action>Set request_id = "RPT-DETAIL-{{date}}"</action>
 <ask response="ba_developer_name">BA/Developer name:</ask>
 <ask response="requestor_name">Requestor name:</ask>
@@ -225,7 +243,7 @@
 <template-output>Complete detailed requirements document</template-output>
 </step>
 
-<step n="18" goal="Closing">
+<step n="19" goal="Closing">
 <action>Confirm completion and next steps</action>
 <ask>Any final notes?</ask>
 </step>

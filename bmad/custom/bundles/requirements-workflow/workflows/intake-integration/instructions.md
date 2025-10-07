@@ -30,7 +30,7 @@
 
 <critical>Do NOT proceed until you have a clear problem statement</critical>
 
-<template-output>problem_statement</template-output>
+<action>Update the output file by replacing {{problem_statement}} with the captured response</action>
 </step>
 
 <step n="3" goal="Understand business impact and ROI">
@@ -48,7 +48,7 @@
 <check>Validate completeness:</check>
 <action>Ensure both expected value AND impact of inaction are captured</action>
 
-<template-output>business_value, impact_if_not_solved</template-output>
+<action>Update the output file by replacing {{business_value}} and {{impact_if_not_solved}} with the captured responses</action>
 </step>
 
 <step n="4" goal="Capture solution vision">
@@ -69,7 +69,7 @@
 - What triggers the integration? (event, schedule, manual)
 - What should happen if there's an error?
 
-<template-output>solution_vision</template-output>
+<action>Update the output file by replacing {{solution_vision}} with the captured response</action>
 </step>
 
 <step n="5" goal="Identify initial requirements">
@@ -92,7 +92,7 @@ Am I capturing this correctly? Anything missing?"
 
 <action>Refine the list based on feedback</action>
 
-<template-output>initial_requirements</template-output>
+<action>Update the output file by replacing {{initial_requirements}} with the refined list</action>
 </step>
 
 <step n="6" goal="Identify stakeholders">
@@ -105,7 +105,7 @@ Am I capturing this correctly? Anything missing?"
 - Who needs to be notified of integration issues?
 - Who owns the business process?
 
-<template-output>stakeholders</template-output>
+<action>Update the output file by replacing {{stakeholders}} with the captured response</action>
 </step>
 
 <step n="7" goal="Identify open questions">
@@ -127,27 +127,31 @@ Does anything else come to mind that we should flag for the detailed session?"
 
 <ask response="open_questions">Any other questions or considerations we should flag for the BA/Developer?</ask>
 
-<template-output>open_questions</template-output>
+<action>Update the output file by replacing {{open_questions}} with the captured response</action>
 </step>
 
-<step n="8" goal="Generate initial requirements document">
+<step n="8" goal="Finalize and review requirements document for cohesion">
 <action>Set request_id = "INT-{{date}}"</action>
-<action>Compile all captured information into the template</action>
-<action>Replace all template placeholders with captured values:</action>
+<action>Read the complete output file</action>
+<action>Replace any remaining placeholders:</action>
 - {{date}} - from system
 - {{request_id}} - set above
 - {{user_name}} - from config
 - {{category}} - "System Integration"
-- {{problem_statement}} - from step 2
-- {{business_value}} - from step 3
-- {{impact_if_not_solved}} - from step 3
-- {{solution_vision}} - from step 4
-- {{initial_requirements}} - from step 5
-- {{stakeholders}} - from step 6
-- {{open_questions}} - from step 7
-<action>Save completed document to {{default_output_file}}</action>
 
-<template-output>Complete requirements document</template-output>
+<action>Review the entire document holistically for logical flow and cohesion</action>
+<check>Do all sections connect logically?</check>
+<check>Does the solution vision align with the problem statement?</check>
+<check>Do the initial requirements clearly address the business value?</check>
+<check>Are there any contradictions or disconnects between sections?</check>
+<check>Does the narrative flow naturally from problem → impact → solution → requirements?</check>
+
+<action>If any issues are found, edit the document to ensure cohesion and logical consistency</action>
+
+<template-output>
+Display the complete, cohesive requirements document to the user for final approval.
+Ask: "I've reviewed the document for logical flow and consistency. Does this accurately capture everything we discussed? Any final edits needed?"
+</template-output>
 </step>
 
 <step n="9" goal="Closing and next steps">

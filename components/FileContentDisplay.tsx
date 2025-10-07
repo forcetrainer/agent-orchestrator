@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { FileContentResponse } from '@/types/api';
+import { Breadcrumb } from '@/components/file-viewer/Breadcrumb';
+import type { FileTreeNode } from '@/lib/files/treeBuilder';
 
 /**
  * FileContentDisplay Component
@@ -37,15 +39,28 @@ interface FileContentDisplayProps {
   isLoading: boolean;
   /** Error message if content failed to load */
   error: string | null;
+  /** Story 5.6 AC-2: Current file path for breadcrumb */
+  currentFilePath?: string;
+  /** Story 5.6 AC-2: Tree data for breadcrumb display names */
+  treeData?: FileTreeNode | null;
+  /** Story 5.6 AC-2: Breadcrumb navigation handler */
+  onBreadcrumbNavigate?: (path: string) => void;
 }
 
 export function FileContentDisplay({
   content,
   isLoading,
   error,
+  currentFilePath,
+  treeData,
+  onBreadcrumbNavigate,
 }: FileContentDisplayProps) {
   // Story 5.4: ViewMode state for markdown toggle (AC-2, AC-7)
   const [viewMode, setViewMode] = useState<ViewMode>('rendered');
+  // Story 5.6 AC-4: Delay loading spinner to prevent flicker
+  const [showLoadingSpinner, setShowLoadingSpinner] = useState(false);
+  // Story 5.6 AC-5: Ref for scroll container to reset scroll position
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   // Story 5.4: Detect markdown files (AC-1)
   const isMarkdown = content?.mimeType === 'text/markdown';
@@ -56,6 +71,30 @@ export function FileContentDisplay({
       setViewMode('rendered');
     }
   }, [content, isMarkdown]);
+
+  // Story 5.6 AC-4: Delay loading spinner by 200ms to prevent flicker
+  useEffect(() => {
+    if (isLoading) {
+      const timer = setTimeout(() => {
+        setShowLoadingSpinner(true);
+      }, 200);
+      return () => clearTimeout(timer);
+    } else {
+      setShowLoadingSpinner(false);
+    }
+  }, [isLoading]);
+
+  // Story 5.6 AC-5: Reset scroll to top when opening new file
+  // Decision: Option A (reset to top) for MVP - simpler than preserving per-file scroll
+  // Future enhancement: Store scroll positions in Map if user feedback requests it
+  useEffect(() => {
+    if (content && scrollContainerRef.current && scrollContainerRef.current.scrollTo) {
+      scrollContainerRef.current.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+    }
+  }, [content]);
 
   // Empty state: No file selected
   if (!content && !isLoading && !error) {
@@ -85,8 +124,8 @@ export function FileContentDisplay({
     );
   }
 
-  // Loading state
-  if (isLoading) {
+  // Loading state (Story 5.6 AC-4: Show spinner only after 200ms delay)
+  if (isLoading && showLoadingSpinner) {
     return (
       <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
         <div className="text-center">
@@ -154,10 +193,49 @@ export function FileContentDisplay({
     );
   }
 
+  // Story 5.6 AC-6: Empty file state (different from loading state)
+  if (content.content.length === 0 && !content.isBinary) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8 bg-gray-50">
+        <div className="text-center">
+          <svg
+            className="mx-auto h-12 w-12 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p className="mt-2 text-sm text-gray-500">This file is empty</p>
+          <p className="mt-1 text-xs text-gray-400">
+            {content.mimeType} • 0 B
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   // Story 5.3 AC-2, AC-3: Text file display with preserved formatting
   // Story 5.4: Add markdown rendering with toggle
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
+      {/* Story 5.6 AC-2: Breadcrumb trail shows current file path */}
+      {currentFilePath && (
+        <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+          <Breadcrumb
+            currentFilePath={currentFilePath}
+            treeData={treeData || undefined}
+            onNavigate={onBreadcrumbNavigate}
+          />
+        </div>
+      )}
+
       {/* Story 5.3 AC-4: Truncation warning */}
       {content.truncated && (
         <div className="px-4 py-2 bg-yellow-50 border-b border-yellow-200 text-sm text-yellow-800">
@@ -182,7 +260,7 @@ export function FileContentDisplay({
       )}
 
       {/* File content with markdown rendering or preserved whitespace */}
-      <div className="flex-1 overflow-auto">
+      <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         {isMarkdown && viewMode === 'rendered' ? (
           // Story 5.4 AC-1, AC-3-7: Markdown rendering (reuses Epic 3 Story 3.3 config)
           <div className="p-4">
