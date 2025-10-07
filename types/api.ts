@@ -84,3 +84,19 @@ export interface FunctionCallResult {
   result?: any;
   error?: string;
 }
+
+/**
+ * File content response for GET /api/files/content
+ * Story 5.3: Display File Contents
+ */
+export interface FileContentResponse {
+  success: boolean;
+  path: string;           // Echoed request path
+  content: string;        // File contents (empty if binary)
+  mimeType: string;       // Detected mime type
+  size: number;           // File size in bytes
+  modified: string;       // ISO 8601 timestamp
+  isBinary?: boolean;     // True if cannot display as text
+  truncated?: boolean;    // True if file was truncated
+  error?: string;
+}

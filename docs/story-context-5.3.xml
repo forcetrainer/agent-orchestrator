@@ -1,0 +1,196 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.3</storyId>
+    <title>Display File Contents</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>to view the contents of files the agent created</iWant>
+    <soThat>I can read and verify generated documents</soThat>
+    <tasks>
+      - Task 1: Create File Content API Endpoint (AC: 1)
+      - Task 2: Implement FileContentDisplay Component (AC: 2, 3, 5)
+      - Task 3: Integrate Content Display into FileViewerPanel (AC: 1, 6)
+      - Task 4: Add File Path Breadcrumb (AC: 7)
+      - Task 5: Implement Large File Handling (AC: 4)
+      - Task 6: Update DirectoryTree for Selection Highlighting (AC: 6)
+      - Task 7: Write Comprehensive Tests (Testing Requirements)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">Clicking file in tree loads its contents via API</criterion>
+    <criterion id="AC-2">Text files display with proper formatting (preserved whitespace)</criterion>
+    <criterion id="AC-3">Line breaks and formatting preserved in display</criterion>
+    <criterion id="AC-4">Large files (>1MB) load without crashing browser (pagination or truncation)</criterion>
+    <criterion id="AC-5">Binary files show "Cannot preview" message (no attempt to render)</criterion>
+    <criterion id="AC-6">Currently selected file is highlighted in tree</criterion>
+    <criterion id="AC-7">File path shown above content area (breadcrumb or header)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-5.md" title="Technical Specification: File Management and Viewer" section="Story 5.3: Display File Contents">
+        - API Contract: GET /api/files/content with FileContentRequest/FileContentResponse interfaces
+        - Security requirements: read-only access to OUTPUT_FOLDER_PATH only, path traversal prevention
+        - Performance targets: file content displays within 1 second (PRD NFR-1)
+        - Binary file handling: mime type detection, isBinary flag
+        - Large file handling: >1MB truncated to first 5000 lines
+        - Error handling: 403 Forbidden for security violations, 404 Not Found for missing files
+      </doc>
+      <doc path="docs/prd.md" title="Agent Orchestrator PRD" section="FR-8: File Viewer (Read-Only)">
+        - Simple file browser for output directory only
+        - Display file contents in browser with basic formatting
+        - View-only interface - no editing, no downloads in MVP
+        - Restricted to agent output directory for security
+      </doc>
+      <doc path="docs/SESSION-OUTPUT-SPEC.md" title="Session Output Management Specification" section="Directory Structure">
+        - Session-based output structure: {output_folder}/agent-outputs/{session-uuid}/
+        - Manifest.json in each session folder
+        - Agent-generated files and subdirectories within session folders
+      </doc>
+      <doc path="docs/BUNDLE-SPEC.md" title="Bundle Specification" section="Security & Access Control">
+        - Path validation ensures reads limited to output directory
+        - No write/edit/delete operations via file viewer
+        - Session UUIDs prevent path traversal attacks
+      </doc>
+    </docs>
+    <code>
+      <artifact path="app/api/files/tree/route.ts" kind="api" symbol="GET" lines="29-84" reason="Existing API route pattern to follow for /api/files/content endpoint - uses validatePath, handleApiError, NextRequest/NextResponse patterns">
+        - Implements security validation with validatePath from lib/files/security
+        - Error handling with specific status codes (403, 404, 500)
+        - Uses handleApiError utility for consistent error responses
+        - Returns typed NextResponse with FileTreeResponse interface
+      </artifact>
+      <artifact path="components/FileViewerPanel.tsx" kind="component" symbol="FileViewerPanel" lines="1-251" reason="Component that needs to be extended with file content display - currently handles tree only, needs selectedFile state and content fetching">
+        - Already has selectedFile state management (line 35-39, 154-157)
+        - Implements file selection handler (line 154-157)
+        - Uses FileViewerState interface (lines 33-40)
+        - Contains auto-refresh logic (lines 64-95) and manual refresh button (lines 175-194)
+        - Renders DirectoryTree with onFileSelect callback (lines 240-244)
+        - Empty state and error display patterns (lines 198-228)
+      </artifact>
+      <artifact path="components/DirectoryTree.tsx" kind="component" symbol="DirectoryTree" lines="1-220" reason="Tree component that needs selection highlighting - already has selectedFile prop support but needs CSS highlighting enhancement">
+        - Already implements file selection callback (line 108)
+        - Has isSelected state (line 95)
+        - Uses conditional CSS classes (lines 118-122)
+        - Includes TreeNode memoization for performance (line 80)
+        - Supports displayName from Story 5.2.1 (line 113)
+      </artifact>
+      <artifact path="lib/files/security.ts" kind="security" symbol="validatePath" lines="42-97" reason="Security validation function that MUST be used for all file path validation - prevents traversal attacks and enforces directory boundaries">
+        - Validates relative paths against base directory (e.g., OUTPUT_PATH)
+        - Blocks directory traversal attempts (../)
+        - Detects null bytes
+        - Normalizes paths to prevent bypass
+        - Logs security violations
+        - Throws 'Access denied' errors for violations
+      </artifact>
+      <artifact path="lib/files/reader.ts" kind="utility" symbol="readFileContent" lines="27-102" reason="Existing file reading pattern showing dual-folder search, error handling, and performance logging - can reference for file content API implementation">
+        - Uses fs/promises readFile with 'utf-8' encoding
+        - Implements performance logging (startTime, duration)
+        - Error handling for ENOENT (file not found), EACCES (permission denied)
+        - Uses validatePath for security before file access
+        - Returns string content
+      </artifact>
+      <artifact path="lib/files/treeBuilder.ts" kind="utility" symbol="FileTreeNode" lines="1-30" reason="FileTreeNode interface used throughout file viewer - needs to be imported in new FileContentDisplay component">
+        interface FileTreeNode {
+          name: string;
+          path: string;
+          type: 'file' | 'directory';
+          children?: FileTreeNode[];
+          size?: number;
+          modified?: string;
+          displayName?: string;
+          metadata?: SessionMetadata;
+          isInternal?: boolean;
+        }
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="next" version="14.2.0">Next.js framework for API routes and SSR</dependency>
+        <dependency name="react" version="^18">React library for UI components</dependency>
+        <dependency name="react-dom" version="^18">React DOM renderer</dependency>
+        <dependency name="tailwindcss" version="^3.4.0">Utility-first CSS framework for styling</dependency>
+      </node>
+      <testing>
+        <dependency name="jest" version="^30.2.0">Testing framework</dependency>
+        <dependency name="@testing-library/react" version="^16.3.0">React component testing utilities</dependency>
+        <dependency name="@testing-library/jest-dom" version="^6.9.1">Custom Jest matchers for DOM</dependency>
+        <dependency name="ts-jest" version="^29.4.4">TypeScript support for Jest</dependency>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1">Security First: ALL file paths MUST be validated using validatePath(relativePath, env.OUTPUT_PATH) before reading - Epic 4 security model enforced</constraint>
+    <constraint id="C2">Read-Only Access: No write, edit, or delete operations allowed via file viewer API - GET-only endpoints</constraint>
+    <constraint id="C3">Path Traversal Prevention: Reject paths containing '../' or absolute paths outside OUTPUT_PATH - error messages sanitized (no path leakage)</constraint>
+    <constraint id="C4">Performance Target: File content MUST display within 1 second (PRD NFR-1) - lazy loading, no preloading</constraint>
+    <constraint id="C5">Large File Handling: Files >1MB MUST be truncated to first 5000 lines to prevent browser freeze</constraint>
+    <constraint id="C6">Binary File Detection: Use extension-based mime type detection (no external library) - mark as isBinary if image/audio/video/pdf/zip</constraint>
+    <constraint id="C7">Error Handling: Return 403 for security violations, 404 for missing files, 500 for server errors - use consistent NextResponse.json format</constraint>
+    <constraint id="C8">Component Reuse: Follow Epic 3 error display patterns and loading indicator styling for consistency</constraint>
+    <constraint id="C9">TypeScript Types: Define FileContentRequest, FileContentResponse, FileViewerState interfaces matching tech spec</constraint>
+    <constraint id="C10">CSS Styling: Use Tailwind CSS with 'whitespace-pre-wrap' for text preservation - no custom CSS files</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="FileContentResponse" kind="api-response" signature="{ success: boolean; path: string; content: string; mimeType: string; size: number; modified: string; isBinary?: boolean; truncated?: boolean; error?: string }" path="types/files.ts">
+      API response from GET /api/files/content - includes file metadata and content or error
+    </interface>
+    <interface name="FileViewerState" kind="react-state" signature="{ treeData: FileTreeNode | null; selectedFile: string | null; fileContent: FileContentResponse | null; isLoading: boolean; viewMode: 'rendered' | 'raw'; error: string | null }" path="components/FileViewerPanel.tsx">
+      React state for FileViewerPanel component - manages tree, selection, content, and UI state
+    </interface>
+    <interface name="validatePath" kind="function" signature="(relativePath: string, baseDir: string): string" path="lib/files/security.ts">
+      Security validation function - returns absolute path if valid, throws 'Access denied' error if invalid
+    </interface>
+    <interface name="handleApiError" kind="function" signature="(error: any): NextResponse" path="lib/utils/errors.ts">
+      Consistent API error handler - returns NextResponse with error message and appropriate status code
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with ts-jest for TypeScript support and React Testing Library for component tests.
+      Test file locations: Colocated with source in __tests__ subdirectories (e.g., app/api/files/content/__tests__/route.test.ts).
+      Naming convention: *.test.ts for unit tests, *.integration.test.ts for integration tests.
+      Test structure: AAA pattern (Arrange, Act, Assert) with descriptive test names.
+      Mocking: Use jest.mock() for external dependencies, mockImplementation() for function behavior control.
+      Coverage targets: 80%+ line coverage for backend, 70%+ for frontend components.
+    </standards>
+    <locations>
+      app/api/files/content/__tests__/route.test.ts
+      app/api/files/content/__tests__/security.test.ts
+      components/__tests__/FileContentDisplay.test.tsx
+      components/__tests__/FileViewerPanel.test.tsx
+      lib/files/__tests__/security.test.ts
+    </locations>
+    <ideas>
+      <test id="T1" ac="AC-1">Unit test API endpoint: valid path returns 200 with file content and metadata</test>
+      <test id="T2" ac="AC-1">Unit test API endpoint: missing file returns 404 with 'File not found' error</test>
+      <test id="T3" ac="AC-1">Security test: path traversal '../../../etc/passwd' returns 403 Forbidden</test>
+      <test id="T4" ac="AC-2,AC-3">Component test: FileContentDisplay renders text in &lt;pre&gt; with whitespace-pre-wrap CSS</test>
+      <test id="T5" ac="AC-2,AC-3">Component test: FileContentDisplay preserves line breaks and multiple spaces</test>
+      <test id="T6" ac="AC-4">Unit test API endpoint: file >1MB truncated to first 5000 lines, truncated flag true</test>
+      <test id="T7" ac="AC-4">Integration test: 2MB file loads without browser crash, warning message displayed</test>
+      <test id="T8" ac="AC-5">Unit test API endpoint: .png file returns isBinary=true, content=''</test>
+      <test id="T9" ac="AC-5">Component test: FileContentDisplay shows 'Cannot preview binary file' when isBinary=true</test>
+      <test id="T10" ac="AC-6">Component test: DirectoryTree applies 'bg-blue-50 text-blue-700' class to selected file</test>
+      <test id="T11" ac="AC-6">Integration test: file click updates selectedFile state and highlights tree node</test>
+      <test id="T12" ac="AC-7">Component test: Breadcrumb displays file path segments correctly</test>
+      <test id="T13" ac="AC-7">Component test: Breadcrumb uses displayName from Story 5.2.1 for session folders</test>
+      <test id="T14" ac="all">Integration test: full flow - tree load → file click → API call → content display</test>
+      <test id="T15" ac="security">Security test: absolute path '/etc/passwd' returns 403 Forbidden</test>
+      <test id="T16" ac="security">Security test: bundle path '../bmad/bundles/agent.md' returns 403 Forbidden</test>
+      <test id="T17" ac="edge-case">Edge case test: empty file (0 bytes) displays empty content area (not error)</test>
+      <test id="T18" ac="edge-case">Edge case test: special characters in filename (spaces, unicode) handled correctly</test>
+    </ideas>
+  </tests>
+</story-context>

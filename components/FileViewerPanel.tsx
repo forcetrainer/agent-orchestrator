@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { DirectoryTree } from './DirectoryTree';
+import { FileContentDisplay } from './FileContentDisplay';
 
 /**
  * FileViewerPanel Component
@@ -17,26 +18,28 @@ import { DirectoryTree } from './DirectoryTree';
  * AC-6: Tree updates when new files are created (auto-refresh after agent response)
  * AC-7: Clicking file selects it for viewing (triggers content load)
  *
+ * Story 5.3: Display File Contents
+ * AC-1: Clicking file in tree loads its contents via API
+ * AC-6: Currently selected file is highlighted in tree
+ * AC-7: File path shown above content area (breadcrumb)
+ *
  * Displays file tree and file content from agent output directory
  */
 
 // Story Context: FileViewerState interface from tech spec
 // Story 5.2.1: Import FileTreeNode from shared treeBuilder module
 import type { FileTreeNode } from '@/lib/files/treeBuilder';
-
-interface FileContentResponse {
-  path: string;
-  content: string;
-  mimeType: string;
-}
+import type { FileContentResponse } from '@/types/api';
 
 interface FileViewerState {
   treeData: FileTreeNode | null;
   selectedFile: string | null;
   fileContent: FileContentResponse | null;
   isLoading: boolean;
+  isLoadingContent: boolean;
   viewMode: 'rendered' | 'raw';
   error: string | null;
+  contentError: string | null;
 }
 
 interface FileViewerPanelProps {
@@ -50,8 +53,10 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
     selectedFile: null,
     fileContent: null,
     isLoading: false,
+    isLoadingContent: false,
     viewMode: 'rendered',
     error: null,
+    contentError: null,
   });
 
   // Story 5.2 AC-1: Fetch directory tree on component mount
@@ -150,10 +155,44 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
   /**
    * Handles file selection from directory tree
    * Story 5.2 AC-7: Clicking file selects it for viewing
+   * Story 5.3 AC-1: Load file contents via API when file selected
    */
   const handleFileSelect = (path: string) => {
     setState((prev) => ({ ...prev, selectedFile: path }));
-    // File content loading will be implemented in Story 5.3
+    loadFileContent(path);
+  };
+
+  /**
+   * Loads file content from API
+   * Story 5.3 AC-1: Fetch file contents via /api/files/content
+   */
+  const loadFileContent = async (path: string) => {
+    setState((prev) => ({ ...prev, isLoadingContent: true, contentError: null }));
+
+    try {
+      const response = await fetch(`/api/files/content?path=${encodeURIComponent(path)}`);
+      const data: FileContentResponse = await response.json();
+
+      if (data.success) {
+        setState((prev) => ({
+          ...prev,
+          fileContent: data,
+          isLoadingContent: false,
+        }));
+      } else {
+        setState((prev) => ({
+          ...prev,
+          contentError: data.error || 'Failed to load file content',
+          isLoadingContent: false,
+        }));
+      }
+    } catch (error: any) {
+      setState((prev) => ({
+        ...prev,
+        contentError: 'Network error loading file content',
+        isLoadingContent: false,
+      }));
+    }
   };
 
   // AC-4: Empty state when no files yet
@@ -235,16 +274,94 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
 
       {/* File tree and content */}
       {!isEmpty && !state.isLoading && (
-        <div className="flex-1 overflow-auto">
-          {/* Story 5.2: Directory tree navigation */}
-          <DirectoryTree
-            root={state.treeData}
-            onFileSelect={handleFileSelect}
-            selectedFile={state.selectedFile}
-          />
-          {/* File content display (Story 5.3) */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* Story 5.2: Directory tree navigation (left pane) */}
+          <div className="w-64 flex-shrink-0 border-r border-gray-200 overflow-auto">
+            <DirectoryTree
+              root={state.treeData}
+              onFileSelect={handleFileSelect}
+              selectedFile={state.selectedFile}
+            />
+          </div>
+
+          {/* Story 5.3: File content display (right pane) */}
+          <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Story 5.3 AC-7: File path breadcrumb */}
+            {state.selectedFile && (
+              <div className="px-4 py-2 border-b border-gray-200 bg-gray-50">
+                <div className="flex items-center text-sm text-gray-600">
+                  <svg
+                    className="h-4 w-4 mr-2 text-gray-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <span className="font-mono truncate">{formatBreadcrumb(state.selectedFile, state.treeData)}</span>
+                  {state.fileContent && !state.fileContent.isBinary && (
+                    <span className="ml-2 text-xs text-gray-500">
+                      {formatFileSize(state.fileContent.size)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* File content display */}
+            <FileContentDisplay
+              content={state.fileContent}
+              isLoading={state.isLoadingContent}
+              error={state.contentError}
+            />
+          </div>
         </div>
       )}
     </div>
   );
+}
+
+/**
+ * Format breadcrumb path with session display names
+ * Story 5.3 AC-7: Use readable session names from Story 5.2.1 metadata
+ */
+function formatBreadcrumb(path: string, treeData: FileTreeNode | null): string {
+  if (!path || !treeData) return path;
+
+  const segments = path.split('/');
+  const formatted: string[] = [];
+
+  // Walk the tree to find display names for session folders
+  let currentNode = treeData;
+  for (const segment of segments) {
+    if (currentNode.children) {
+      const child = currentNode.children.find((c) => c.name === segment);
+      if (child) {
+        // Use displayName for session folders, regular name otherwise
+        formatted.push(child.displayName || child.name);
+        currentNode = child;
+      } else {
+        formatted.push(segment);
+      }
+    } else {
+      formatted.push(segment);
+    }
+  }
+
+  return formatted.join(' / ');
+}
+
+/**
+ * Format file size in human-readable format
+ */
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
