@@ -362,6 +362,17 @@ export async function executeWorkflow(
         }
       }
 
+      // Story 5.1 Security: Validate session folder is within /data/agent-outputs ONLY
+      try {
+        validateWritePath(sessionFolder, enhancedContext);
+      } catch (error: any) {
+        return {
+          success: false,
+          error: `Security violation: Session folder must be within /data/agent-outputs. ${error.message}`,
+          path: sessionFolder,
+        };
+      }
+
       // Create the session directory
       await mkdir(sessionFolder, { recursive: true });
       console.log(`[executeWorkflow] Created session folder: ${sessionFolder}`);

@@ -60,10 +60,11 @@ export const env = {
 
   /**
    * Path to directory for generated outputs
-   * Default: ./output (resolved to absolute path based on PROJECT_ROOT)
+   * Story 5.1 Security: Hardened to /data/agent-outputs for security
+   * Default: ./data/agent-outputs (resolved to absolute path based on PROJECT_ROOT)
    */
   get OUTPUT_PATH(): string {
-    const relativePath = process.env.OUTPUT_PATH || './output';
+    const relativePath = process.env.OUTPUT_PATH || './data/agent-outputs';
     return resolve(this.PROJECT_ROOT, relativePath);
   },
 

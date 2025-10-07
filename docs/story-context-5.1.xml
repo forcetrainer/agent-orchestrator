@@ -1,0 +1,135 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.1</storyId>
+    <title>File Viewer UI Component</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-06</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>a file viewer panel in the interface</iWant>
+    <soThat>I can see what files the agent created</soThat>
+    <tasks>
+      - Task 1: Design and implement FileViewerPanel component (AC: 1, 2)
+      - Task 2: Implement panel visibility and toggle functionality (AC: 3)
+      - Task 3: Create empty state display (AC: 4)
+      - Task 4: Integrate with chat interface layout (AC: 5)
+      - Task 5: Implement responsive design (AC: 6)
+      - Task 6: Apply styling and visual design
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">File viewer panel appears in UI (sidebar or split-pane layout)</ac>
+    <ac id="2">Panel clearly labeled "Output Files" or similar</ac>
+    <ac id="3">Panel toggleable or always visible based on design decision</ac>
+    <ac id="4">Empty state shows "No files yet" message when output directory is empty</ac>
+    <ac id="5">UI doesn't interfere with chat interface functionality</ac>
+    <ac id="6">Responsive layout works on desktop browsers (Chrome, Firefox, Safari, Edge)</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-5.md" section="Story 5.1: File Viewer UI Component">
+        Full technical specification for FileViewerPanel component including architecture impact, implementation components, and acceptance criteria mapping
+      </doc>
+      <doc path="docs/tech-spec-epic-5.md" section="Services and Modules > FileViewerPanel">
+        Component responsibility: React component rendering file browser UI. Inputs: Selected agent context, output directory path. Outputs: File tree navigation, selected file display
+      </doc>
+      <doc path="docs/tech-spec-epic-5.md" section="Data Models and Contracts > FileViewerState">
+        Interface FileViewerState { treeData: FileTreeNode | null; selectedFile: string | null; fileContent: FileContentResponse | null; isLoading: boolean; viewMode: 'rendered' | 'raw'; error: string | null }
+      </doc>
+      <doc path="docs/PRD 2.md" section="UX Design Principles">
+        Principle #4: Trust Through Transparency - File viewer lets users verify agent outputs and build confidence. Principle #1: Radical Familiarity - Interface should feel immediately familiar
+      </doc>
+      <doc path="docs/epics.md" section="Epic 3: Chat Interface and Agent Selection">
+        Stories 3.1-3.8 provide the foundation chat UI layout. Story 5.1 integrates file viewer panel into this existing layout per tech spec
+      </doc>
+      <doc path="docs/tech-spec-epic-5.md" section="Traceability Mapping AC 5.1.1-5.1.6">
+        Complete traceability from each acceptance criteria to spec sections, components/APIs, and test ideas
+      </doc>
+      <doc path="docs/tech-spec-epic-5.md" section="System Architecture Alignment">
+        Epic 5 builds upon Epic 4 by leveraging path resolution system, using existing file operations, integrating with Chat UI, and respecting security model
+      </doc>
+    </docs>
+    <code>
+      <artifact path="app/page.tsx" kind="page" symbol="Home" lines="1-12" reason="Main entry point that renders ChatPanel - integration point for file viewer split-pane layout"></artifact>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="ChatPanel" lines="1-366" reason="Primary chat component with full-screen flex layout. File viewer will integrate into this layout as split-pane (chat left, files right)"></artifact>
+      <artifact path="components/chat/ErrorMessage.tsx" kind="component" symbol="ErrorMessage" lines="1-57" reason="Reference implementation for error display patterns to reuse in file viewer. Shows Tailwind styling conventions and accessibility patterns"></artifact>
+      <artifact path="components/chat/MessageList.tsx" kind="component" symbol="MessageList" reason="Reference for list rendering patterns and scroll management that file tree navigation may reuse"></artifact>
+      <artifact path="components/chat/AgentSelector.tsx" kind="component" symbol="AgentSelector" reason="Reference for dropdown/selector UI patterns and state management to inform file viewer UI design"></artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18">UI framework - already installed, used for component state management</package>
+        <package name="react-dom" version="^18">DOM rendering - already installed</package>
+        <package name="next" version="14.2.0">Next.js framework - already installed, provides App Router for API routes</package>
+        <package name="tailwindcss" version="^3.4.0">Styling framework - already installed, reuse for FileViewerPanel styling consistency</package>
+        <package name="typescript" version="^5">Type safety - already installed</package>
+      </node>
+      <testing>
+        <package name="@testing-library/react" version="^16.3.0">React component testing - already installed</package>
+        <package name="@testing-library/jest-dom" version="^6.9.1">Jest DOM matchers - already installed</package>
+        <package name="jest" version="^30.2.0">Test runner - already installed</package>
+        <package name="jest-environment-jsdom" version="^30.2.0">JSDOM for React testing - already installed</package>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Component should be self-contained and reusable - follows React component best practices from Epic 3</constraint>
+    <constraint type="architecture">State management uses React hooks (useState, useEffect) for MVP - no external state management libraries</constraint>
+    <constraint type="architecture">No external tree component libraries - custom implementation using Tailwind + React per tech spec decision</constraint>
+    <constraint type="integration">Reuse Epic 3 chat UI layout as integration point (Stories 3.1-3.8) - file viewer must coexist with chat interface</constraint>
+    <constraint type="styling">Use Tailwind CSS for component styling (consistency with Epic 3 chat components)</constraint>
+    <constraint type="ux">Split-pane layout chosen over tabs based on PRD "trust through transparency" principle - file viewer always visible for transparency</constraint>
+    <constraint type="ux">Always-visible file viewer (not toggleable) for MVP to maximize transparency - toggle can be added in Phase 2 if needed</constraint>
+    <constraint type="testing">Unit tests using React Testing Library - test empty state, panel visibility, integration with chat</constraint>
+    <constraint type="testing">Cross-browser visual regression testing required for Chrome, Firefox, Safari, Edge</constraint>
+    <constraint type="naming">Components in /components directory per Next.js conventions - follow Epic 3 component naming patterns (PascalCase)</constraint>
+    <constraint type="api">API route integration: /api/files/tree (created in later stories 5.2+)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="FileViewerState" kind="TypeScript interface" signature="interface FileViewerState { treeData: FileTreeNode | null; selectedFile: string | null; fileContent: FileContentResponse | null; isLoading: boolean; viewMode: 'rendered' | 'raw'; error: string | null }" path="docs/tech-spec-epic-5.md">
+      Component state structure for FileViewerPanel - defines all state management needs for the UI component
+    </interface>
+    <interface name="ChatPanel layout pattern" kind="React component pattern" signature="<div className='flex flex-col h-screen'>" path="components/chat/ChatPanel.tsx:347-365">
+      Full-screen flex layout pattern to integrate file viewer split-pane. File viewer will modify this to split screen (chat left, files right)
+    </interface>
+    <interface name="Tailwind styling conventions" kind="CSS pattern" signature="className='...' with utility classes" path="components/chat/*">
+      All Epic 3 components use Tailwind utility classes. FileViewerPanel must follow same conventions for visual consistency
+    </interface>
+    <interface name="Error display pattern" kind="React component pattern" signature="<ErrorMessage message={message} />" path="components/chat/ErrorMessage.tsx:28-56">
+      Reusable error display component with accessibility (role='alert', aria-live='assertive'). File viewer should reuse this pattern for errors
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing uses React Testing Library with Jest. All components have unit tests in __tests__ subdirectories. Tests verify rendering, user interactions, state management, and accessibility. Integration tests verify components work together correctly. Cross-browser testing validates Chrome, Firefox, Safari, Edge compatibility.
+    </standards>
+    <locations>
+      - components/chat/__tests__/*.test.tsx (Epic 3 test reference patterns)
+      - __tests__/**/*.test.tsx (project test location pattern)
+      - Future: components/FileViewerPanel.test.tsx (new component test)
+    </locations>
+    <ideas>
+      <test ac="1,2">Verify FileViewerPanel renders with split-pane layout and "Output Files" label</test>
+      <test ac="3">Test panel visibility toggle functionality and state persistence</test>
+      <test ac="4">Mock /api/files/tree to return empty tree, verify "No files yet" message displays</test>
+      <test ac="5">Integration test: render ChatPanel + FileViewerPanel, verify both functional and no z-index/overlap issues</test>
+      <test ac="6">Visual regression tests on Chrome, Firefox, Safari, Edge - verify responsive layout at different widths</test>
+      <test general>Test FileViewerPanel component mounts without errors</test>
+      <test general>Test empty state shows when treeData is null or empty</test>
+      <test general>Test loading state displays during API call</test>
+      <test general>Test error state displays when API fails</test>
+      <test general>Test Tailwind classes applied correctly for styling consistency</test>
+      <test accessibility>Verify panel has appropriate ARIA labels and semantic HTML</test>
+    </ideas>
+  </tests>
+</story-context>

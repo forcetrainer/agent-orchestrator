@@ -282,8 +282,22 @@ function resolveConfigVariables(
 
     const value = context.bundleConfig[varName];
 
-    // Convert value to string if it's not already
-    return String(value);
+    // Convert value to string
+    const strValue = String(value);
+
+    // Recursively resolve any path variables in the config value itself
+    // This handles cases like agent_outputs_folder: '{project-root}/data/agent-outputs'
+    if (strValue.includes('{')) {
+      try {
+        return resolvePathVariables(strValue, context);
+      } catch (error) {
+        // If recursive resolution fails, return the original value
+        console.warn(`[resolveConfigVariables] Failed to recursively resolve ${varName}: ${error}`);
+        return strValue;
+      }
+    }
+
+    return strValue;
   });
 }
 

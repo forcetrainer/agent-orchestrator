@@ -77,13 +77,13 @@ describe('writer module', () => {
     it('should reject writes to agents folder via traversal', async () => {
       await expect(
         writeFileContent('../agents/bad.txt', 'should fail')
-      ).rejects.toThrow('Access denied');
+      ).rejects.toThrow('Security violation');
     });
 
     it('should reject directory traversal attempts', async () => {
       await expect(
         writeFileContent('../../etc/passwd', 'should fail')
-      ).rejects.toThrow('Access denied');
+      ).rejects.toThrow('Security violation');
     });
 
     it('should log stack trace for errors', async () => {

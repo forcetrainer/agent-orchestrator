@@ -47,10 +47,14 @@ describe('ChatPanel', () => {
   // Story 3.5: Starts with empty messages array
   it('renders centered layout when no messages exist', () => {
     const { container } = render(<ChatPanel />);
-    const chatPanel = container.firstChild as HTMLElement;
+    const mainContainer = container.firstChild as HTMLElement;
 
-    // Should show centered layout (bg-gray-50 indicates centered mode)
-    expect(chatPanel).toHaveClass('flex', 'flex-col', 'h-screen', 'bg-gray-50');
+    // Story 5.1: Now renders split-pane layout (chat + file viewer)
+    expect(mainContainer).toHaveClass('flex', 'h-screen');
+
+    // Chat panel (left side) should have centered content
+    const chatPanel = container.querySelector('.flex-col.flex-1.min-w-0.bg-gray-50');
+    expect(chatPanel).toBeInTheDocument();
   });
 
   // Story 3.1: Layout test
@@ -944,17 +948,22 @@ describe('ChatPanel', () => {
       });
 
       // AC-8.6, AC-8.7: User can still send new messages after error
-      // Wait for input to be enabled before trying to use it
+      // Wait for textarea to be enabled (button will be disabled because input is empty)
       await waitFor(() => {
         expect(textarea).not.toBeDisabled();
+      });
+
+      // Send button is disabled when textarea is empty (correct behavior)
+      expect(sendButton).toBeDisabled();
+
+      // Type new message - input should not be disabled
+      await user.type(textarea, 'Second message');
+
+      // Now button should be enabled
+      await waitFor(() => {
         expect(sendButton).not.toBeDisabled();
       });
-      // Manually clear textarea for test
-      fireEvent.change(textarea, { target: { value: '' } });
-      await new Promise(resolve => setTimeout(resolve, 10));
 
-      // Input should not be disabled - can send new message
-      await user.type(textarea, 'Second message');
       await user.click(sendButton);
 
       // Second message succeeds
@@ -1124,9 +1133,12 @@ describe('ChatPanel', () => {
       // Loading indicator should NOT be visible (isLoading reset to false)
       expect(screen.queryByText(/Agent is thinking/i)).not.toBeInTheDocument();
 
-      // Input should be enabled (not disabled)
+      // Textarea should be enabled (user can type new message)
       expect(textarea).not.toBeDisabled();
-      expect(sendButton).not.toBeDisabled();
+
+      // Send button is disabled because input was cleared after send
+      // This is correct behavior - button should only be enabled when there's text
+      expect(sendButton).toBeDisabled();
     });
 
     // Task 6.6: Test error doesn't corrupt messages array or crash component
@@ -1353,18 +1365,25 @@ describe('ChatPanel', () => {
         expect(screen.getByText('Hello!')).toBeInTheDocument();
       });
 
-      // AC-4.7.8: Input should be enabled after initialization - wait for it
+      // AC-4.7.8: Input should be enabled after initialization
+      const textarea = screen.getByPlaceholderText(/type your message/i);
+      const sendButton = screen.getByRole('button', { name: /send message/i });
+
       await waitFor(() => {
-        const textarea = screen.getByPlaceholderText(/type your message/i);
-        const sendButton = screen.getByRole('button', { name: /send message/i });
         expect(textarea).not.toBeDisabled();
+      });
+
+      // Send button is disabled when textarea is empty (correct behavior)
+      expect(sendButton).toBeDisabled();
+
+      // User can send first message
+      await user.type(textarea, 'Hello agent!');
+
+      // Now button should be enabled
+      await waitFor(() => {
         expect(sendButton).not.toBeDisabled();
       });
 
-      // User can send first message
-      const textarea = screen.getByPlaceholderText(/type your message/i);
-      const sendButton = screen.getByRole('button', { name: /send message/i });
-      await user.type(textarea, 'Hello agent!');
       await user.click(sendButton);
 
       // Response should appear

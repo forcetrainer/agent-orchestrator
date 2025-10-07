@@ -13,6 +13,8 @@ const customJestConfig = {
     // Mock react-markdown and remark-gfm (ESM-only packages)
     '^react-markdown$': '<rootDir>/__mocks__/react-markdown.tsx',
     '^remark-gfm$': '<rootDir>/__mocks__/remark-gfm.ts',
+    // Mock uuid (ESM-only package)
+    '^uuid$': '<rootDir>/__mocks__/uuid.ts',
   },
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',

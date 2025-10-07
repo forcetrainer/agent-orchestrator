@@ -10,19 +10,21 @@
 
 import { writeFile, mkdir } from 'fs/promises';
 import { dirname } from 'path';
-import { validateWritePath } from './security';
+import { validateWritePath } from '@/lib/pathResolver';
+import { env } from '@/lib/utils/env';
+import { createPathContext } from '@/lib/pathResolver';
 
 /**
  * Writes file content to output folder.
  *
  * Features:
  * - Auto-creates parent directories if needed (mkdir recursive)
- * - Restricted to OUTPUT_PATH only (agents folder is read-only)
+ * - Restricted to /data/agent-outputs ONLY (all other paths rejected)
  * - Path validation prevents directory traversal
  *
  * @param relativePath - Relative path to file (e.g., "results/output.json")
  * @param content - File content to write (UTF-8 string)
- * @throws Error if attempting to write to agents folder or disk full
+ * @throws Error if attempting to write outside /data/agent-outputs or disk full
  */
 export async function writeFileContent(
   relativePath: string,
@@ -31,8 +33,16 @@ export async function writeFileContent(
   const startTime = performance.now();
 
   try {
-    // Validate write path (ensures OUTPUT_PATH only, rejects AGENTS_PATH)
-    const fullPath = validateWritePath(relativePath);
+    // Create PathContext for secure path validation
+    const context = createPathContext('', {}); // Empty bundle name for general file operations
+
+    // Resolve full path from OUTPUT_PATH (legacy support for relative paths)
+    const fullPath = relativePath.startsWith('/')
+      ? relativePath
+      : `${env.OUTPUT_PATH}/${relativePath}`;
+
+    // Validate write path (Story 5.1: ONLY allows /data/agent-outputs, blocks everything else)
+    validateWritePath(fullPath, context);
 
     // Auto-create parent directories if needed
     const dir = dirname(fullPath);
