@@ -1,5 +1,8 @@
 'use client';
 
+import { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { FileContentResponse } from '@/types/api';
 
 /**
@@ -12,8 +15,20 @@ import type { FileContentResponse } from '@/types/api';
  * AC-5: Binary files show "Cannot preview" message
  * AC-7: File path shown above content area
  *
+ * Story 5.4: Markdown Rendering in File Viewer
+ * AC-1: .md files render with markdown formatting by default
+ * AC-2: Toggle button switches between rendered and raw view
+ * AC-3: Headings, lists, tables all render correctly (match Epic 3 chat rendering)
+ * AC-4: Links are clickable (if safe - same security model as chat)
+ * AC-5: Code blocks display with monospace font and background
+ * AC-6: Markdown rendering matches chat interface styling (consistency)
+ * AC-7: Default view is rendered (not raw text)
+ *
  * Displays file contents with proper text formatting or binary file messaging.
+ * Markdown files render with formatting using react-markdown (reuses Epic 3 Story 3.3 config).
  */
+
+type ViewMode = 'rendered' | 'raw';
 
 interface FileContentDisplayProps {
   /** File content response from API */
@@ -29,6 +44,19 @@ export function FileContentDisplay({
   isLoading,
   error,
 }: FileContentDisplayProps) {
+  // Story 5.4: ViewMode state for markdown toggle (AC-2, AC-7)
+  const [viewMode, setViewMode] = useState<ViewMode>('rendered');
+
+  // Story 5.4: Detect markdown files (AC-1)
+  const isMarkdown = content?.mimeType === 'text/markdown';
+
+  // Story 5.4: Default to rendered view for markdown files (AC-7)
+  useEffect(() => {
+    if (content && isMarkdown) {
+      setViewMode('rendered');
+    }
+  }, [content, isMarkdown]);
+
   // Empty state: No file selected
   if (!content && !isLoading && !error) {
     return (
@@ -127,6 +155,7 @@ export function FileContentDisplay({
   }
 
   // Story 5.3 AC-2, AC-3: Text file display with preserved formatting
+  // Story 5.4: Add markdown rendering with toggle
   return (
     <div className="flex-1 flex flex-col overflow-hidden bg-white">
       {/* Story 5.3 AC-4: Truncation warning */}
@@ -136,12 +165,94 @@ export function FileContentDisplay({
         </div>
       )}
 
-      {/* File content with preserved whitespace */}
-      {/* Story 5.3 Constraint C10: Use 'whitespace-pre-wrap' for text preservation */}
+      {/* Story 5.4 AC-2: Toggle button for markdown files */}
+      {isMarkdown && (
+        <div className="px-4 py-2 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+          <span className="text-sm text-gray-600">
+            {content.mimeType} • {formatFileSize(content.size)}
+          </span>
+          <button
+            onClick={() => setViewMode(viewMode === 'rendered' ? 'raw' : 'rendered')}
+            className="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100 transition-colors"
+            aria-label="Toggle between rendered and raw view"
+          >
+            {viewMode === 'rendered' ? 'View Raw' : 'View Rendered'}
+          </button>
+        </div>
+      )}
+
+      {/* File content with markdown rendering or preserved whitespace */}
       <div className="flex-1 overflow-auto">
-        <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-words text-gray-900">
-          {content.content}
-        </pre>
+        {isMarkdown && viewMode === 'rendered' ? (
+          // Story 5.4 AC-1, AC-3-7: Markdown rendering (reuses Epic 3 Story 3.3 config)
+          <div className="p-4">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                // Headings (AC-3)
+                h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+                h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+                h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+                h4: ({ children }) => <h4 className="text-base font-bold mb-1">{children}</h4>,
+                h5: ({ children }) => <h5 className="text-sm font-bold mb-1">{children}</h5>,
+                h6: ({ children }) => <h6 className="text-xs font-bold mb-1">{children}</h6>,
+
+                // Lists (AC-3)
+                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
+                ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
+                li: ({ children }) => <li className="ml-4">{children}</li>,
+
+                // Code blocks (AC-5)
+                pre: ({ children }) => <pre className="bg-gray-100 rounded p-3 mb-2 overflow-x-auto">{children}</pre>,
+                code: ({ className, children }) => {
+                  // Inline code vs code block
+                  const isInline = !className;
+                  if (isInline) {
+                    return <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>;
+                  }
+                  return <code className="font-mono text-sm">{children}</code>;
+                },
+
+                // Links (AC-4) - Security: rel="noopener noreferrer" for external links
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 underline hover:text-blue-800"
+                  >
+                    {children}
+                  </a>
+                ),
+
+                // Bold and italic (AC-6)
+                strong: ({ children }) => <strong className="font-bold">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
+
+                // Paragraphs (AC-6)
+                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+
+                // Tables (AC-3)
+                table: ({ children }) => (
+                  <table className="border-collapse border border-gray-300 mb-2 w-full">{children}</table>
+                ),
+                thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+                tbody: ({ children }) => <tbody>{children}</tbody>,
+                tr: ({ children }) => <tr className="border-b border-gray-300">{children}</tr>,
+                th: ({ children }) => <th className="border border-gray-300 px-3 py-2 text-left font-semibold">{children}</th>,
+                td: ({ children }) => <td className="border border-gray-300 px-3 py-2">{children}</td>,
+              }}
+            >
+              {content.content}
+            </ReactMarkdown>
+          </div>
+        ) : (
+          // Story 5.3 Constraint C10: Use 'whitespace-pre-wrap' for text preservation
+          // Story 5.4: Raw view for markdown or all non-markdown text files
+          <pre className="p-4 text-sm font-mono whitespace-pre-wrap break-words text-gray-900">
+            {content.content}
+          </pre>
+        )}
       </div>
     </div>
   );

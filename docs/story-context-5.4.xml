@@ -1,0 +1,239 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.4</storyId>
+    <title>Markdown Rendering in File Viewer</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>markdown files to render with formatting</iWant>
+    <soThat>I can read generated docs as intended</soThat>
+    <tasks>
+      <task id="1" ac="1,7">Integrate react-markdown into FileContentDisplay</task>
+      <task id="2" ac="2,7">Add Rendered/Raw View Toggle</task>
+      <task id="3" ac="3,4,5,6">Configure Markdown Rendering to Match Chat Interface</task>
+      <task id="4" ac="6">Ensure Markdown Styling Consistency</task>
+      <task id="5" ac="1,3">Handle Edge Cases for Markdown Rendering</task>
+      <task id="6">Add Accessibility for Markdown Content</task>
+      <task id="7">Write Comprehensive Tests</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">.md files render with markdown formatting by default</criterion>
+    <criterion id="2">Toggle button switches between rendered and raw view</criterion>
+    <criterion id="3">Headings, lists, tables all render correctly (match Epic 3 chat rendering)</criterion>
+    <criterion id="4">Links are clickable (if safe - same security model as chat)</criterion>
+    <criterion id="5">Code blocks display with monospace font and background</criterion>
+    <criterion id="6">Markdown rendering matches chat interface styling (consistency)</criterion>
+    <criterion id="7">Default view is rendered (not raw text)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: File Management and Viewer</title>
+        <section>Story 5.4: Markdown Rendering in File Viewer</section>
+        <snippet>AC 5.4.1-5.4.7 define markdown rendering requirements. Component must reuse Epic 3's react-markdown configuration (v10.1.0) and remark-gfm (v4.0.1). Styling must match chat interface exactly. Toggle between rendered/raw view required for .md files.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Epic 5 Story 5.4</section>
+        <snippet>Story 5.4 builds on Story 5.3 file display. Markdown rendering reuses Epic 3 Story 3.3 implementation. Default view is rendered for .md files with toggle to raw text. Security model matches chat (react-markdown prevents XSS).</snippet>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>FR-3: ChatGPT-Style Chat UI</section>
+        <snippet>FR-3 requires markdown rendering for agent responses including headings, lists, code blocks, links. Same rendering must apply to file viewer for consistency.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-3.3.md</path>
+        <title>Story 3.3: Markdown Rendering for Agent Responses</title>
+        <section>Implementation</section>
+        <snippet>PRIMARY REFERENCE: Epic 3 Story 3.3 implemented react-markdown (v10.1.0) with remark-gfm (v4.0.1) for chat messages. Configuration in components/chat/MessageBubble.tsx lines 61-119. Custom component overrides for headings, lists, code blocks, links, tables with Tailwind CSS classes. Security: external links use rel="noopener noreferrer", no dangerouslySetInnerHTML.</snippet>
+      </doc>
+      <doc>
+        <path>docs/stories/story-5.3.md</path>
+        <title>Story 5.3: Display File Contents</title>
+        <section>Implementation</section>
+        <snippet>Story 5.3 completed FileContentDisplay component (components/FileContentDisplay.tsx). Text files render in &lt;pre&gt; tag with whitespace-pre-wrap. Binary files show "Cannot preview" message. FileContentResponse includes mimeType for file type detection. Large files (&gt;1MB) truncated to 5000 lines.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>components/chat/MessageBubble.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageBubble</symbol>
+        <lines>1-133</lines>
+        <reason>PRIMARY REFERENCE - Epic 3 Story 3.3 markdown implementation. Lines 4-5 import ReactMarkdown and remarkGfm. Lines 59-120 render markdown for assistant/system messages with custom component overrides (headings, lists, code, links, tables). Lines 64-115 define Tailwind CSS classes for each markdown element. COPY THIS CONFIGURATION EXACTLY for file viewer markdown.</reason>
+      </file>
+      <file>
+        <path>components/FileContentDisplay.tsx</path>
+        <kind>component</kind>
+        <symbol>FileContentDisplay</symbol>
+        <lines>1-159</lines>
+        <reason>MODIFICATION TARGET - Story 5.3 implementation. Currently renders text in &lt;pre&gt; tag (lines 142-144). Need to ADD: (1) Import ReactMarkdown and remarkGfm, (2) viewMode state ('rendered' | 'raw'), (3) Markdown detection via fileContent.mimeType === 'text/markdown', (4) Toggle button UI, (5) Conditional rendering: ReactMarkdown when rendered, &lt;pre&gt; when raw. Lines 18-25 define props, lines 99-147 define content rendering logic.</reason>
+      </file>
+      <file>
+        <path>types/api.ts</path>
+        <kind>types</kind>
+        <symbol>FileContentResponse</symbol>
+        <lines>unknown</lines>
+        <reason>Interface definition for FileContentResponse used in FileContentDisplay. Includes mimeType field for markdown detection. No modification needed - existing mimeType field sufficient for detecting 'text/markdown' files.</reason>
+      </file>
+      <file>
+        <path>components/__tests__/FileContentDisplay.test.tsx</path>
+        <kind>test</kind>
+        <symbol>FileContentDisplay tests</symbol>
+        <lines>unknown</lines>
+        <reason>MODIFICATION TARGET - Add markdown tests. Need to ADD: (1) Markdown detection tests (mimeType check), (2) Toggle functionality tests (button click changes viewMode), (3) ReactMarkdown rendering tests (headings, lists, tables, code, links), (4) Default state test (rendered by default for .md files), (5) Edge cases (empty markdown, malformed markdown, truncated).</reason>
+      </file>
+      <file>
+        <path>components/chat/__tests__/MessageBubble.test.tsx</path>
+        <kind>test</kind>
+        <symbol>MessageBubble tests</symbol>
+        <lines>unknown</lines>
+        <reason>REFERENCE - Epic 3 Story 3.3 test patterns. Review test structure for markdown rendering tests: headings, lists, code blocks, links, tables. Use similar test patterns for FileContentDisplay markdown tests.</reason>
+      </file>
+    </code>
+    <dependencies>
+      <ecosystem name="Node.js">
+        <package name="react-markdown" version="10.1.0" usage="Markdown rendering in file viewer (already installed from Epic 3)" />
+        <package name="remark-gfm" version="4.0.1" usage="GitHub Flavored Markdown support (already installed from Epic 3)" />
+        <package name="react" version="^18" usage="React framework for component" />
+        <package name="next" version="14.2.0" usage="Next.js framework" />
+        <package name="tailwindcss" version="^3.4.0" usage="Styling for markdown elements and toggle button" />
+        <package name="@testing-library/react" version="unknown" usage="Component testing for markdown rendering and toggle" />
+        <package name="jest" version="unknown" usage="Test framework" />
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1" source="Tech Spec Epic 5">
+      Component Reuse: MUST reuse exact same react-markdown configuration from Epic 3 Story 3.3 (components/chat/MessageBubble.tsx lines 61-119). Copy custom component overrides for headings, lists, code blocks, links, tables with identical Tailwind CSS classes.
+    </constraint>
+    <constraint id="C2" source="Tech Spec Epic 5">
+      Styling Consistency: File viewer markdown MUST look identical to chat interface markdown. Same font families, font sizes, line heights, colors, spacing, indentation. Visual regression test or manual side-by-side comparison required.
+    </constraint>
+    <constraint id="C3" source="Story 5.4 AC-2">
+      Toggle Functionality: Toggle button MUST switch between rendered and raw view for .md files only. Button shows "View Raw" when rendered, "View Rendered" when raw. Default state is 'rendered' for markdown files.
+    </constraint>
+    <constraint id="C4" source="Story 5.4 AC-7">
+      Default View: Markdown files (.md extension or text/markdown mime type) MUST default to rendered view. Non-markdown files do not show toggle button and render as plain text.
+    </constraint>
+    <constraint id="C5" source="Epic 3 Story 3.3 Security">
+      Security Model: Same security as chat interface. React-markdown prevents XSS by default. External links use rel="noopener noreferrer". No dangerouslySetInnerHTML. Code blocks display-only (no execution).
+    </constraint>
+    <constraint id="C6" source="Story 5.3 Integration">
+      Preserve Existing: Must NOT break Story 5.3 functionality. Text files continue to render in &lt;pre&gt; tag. Binary files show "Cannot preview" message. Truncation warning preserved for large files.
+    </constraint>
+    <constraint id="C7" source="Tech Spec Testing Requirements">
+      Comprehensive Tests: Unit tests for markdown detection and toggle. Component tests for all markdown elements (headings, lists, tables, code, links). Integration tests for full workflow (select .md → rendered → toggle → raw → toggle back). Visual consistency test with chat interface.
+    </constraint>
+    <constraint id="C8" source="Story 5.4 Accessibility">
+      Accessibility: Rendered markdown maintains semantic HTML (headings, lists, tables). Toggle button has aria-label "Toggle between rendered and raw view". Keyboard navigation works. Screen reader compatible.
+    </constraint>
+    <constraint id="C9" source="Story 5.3 Performance">
+      Performance: Markdown rendering client-side via ReactMarkdown. Large files already truncated to 5000 lines (Story 5.3). No additional performance concerns. ReactMarkdown handles large documents efficiently.
+    </constraint>
+    <constraint id="C10" source="Tech Spec Tailwind">
+      Styling Framework: Use Tailwind CSS utility classes only. No custom CSS files. Match existing component styling patterns (FileContentDisplay, MessageBubble).
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ReactMarkdown</name>
+      <kind>component</kind>
+      <signature>
+        &lt;ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1, h2, h3, h4, h5, h6,
+            ul, ol, li,
+            pre, code,
+            a,
+            strong, em,
+            p,
+            table, thead, tbody, tr, th, td
+          }}
+        &gt;
+          {content}
+        &lt;/ReactMarkdown&gt;
+      </signature>
+      <path>node_modules/react-markdown</path>
+      <usage>Import and use exactly as in MessageBubble.tsx lines 61-119. Copy remarkPlugins={[remarkGfm]} and custom components object with Tailwind classes.</usage>
+    </interface>
+    <interface>
+      <name>FileContentResponse</name>
+      <kind>interface</kind>
+      <signature>
+        interface FileContentResponse {
+          success: boolean;
+          path: string;
+          content: string;
+          mimeType: string;  // Use for markdown detection
+          size: number;
+          modified: string;
+          isBinary?: boolean;
+          truncated?: boolean;
+          error?: string;
+        }
+      </signature>
+      <path>types/api.ts</path>
+      <usage>Existing interface from Story 5.3. Use mimeType field to detect markdown: fileContent.mimeType === 'text/markdown'. No modification needed.</usage>
+    </interface>
+    <interface>
+      <name>formatFileSize</name>
+      <kind>function</kind>
+      <signature>function formatFileSize(bytes: number): string</signature>
+      <path>components/FileContentDisplay.tsx:153-158</path>
+      <usage>Existing utility function. No changes needed. Continues to format file sizes for breadcrumb/header display.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing Strategy from Story 5.4: Use Jest for unit tests and React Testing Library for component tests. Test coverage goal: 80%+ for new markdown functionality. Test patterns should match Epic 3 Story 3.3 (MessageBubble tests). Integration tests verify full workflow: select .md file → rendered by default → toggle to raw → toggle back to rendered. Visual consistency test compares file viewer markdown to chat interface markdown (side-by-side or screenshot comparison).
+    </standards>
+    <locations>
+      <location>components/__tests__/FileContentDisplay.test.tsx</location>
+      <location>components/chat/__tests__/MessageBubble.test.tsx (reference for markdown test patterns)</location>
+    </locations>
+    <ideas>
+      <test ac="1" idea="Unit test: Markdown file detection - fileContent.mimeType === 'text/markdown' returns true, enables markdown features" />
+      <test ac="1" idea="Component test: .md file renders with ReactMarkdown component, not &lt;pre&gt; tag" />
+      <test ac="2" idea="Unit test: Toggle button click changes viewMode state from 'rendered' to 'raw' and back" />
+      <test ac="2" idea="Component test: Toggle button shows 'View Raw' when viewMode is 'rendered', shows 'View Rendered' when viewMode is 'raw'" />
+      <test ac="2" idea="Component test: Toggle button hidden for non-markdown files (text/plain, application/json, etc.)" />
+      <test ac="3" idea="Component test: Headings render - '# H1' → &lt;h1 className=&quot;text-2xl font-bold mb-2&quot;&gt;H1&lt;/h1&gt;" />
+      <test ac="3" idea="Component test: Lists render - '- Item' → &lt;ul className=&quot;list-disc list-inside mb-2&quot;&gt;&lt;li&gt;Item&lt;/li&gt;&lt;/ul&gt;" />
+      <test ac="3" idea="Component test: Tables render - '| Col1 | Col2 |' → &lt;table&gt; with borders and padding" />
+      <test ac="4" idea="Component test: Links render - '[text](url)' → &lt;a href=&quot;url&quot; target=&quot;_blank&quot; rel=&quot;noopener noreferrer&quot;&gt;text&lt;/a&gt;" />
+      <test ac="4" idea="Security test: External links open in new tab with rel='noopener noreferrer'" />
+      <test ac="5" idea="Component test: Code blocks render - '```code```' → &lt;pre className=&quot;bg-gray-100 rounded p-3&quot;&gt;&lt;code className=&quot;font-mono&quot;&gt;code&lt;/code&gt;&lt;/pre&gt;" />
+      <test ac="5" idea="Component test: Inline code renders - '`code`' → &lt;code className=&quot;bg-gray-100 px-1.5 py-0.5 rounded&quot;&gt;code&lt;/code&gt;" />
+      <test ac="6" idea="Visual test: Compare same markdown in chat vs. file viewer - verify identical font, spacing, colors" />
+      <test ac="6" idea="Visual test: Verify heading hierarchy matches (h1 &gt; h2 &gt; h3 same sizes in both interfaces)" />
+      <test ac="7" idea="Unit test: Default viewMode is 'rendered' when markdown file loaded" />
+      <test ac="7" idea="Integration test: Select .md file → displays rendered by default (not raw text)" />
+      <test edge-case="true" idea="Edge case test: Empty markdown file shows empty rendered view (not error)" />
+      <test edge-case="true" idea="Edge case test: Malformed markdown renders best-effort without crashing component" />
+      <test edge-case="true" idea="Edge case test: Truncated markdown (&gt;5000 lines) renders correctly with truncation warning" />
+      <test edge-case="true" idea="Edge case test: Markdown with special characters (HTML entities, unicode) renders correctly" />
+      <test edge-case="true" idea="Integration test: Switch between .md and .txt files - toggle only visible for .md" />
+      <test accessibility="true" idea="Accessibility test: Toggle button has aria-label 'Toggle between rendered and raw view'" />
+      <test accessibility="true" idea="Accessibility test: Rendered markdown maintains semantic HTML (h1-h6, ul/ol, table elements)" />
+      <test accessibility="true" idea="Accessibility test: Keyboard navigation works within rendered markdown (tab through links)" />
+    </ideas>
+  </tests>
+</story-context>

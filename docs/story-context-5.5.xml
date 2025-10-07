@@ -1,0 +1,252 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.5</storyId>
+    <title>Refresh File List</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.5.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>the file list to update when agent creates new files</iWant>
+    <soThat>I see newly created files without manual refresh</soThat>
+    <tasks>
+      - Task 1: Implement Auto-Refresh After Agent Response (AC: 1, 6)
+      - Task 2: Add Manual Refresh Button (AC: 2)
+      - Task 3: Implement Selected File Preservation Logic (AC: 4)
+      - Task 4: Add New File Visual Indicator (AC: 3, Optional)
+      - Task 5: Implement Refresh Debouncing (AC: 6)
+      - Task 6: Handle Refresh During Active File Viewing (AC: 5)
+      - Task 7: Update FileViewerPanel State Management (AC: 1-6)
+      - Task 8: Write Comprehensive Tests (Testing Requirements)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">File list refreshes automatically after agent completes response</criterion>
+    <criterion id="AC-2">Manual refresh button available in file viewer UI</criterion>
+    <criterion id="AC-3">New files highlighted or indicated as new (optional visual cue)</criterion>
+    <criterion id="AC-4">Refresh preserves currently selected file if it still exists</criterion>
+    <criterion id="AC-5">Refresh doesn't interrupt user if actively viewing file</criterion>
+    <criterion id="AC-6">Auto-refresh frequency is reasonable (debounced to avoid excessive calls)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: File Management and Viewer</title>
+        <section>Story 5.5: Refresh File List</section>
+        <snippet>AC 5.5.1-5.5.6 cover auto-refresh, manual refresh, file preservation, visual indicators, debouncing. Workflow 4 "File Refresh After Agent Output" details refresh sequence. Workflow 5 "Manual Refresh" covers manual trigger flow.</snippet>
+        <reason>Authoritative technical specification for Story 5.5 implementation</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Workflows and Sequencing</title>
+        <section>Workflow 4: File Refresh After Agent Output (Lines 527-536)</section>
+        <snippet>1. Agent completes response in chat (Epic 3) → 2. Agent used save_output tool (Epic 4) → 3. Chat completion event triggers → 4. FileViewerPanel detects completion → 5. Component calls GET /api/files/tree again → 6. Tree data updates with new files → 7. New files render in tree (optionally highlighted) → 8. If previously selected file still exists, selection preserved</snippet>
+        <reason>Defines the auto-refresh workflow sequence and integration points</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Workflows and Sequencing</title>
+        <section>Workflow 5: Manual Refresh (Lines 538-545)</section>
+        <snippet>1. User clicks "Refresh" button in file viewer → 2. Component calls GET /api/files/tree → 3. Current tree data replaced with fresh data → 4. Selected file state preserved if file still exists → 5. Loading indicator shows during fetch</snippet>
+        <reason>Defines the manual refresh workflow and user interaction</reason>
+      </doc>
+      <doc>
+        <path>docs/tech-spec-epic-5.md</path>
+        <title>Non-Functional Requirements</title>
+        <section>Performance (Lines 560-578)</section>
+        <snippet>Refresh operation completes within 2 seconds. Debounce refresh operations to prevent excessive API calls. Performance targets: File viewer loads directory tree within 1 second, directory tree with up to 100 files loads without performance degradation.</snippet>
+        <reason>Performance requirements for refresh operations and debouncing strategy</reason>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>FR-8: File Viewer (Read-Only) (Lines 181-188)</section>
+        <snippet>Simple file browser for output directory only. Directory traversal to navigate multiple folders created by agents. Display file contents in browser with basic formatting. View-only interface - no editing, no downloads in MVP.</snippet>
+        <reason>Product context for file viewer functionality including read-only constraints</reason>
+      </doc>
+      <doc>
+        <path>docs/prd.md</path>
+        <title>Product Requirements Document</title>
+        <section>NFR-1: Performance (Lines 228-233)</section>
+        <snippet>File viewer loads and displays files within 1 second. Agent selector updates within 500ms when agents folder changes. Chat responses begin within 2 seconds of user sending message.</snippet>
+        <reason>Overall performance requirements that apply to refresh operations</reason>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 5.5: Refresh File List (Lines 1375-1395)</section>
+        <snippet>As an end user, I want the file list to update when agent creates new files, so that I see newly created files without manual refresh. Dependencies: Story 5.2 (Directory Tree). AC: Auto-refresh after agent response, manual refresh button, optional new file highlighting, preserve selected file, non-disruptive refresh, reasonable debounce frequency.</snippet>
+        <reason>Original story definition and context within Epic 5</reason>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>components/FileViewerPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>FileViewerPanel</symbol>
+        <lines>1-100</lines>
+        <reason>Main component for file viewer. Already has auto-refresh implemented (lines 68-100) with debouncing and event listener for 'agent-response-complete'. Need to add manual refresh button and new file indicators.</reason>
+      </artifact>
+      <artifact>
+        <path>components/FileViewerPanel.tsx</path>
+        <kind>interface</kind>
+        <symbol>FileViewerState</symbol>
+        <lines>34-43</lines>
+        <reason>State management interface for file viewer. Will need to extend with: isRefreshing, lastRefreshTimestamp, newFiles[] for Story 5.5 requirements.</reason>
+      </artifact>
+      <artifact>
+        <path>components/DirectoryTree.tsx</path>
+        <kind>component</kind>
+        <symbol>DirectoryTree</symbol>
+        <lines>1-80</lines>
+        <reason>Tree component that displays file structure. Will need to accept newFiles prop and apply visual indicators to new files (AC-3).</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/files/tree/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>GET /api/files/tree</symbol>
+        <lines>N/A</lines>
+        <reason>API endpoint that returns directory tree structure. Called by loadDirectoryTree() for both auto and manual refresh.</reason>
+      </artifact>
+      <artifact>
+        <path>types/api.ts</path>
+        <kind>interface</kind>
+        <symbol>FileContentResponse</symbol>
+        <lines>92-102</lines>
+        <reason>Type definition for file content API responses. Used in FileViewerState.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/treeBuilder.ts</path>
+        <kind>module</kind>
+        <symbol>FileTreeNode</symbol>
+        <lines>N/A</lines>
+        <reason>Type definition for tree nodes. Used throughout file viewer components.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="react" version="^18" scope="prod" />
+        <package name="react-dom" version="^18" scope="prod" />
+        <package name="next" version="14.2.0" scope="prod" />
+        <package name="typescript" version="^5" scope="dev" />
+        <package name="tailwindcss" version="^3.4.0" scope="dev" />
+      </node>
+      <testing>
+        <package name="jest" version="^30.2.0" scope="dev" />
+        <package name="@testing-library/react" version="^16.3.0" scope="dev" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" scope="dev" />
+        <package name="@testing-library/user-event" version="^14.6.1" scope="dev" />
+        <package name="jest-environment-jsdom" version="^30.2.0" scope="dev" />
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1" type="architecture">
+      <rule>FileViewerPanel already has auto-refresh implemented (lines 68-100). Story 5.5 adds manual refresh button and new file indicators to existing implementation.</rule>
+    </constraint>
+    <constraint id="C2" type="performance">
+      <rule>Debounce auto-refresh with MIN_REFRESH_INTERVAL = 2000ms (2 seconds) to prevent excessive API calls per tech spec NFR.</rule>
+    </constraint>
+    <constraint id="C3" type="integration">
+      <rule>Auto-refresh triggers via window.addEventListener('agent-response-complete') event from chat interface (Epic 3 integration point).</rule>
+    </constraint>
+    <constraint id="C4" type="state-management">
+      <rule>Extend FileViewerState interface with: isRefreshing: boolean, lastRefreshTimestamp: number, newFiles: string[] for Story 5.5 requirements.</rule>
+    </constraint>
+    <constraint id="C5" type="ui-pattern">
+      <rule>Manual refresh button should be clearly visible in file viewer header, styled consistently with existing UI components using TailwindCSS.</rule>
+    </constraint>
+    <constraint id="C6" type="data-preservation">
+      <rule>Preserve selectedFile state during refresh. If file deleted, clear selection and show message. Preserve scroll position in file content view (AC-4, AC-5).</rule>
+    </constraint>
+    <constraint id="C7" type="visual-indicator">
+      <rule>New file indicator optional (AC-3). If implemented: use subtle styling (green dot or "NEW" badge), auto-remove after 10 seconds or user interaction.</rule>
+    </constraint>
+    <constraint id="C8" type="testing">
+      <rule>All refresh logic must have comprehensive unit and integration tests. Test debouncing, file preservation, manual refresh, auto-refresh event handling.</rule>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>loadDirectoryTree</name>
+      <kind>function</kind>
+      <signature>async function loadDirectoryTree(): Promise&lt;void&gt;</signature>
+      <path>components/FileViewerPanel.tsx</path>
+      <description>Existing function that calls GET /api/files/tree. Used by both auto-refresh and will be called by manual refresh button.</description>
+    </interface>
+    <interface>
+      <name>FileTreeNode</name>
+      <kind>interface</kind>
+      <signature>interface FileTreeNode { name: string; path: string; type: 'file' | 'directory'; children?: FileTreeNode[]; displayName?: string; metadata?: SessionMetadata; isInternal?: boolean; }</signature>
+      <path>lib/files/treeBuilder.ts</path>
+      <description>Tree node data structure. DirectoryTree component will need to check for newFiles prop and apply visual indicator styling.</description>
+    </interface>
+    <interface>
+      <name>window.addEventListener('agent-response-complete')</name>
+      <kind>event</kind>
+      <signature>window.addEventListener('agent-response-complete', () =&gt; void)</signature>
+      <path>Epic 3 chat interface</path>
+      <description>Custom event dispatched by chat interface when agent completes response. FileViewerPanel listens to this event to trigger auto-refresh.</description>
+    </interface>
+    <interface>
+      <name>GET /api/files/tree</name>
+      <kind>api</kind>
+      <signature>GET /api/files/tree -&gt; { success: boolean; root: FileTreeNode; error?: string }</signature>
+      <path>app/api/files/tree/route.ts</path>
+      <description>API endpoint that returns directory tree structure. Called for both auto and manual refresh operations.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Jest + React Testing Library for component tests. @testing-library/user-event for user interaction simulation. Test files located in components/__tests__/ directory. Existing test: components/__tests__/FileViewerPanel.test.tsx covers Stories 5.1-5.4. Story 5.5 extends this test suite with refresh-specific tests.
+    </standards>
+    <locations>
+      - components/__tests__/FileViewerPanel.test.tsx (extend existing tests)
+      - components/__tests__/DirectoryTree.test.tsx (add new file indicator tests)
+    </locations>
+    <ideas>
+      <test id="T1" ac="AC-1">
+        <description>Test auto-refresh triggers on 'agent-response-complete' event</description>
+        <approach>Dispatch custom event, verify loadDirectoryTree called after debounce delay</approach>
+      </test>
+      <test id="T2" ac="AC-2">
+        <description>Test manual refresh button click calls loadDirectoryTree</description>
+        <approach>Render component, click refresh button, verify API called</approach>
+      </test>
+      <test id="T3" ac="AC-3">
+        <description>Test new file visual indicator appears for newly added files</description>
+        <approach>Mock tree update with new files, verify indicator styling applied</approach>
+      </test>
+      <test id="T4" ac="AC-4">
+        <description>Test selected file preserved after refresh if still exists</description>
+        <approach>Select file, refresh tree with same file, verify selection maintained</approach>
+      </test>
+      <test id="T5" ac="AC-4">
+        <description>Test selected file cleared after refresh if deleted</description>
+        <approach>Select file, refresh tree without that file, verify selection cleared</approach>
+      </test>
+      <test id="T6" ac="AC-5">
+        <description>Test refresh doesn't interrupt active file viewing</description>
+        <approach>Display file content, trigger refresh, verify content remains visible</approach>
+      </test>
+      <test id="T7" ac="AC-6">
+        <description>Test debounce prevents rapid refresh calls</description>
+        <approach>Dispatch multiple events within 2 seconds, verify only one API call</approach>
+      </test>
+      <test id="T8" ac="AC-6">
+        <description>Test manual refresh cancels pending auto-refresh</description>
+        <approach>Schedule auto-refresh, click manual refresh, verify no duplicate calls</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>
