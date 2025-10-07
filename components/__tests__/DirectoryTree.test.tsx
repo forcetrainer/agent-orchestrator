@@ -425,4 +425,160 @@ describe('DirectoryTree', () => {
       expect(screen.getByText('no-size.txt')).toBeInTheDocument();
     });
   });
+
+  describe('Story 5.2.1: Session Metadata Display', () => {
+    it('should render displayName when present (AC-1)', () => {
+      // Arrange
+      const treeWithDisplayName: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'a1b2c3d4-5678-4abc-9def-0123456789ab',
+            path: 'a1b2c3d4-5678-4abc-9def-0123456789ab',
+            type: 'directory',
+            displayName: 'Alex the Facilitator - Intake ITSM (Oct 6, 2025, 5:09 PM)',
+            children: [],
+          },
+        ],
+      };
+
+      // Act
+      render(<DirectoryTree root={treeWithDisplayName} />);
+
+      // Assert
+      expect(screen.getByText('Alex the Facilitator - Intake ITSM (Oct 6, 2025, 5:09 PM)')).toBeInTheDocument();
+      expect(screen.queryByText('a1b2c3d4-5678-4abc-9def-0123456789ab')).not.toBeInTheDocument();
+    });
+
+    it('should fallback to name when displayName is not present (AC-7)', () => {
+      // Arrange
+      const treeWithoutDisplayName: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'b2c3d4e5-6789-4bcd-aef0-123456789abc',
+            path: 'b2c3d4e5-6789-4bcd-aef0-123456789abc',
+            type: 'directory',
+            children: [],
+          },
+        ],
+      };
+
+      // Act
+      render(<DirectoryTree root={treeWithoutDisplayName} />);
+
+      // Assert
+      expect(screen.getByText('b2c3d4e5-6789-4bcd-aef0-123456789abc')).toBeInTheDocument();
+    });
+
+    it('should filter out nodes with isInternal=true (AC-2)', () => {
+      // Arrange
+      const treeWithInternal: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'session-folder',
+            path: 'session-folder',
+            type: 'directory',
+            children: [
+              {
+                name: 'manifest.json',
+                path: 'session-folder/manifest.json',
+                type: 'file',
+                isInternal: true,
+                size: 512,
+              },
+              {
+                name: 'output.md',
+                path: 'session-folder/output.md',
+                type: 'file',
+                size: 1024,
+              },
+            ],
+          },
+        ],
+      };
+
+      // Act
+      render(<DirectoryTree root={treeWithInternal} />);
+
+      // Expand session folder
+      const sessionFolder = screen.getByText('session-folder');
+      fireEvent.click(sessionFolder);
+
+      // Assert
+      expect(screen.queryByText('manifest.json')).not.toBeInTheDocument();
+      expect(screen.getByText('output.md')).toBeInTheDocument();
+    });
+
+    it('should show UUID in title attribute when displayName is present', () => {
+      // Arrange
+      const treeWithDisplayName: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'c3d4e5f6-789a-4cde-bf01-23456789abcd',
+            path: 'c3d4e5f6-789a-4cde-bf01-23456789abcd',
+            type: 'directory',
+            displayName: 'Pixel - Build Stories (In Progress)',
+            children: [],
+          },
+        ],
+      };
+
+      // Act
+      const { container } = render(<DirectoryTree root={treeWithDisplayName} />);
+      const sessionNode = screen.getByText('Pixel - Build Stories (In Progress)');
+      const nodeElement = sessionNode.closest('[title]');
+
+      // Assert
+      expect(nodeElement).toHaveAttribute('title', 'c3d4e5f6-789a-4cde-bf01-23456789abcd');
+    });
+
+    it('should handle mixed tree with both regular and session folders', () => {
+      // Arrange
+      const mixedTree: FileTreeNode = {
+        name: 'root',
+        path: '',
+        type: 'directory',
+        children: [
+          {
+            name: 'regular-folder',
+            path: 'regular-folder',
+            type: 'directory',
+            children: [],
+          },
+          {
+            name: 'd4e5f6g7-890b-4def-c012-3456789abcde',
+            path: 'd4e5f6g7-890b-4def-c012-3456789abcde',
+            type: 'directory',
+            displayName: 'Casey - Deep Dive (Oct 5, 2025, 2:30 PM)',
+            children: [],
+          },
+          {
+            name: 'regular-file.txt',
+            path: 'regular-file.txt',
+            type: 'file',
+            size: 256,
+          },
+        ],
+      };
+
+      // Act
+      render(<DirectoryTree root={mixedTree} />);
+
+      // Assert
+      expect(screen.getByText('regular-folder')).toBeInTheDocument();
+      expect(screen.getByText('Casey - Deep Dive (Oct 5, 2025, 2:30 PM)')).toBeInTheDocument();
+      expect(screen.getByText('regular-file.txt')).toBeInTheDocument();
+    });
+  });
 });

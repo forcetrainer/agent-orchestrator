@@ -850,6 +850,12 @@ function validateOutputPath(requestedPath: string): string {
 4. **[LOW]** Validate concurrent write safety for output registration under high concurrency scenarios
 5. **[LOW]** Add end-to-end integration test for cross-agent session discovery (Alex → Casey → Pixel chain)
 
+**Story 5.2.1 Review (2025-10-07):**
+1. **[MEDIUM]** Consider timezone-aware timestamp formatting based on user locale (lib/files/manifestReader.ts:138) - Current: hardcoded UTC, Suggested: Intl.DateTimeFormat with user's timezone or make configurable
+2. **[MEDIUM]** Complete Task 5: Dedicated metadata panel UI when UX design is finalized - Current: metadata attached to nodes with UUID tooltip, Future: modal/drawer with full session details
+3. **[LOW]** Add test for very long agent titles/workflow names (>100 chars) to verify CSS truncation (components/__tests__/DirectoryTree.test.tsx) - Estimated effort: 15 minutes
+4. **[LOW]** Add ADR documenting decision to defer Task 5 metadata panel (docs/adrs/adr-005-session-metadata-display.md)
+
 ---
 
 ## Risks, Assumptions, Open Questions

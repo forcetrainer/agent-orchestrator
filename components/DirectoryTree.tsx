@@ -12,19 +12,17 @@ import { useState, memo } from 'react';
  * AC-4: Nested directories display with proper indentation
  * AC-5: Empty folders show as empty (not hidden from tree)
  *
+ * Story 5.2.1: Session Metadata Display Enhancement
+ * - Renders displayName instead of name when present
+ * - Filters out nodes with isInternal=true (manifest.json files)
+ *
  * Recursively renders file tree with expand/collapse functionality.
  * Custom implementation using Tailwind CSS + React state (no external tree libraries).
  * Performance: React.memo() optimization to prevent unnecessary re-renders.
  */
 
-export interface FileTreeNode {
-  name: string;
-  path: string;
-  type: 'file' | 'directory';
-  children?: FileTreeNode[];
-  size?: number;
-  modified?: string;
-}
+import type { FileTreeNode } from '@/lib/files/treeBuilder';
+export type { FileTreeNode };
 
 export interface DirectoryTreeProps {
   /** Root node of the tree structure */
@@ -96,6 +94,11 @@ const TreeNode = memo(
     const hasChildren = isDirectory && node.children && node.children.length > 0;
     const isSelected = selectedFile === node.path;
 
+    // Story 5.2.1 AC-2: Filter out internal files (manifest.json)
+    if (node.isInternal) {
+      return null;
+    }
+
     const handleClick = () => {
       if (isDirectory) {
         // AC-2: Folders toggle expand/collapse on click
@@ -105,6 +108,9 @@ const TreeNode = memo(
         onFileSelect?.(node.path);
       }
     };
+
+    // Story 5.2.1 AC-1: Use displayName if present, otherwise fallback to name
+    const displayText = node.displayName || node.name;
 
     return (
       <div>
@@ -116,11 +122,13 @@ const TreeNode = memo(
           `}
           style={{ paddingLeft: `${depth * 16 + 8}px` }} // AC-4: Proper indentation (16px per level)
           onClick={handleClick}
+          title={node.displayName ? node.name : undefined} // Show UUID on hover for renamed sessions
         >
           {/* AC-3: Icons distinguish files from folders */}
           {isDirectory ? <FolderIcon isOpen={isExpanded} /> : <FileIcon />}
 
-          <span className="text-sm truncate flex-1">{node.name}</span>
+          {/* Story 5.2.1 AC-1: Display human-readable name */}
+          <span className="text-sm truncate flex-1">{displayText}</span>
 
           {/* Show file size for files */}
           {!isDirectory && node.size !== undefined && (
@@ -134,15 +142,18 @@ const TreeNode = memo(
         {isDirectory && isExpanded && (
           <div>
             {hasChildren ? (
-              node.children!.map((child) => (
-                <TreeNode
-                  key={child.path}
-                  node={child}
-                  depth={depth + 1}
-                  onFileSelect={onFileSelect}
-                  selectedFile={selectedFile}
-                />
-              ))
+              // Story 5.2.1 AC-2: Filter out internal nodes from children
+              node.children!
+                .filter((child) => !child.isInternal)
+                .map((child) => (
+                  <TreeNode
+                    key={child.path}
+                    node={child}
+                    depth={depth + 1}
+                    onFileSelect={onFileSelect}
+                    selectedFile={selectedFile}
+                  />
+                ))
             ) : (
               // AC-5: Empty folders show as empty
               <div

@@ -5,6 +5,11 @@
  * AC-1: Directory tree displays output folder structure
  * AC-5: Empty folders show as empty (not hidden from tree)
  *
+ * Story 5.2.1: Session Metadata Display Enhancement
+ * - Detects session folders (UUID pattern)
+ * - Loads manifest.json and populates displayName, metadata
+ * - Marks manifest.json files as isInternal (hidden from UI)
+ *
  * Recursively builds FileTreeNode hierarchy from file system.
  * Security: All paths validated through security module before file access.
  * Performance: Async/await with fs/promises for non-blocking I/O.
@@ -12,22 +17,43 @@
 
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
+import { parseManifest, generateDisplayName } from './manifestReader';
 
 /**
  * FileTreeNode interface matching Story 5.2 tech spec
- * Reuses interface from components/FileViewerPanel.tsx:18-23
+ * Story 5.2.1: Extended with displayName, metadata, isInternal fields
  */
+import type { SessionMetadata } from './manifestReader';
+
 export interface FileTreeNode {
-  name: string;
-  path: string;
+  name: string;              // Technical name (UUID for sessions)
+  path: string;              // Technical path
   type: 'file' | 'directory';
   children?: FileTreeNode[];
   size?: number;
   modified?: string;
+  displayName?: string;      // Story 5.2.1: Human-readable name for UI display
+  metadata?: SessionMetadata; // Story 5.2.1: Session metadata from manifest.json
+  isInternal?: boolean;      // Story 5.2.1: Hide from UI (e.g., manifest.json files)
+}
+
+/**
+ * UUID v4 pattern for detecting session folders
+ * Story 5.2.1 AC-1: Detect session folders by UUID pattern
+ */
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Check if a directory name matches UUID v4 pattern (session folder)
+ */
+function isSessionFolder(name: string): boolean {
+  return UUID_PATTERN.test(name);
 }
 
 /**
  * Recursively builds a directory tree structure from the specified base path.
+ *
+ * Story 5.2.1: Enhanced with manifest loading for session folders
  *
  * @param basePath - Absolute path to the root directory (already validated)
  * @param relativePath - Relative path from basePath for recursion (default: '')
@@ -52,10 +78,28 @@ export async function buildDirectoryTree(
     modified: stats.mtime.toISOString(),
   };
 
-  // Add size for files only
+  // Story 5.2.1 AC-2: Mark manifest.json files as internal (hide from UI)
   if (stats.isFile()) {
     node.size = stats.size;
+
+    if (name === 'manifest.json') {
+      node.isInternal = true;
+    }
+
     return node;
+  }
+
+  // Story 5.2.1 AC-1, AC-5, AC-7: Load manifest for session folders
+  if (isSessionFolder(name)) {
+    const metadata = await parseManifest(fullPath);
+
+    if (metadata) {
+      // AC-1: Set human-readable display name
+      node.displayName = generateDisplayName(metadata);
+      // Attach metadata for UI display (AC-3)
+      node.metadata = metadata;
+    }
+    // AC-7: If no manifest, node.displayName remains undefined (falls back to UUID)
   }
 
   // For directories, recursively build children

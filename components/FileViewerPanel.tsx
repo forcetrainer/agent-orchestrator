@@ -21,14 +21,8 @@ import { DirectoryTree } from './DirectoryTree';
  */
 
 // Story Context: FileViewerState interface from tech spec
-interface FileTreeNode {
-  name: string;
-  path: string;
-  type: 'file' | 'directory';
-  children?: FileTreeNode[];
-  size?: number;
-  modified?: string;
-}
+// Story 5.2.1: Import FileTreeNode from shared treeBuilder module
+import type { FileTreeNode } from '@/lib/files/treeBuilder';
 
 interface FileContentResponse {
   path: string;
