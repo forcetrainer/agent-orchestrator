@@ -90,3 +90,14 @@ export interface Conversation {
   /** Story 6.3: Session ID for file-based session manifest (if created) */
   sessionId?: string;
 }
+
+/**
+ * File reference attachment for drag-drop functionality.
+ * Story 6.6: Represents a file that has been attached to a message.
+ */
+export interface FileReference {
+  /** Absolute file path */
+  filepath: string;
+  /** Display name of the file */
+  filename: string;
+}

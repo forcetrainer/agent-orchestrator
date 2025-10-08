@@ -15,6 +15,9 @@ const customJestConfig = {
     '^remark-gfm$': '<rootDir>/__mocks__/remark-gfm.ts',
     // Mock uuid (ESM-only package)
     '^uuid$': '<rootDir>/__mocks__/uuid.ts',
+    // Mock react-dnd and react-dnd-html5-backend (ESM-only packages - Story 6.6)
+    '^react-dnd$': '<rootDir>/__mocks__/react-dnd.ts',
+    '^react-dnd-html5-backend$': '<rootDir>/__mocks__/react-dnd-html5-backend.ts',
   },
   collectCoverageFrom: [
     'app/**/*.{js,jsx,ts,tsx}',

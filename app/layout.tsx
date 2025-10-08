@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { validateEnv } from "@/lib/utils/env";
 import { FileViewerProvider } from "@/components/file-viewer/FileViewerContext";
+import { DndWrapper } from "@/components/DndWrapper";
 
 // Validate environment variables on server startup only
 if (typeof window === 'undefined') {
@@ -24,7 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <FileViewerProvider>{children}</FileViewerProvider>
+        <DndWrapper>
+          <FileViewerProvider>{children}</FileViewerProvider>
+        </DndWrapper>
       </body>
     </html>
   );

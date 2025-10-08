@@ -1,0 +1,162 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.6</storyId>
+    <title>File Reference Attachment UI (Drag & Drop)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to drag files from the viewer into the chat input</iWant>
+    <soThat>I can reference existing files as context for my next message</soThat>
+    <tasks>
+      - Install React DnD dependencies (react-dnd, react-dnd-html5-backend)
+      - Implement draggable files in DirectoryTree component
+      - Implement drop zone in MessageInput component
+      - Create FileAttachment pill component
+      - Display attachment pills in input area (max 10)
+      - Implement remove attachment functionality
+      - Add keyboard accessibility (Tab, Space, Arrow keys)
+      - Add screen reader support (announcements)
+      - Visual polish and edge cases
+      - Integration with message send (pass attachments array)
+      - Testing and validation (unit, integration, E2E, accessibility)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">Files in directory tree are draggable (cursor changes to "move")</criterion>
+    <criterion id="2">Chat input area accepts dropped files (shows blue highlight when hovering with file)</criterion>
+    <criterion id="3">Dropped file appears as pill/chip in input area above text field</criterion>
+    <criterion id="4">Pill shows filename and has remove button (× icon)</criterion>
+    <criterion id="5">User can attach multiple files (up to 10)</criterion>
+    <criterion id="6">Clicking × on pill removes attachment</criterion>
+    <criterion id="7">Folders cannot be dragged (only files)</criterion>
+    <criterion id="8">Keyboard alternative: Select file in tree, press Space, then "Attach to Chat" button appears</criterion>
+    <criterion id="9">Screen reader announces "File attached: {filename}"</criterion>
+    <criterion id="10">Drag-drop works with keyboard (Tab to file, Space to grab, Arrow keys to move, Space to drop)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-6.md" title="Epic 6 Technical Specification" section="4. File Reference Attachments (Stories 6.6, 6.7)">
+        Complete implementation specification for drag-drop file attachments including:
+        - React DnD setup with DndProvider and HTML5Backend
+        - Draggable file component with useDrag() hook (type: 'FILE_REFERENCE', item: {filepath, filename}, canDrag: file.type === 'file')
+        - Drop zone component with useDrop() hook (accept: 'FILE_REFERENCE', isOver indicator)
+        - FileAttachment pill component (blue background, rounded-full, × remove button)
+        - Screen reader announcements utility
+        - Keyboard navigation pattern
+        - Edge cases: duplicates, max limit (10), folders prevention
+      </doc>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/epics.md" title="Epic Breakdown" section="Story 6.6">
+        Acceptance criteria and technical notes for drag-drop implementation
+      </doc>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/PRD.md" title="Product Requirements" section="Epic 6: Enhanced UX & Interactive Features">
+        User journey and business value for file attachment feature
+      </doc>
+    </docs>
+
+    <code>
+      <file path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/DirectoryTree.tsx" kind="component" symbol="DirectoryTree" lines="1-304" reason="Existing directory tree component that needs to be made draggable. Uses FileTreeNode type, TreeNode recursive component, already has file/folder icons and selection logic.">
+        Current implementation:
+        - TreeNode component renders files and folders recursively
+        - Uses FileIcon and FolderIcon components for visual distinction
+        - Has click handler for selection (AC-7 already exists)
+        - Memoized for performance
+        - Needs useDrag() hook added to enable drag functionality
+        - Must add canDrag check to prevent folder dragging (AC-7)
+      </file>
+      <file path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/chat/MessageInput.tsx" kind="component" symbol="MessageInput" lines="1-61" reason="Chat input component that needs drop zone functionality. Currently has text input and send button, needs to accept dropped files and display attachment pills above textarea.">
+        Current implementation:
+        - Two variants: centered (initial) and standard (after conversation)
+        - Has textarea and Send button
+        - Currently disabled (placeholder from Story 3.1)
+        - Needs useDrop() hook to accept FILE_REFERENCE drops
+        - Needs state for attachments array
+        - Needs to render FileAttachment pills above textarea
+        - Needs to highlight drop zone when hovering with file (AC-2)
+      </file>
+    </code>
+
+    <dependencies>
+      <node>
+        <existing>
+          <package name="react" version="^18" />
+          <package name="react-dom" version="^18" />
+          <package name="next" version="14.2.0" />
+          <package name="framer-motion" version="^10.16.4" />
+        </existing>
+        <new>
+          <package name="react-dnd" version="^16.0.1" reason="Industry-standard drag-drop library with built-in accessibility support" />
+          <package name="react-dnd-html5-backend" version="^16.0.1" reason="HTML5 backend for React DnD" />
+        </new>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - MUST use React DnD library (not custom drag-drop implementation) for cross-browser consistency and accessibility
+    - MUST wrap application with DndProvider at MainLayout level
+    - MUST use type 'FILE_REFERENCE' for drag items to prevent dropping other draggable elements
+    - MUST prevent folders from being dragged (only files) - use canDrag check
+    - MUST limit attachments to 10 files maximum
+    - MUST prevent duplicate attachments (check filepath before adding)
+    - MUST support keyboard navigation (Tab, Space, Arrow keys) for accessibility
+    - MUST announce file attachment/removal to screen readers
+    - MUST maintain performance (React.memo on components to prevent unnecessary re-renders)
+    - MUST work in both light and dark mode
+    - MUST follow existing design system (blue accent colors, rounded-full pills)
+    - NO backend changes in this story (Story 6.7 handles backend file reading)
+    - MUST test accessibility with axe-core automated scan
+    - MUST test cross-browser (Chrome, Firefox, Safari, Edge)
+  </constraints>
+
+  <interfaces>
+    <interface name="useDrag" kind="hook" signature="useDrag({ type: string, item: T, collect: (monitor) => object, canDrag: boolean }): [CollectedProps, DragSourceRef]" path="react-dnd">
+      Hook to make an element draggable. Returns collected props (isDragging) and ref to attach to element.
+    </interface>
+    <interface name="useDrop" kind="hook" signature="useDrop({ accept: string, drop: (item: T) => void, collect: (monitor) => object }): [CollectedProps, DropTargetRef]" path="react-dnd">
+      Hook to make an element accept drops. Returns collected props (isOver) and ref to attach to element.
+    </interface>
+    <interface name="DndProvider" kind="component" signature="<DndProvider backend={HTML5Backend}>{children}</DndProvider>" path="react-dnd">
+      Context provider that must wrap the application to enable drag-drop.
+    </interface>
+    <interface name="FileTreeNode" kind="type" signature="{ name: string, path: string, type: 'file' | 'directory', children?: FileTreeNode[], size?: number, displayName?: string, isInternal?: boolean, metadata?: SessionMetadata }" path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/treeBuilder.ts">
+      Existing type for tree nodes. Used in DirectoryTree component.
+    </interface>
+    <interface name="FileReference" kind="type" signature="{ filepath: string, filename: string }" path="NEW - to be defined in types">
+      Type for drag-drop payload and attachment state.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest + React Testing Library for unit tests. Integration tests in __tests__ directories. E2E tests use Playwright. Accessibility tests use axe-core. Component tests verify rendering, user interactions, and props. Integration tests verify component interactions. Follow existing test patterns in components/chat/__tests__/ and components/__tests__/.
+    </standards>
+    <locations>
+      - components/chat/__tests__/ (unit tests for MessageInput)
+      - components/__tests__/ (unit tests for DirectoryTree, integration tests)
+      - lib/accessibility/__tests__/ (unit tests for announcer utility - NEW)
+      - e2e/ (Playwright E2E tests - to be created)
+    </locations>
+    <ideas>
+      <test ac="1" type="unit">FileItem component renders with cursor: 'move' style when file type is 'file'</test>
+      <test ac="1,7" type="unit">FileItem component has canDrag=true for files, canDrag=false for folders</test>
+      <test ac="2" type="unit">MessageInput component highlights drop zone (blue background) when isOver=true</test>
+      <test ac="3,4" type="unit">FileAttachment component renders pill with filename and × button</test>
+      <test ac="5" type="unit">MessageInput prevents adding 11th attachment (max limit)</test>
+      <test ac="6" type="unit">Clicking × on FileAttachment calls onRemove callback</test>
+      <test ac="5" type="integration">Prevent duplicate attachments (drag same file twice, second drop is no-op)</test>
+      <test ac="1,2,3" type="integration">Drag file from tree → Drop in input → Pill appears in attachments array</test>
+      <test ac="9" type="integration">Screen reader announces "File attached: {filename}" when file dropped</test>
+      <test ac="10" type="e2e">Full drag-drop flow with keyboard (Tab to file, Space to grab, Arrow to move, Space to drop)</test>
+      <test ac="all" type="accessibility">axe-core automated scan finds no violations</test>
+      <test ac="all" type="cross-browser">Drag-drop works in Chrome, Firefox, Safari, Edge</test>
+    </ideas>
+  </tests>
+</story-context>

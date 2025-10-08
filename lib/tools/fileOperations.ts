@@ -79,7 +79,7 @@ export async function executeReadFile(
   params: ReadFileParams,
   context: PathContext
 ): Promise<ToolResult> {
-  let resolvedPath: string;
+  let resolvedPath: string | undefined;
 
   try {
     // Resolve path variables (includes security validation)
@@ -100,13 +100,13 @@ export async function executeReadFile(
       return {
         success: false,
         error: `File not found: ${params.file_path}`,
-        path: resolvedPath!,
+        path: resolvedPath || params.file_path,
       };
     } else if (error.code === 'EACCES' || error.code === 'EPERM') {
       return {
         success: false,
         error: `Permission denied: ${params.file_path}`,
-        path: resolvedPath!,
+        path: resolvedPath || params.file_path,
       };
     } else if (error.message?.includes('Security violation')) {
       // Security violations from path resolution
@@ -139,7 +139,7 @@ export async function executeSaveOutput(
   params: SaveOutputParams,
   context: PathContext
 ): Promise<ToolResult> {
-  let resolvedPath: string;
+  let resolvedPath: string | undefined;
 
   try {
     // Story 6.5: Validate filename before resolving path
@@ -200,7 +200,7 @@ export async function executeSaveOutput(
       return {
         success: false,
         error: `Permission denied: ${params.file_path}`,
-        path: resolvedPath!,
+        path: resolvedPath || params.file_path,
       };
     } else if (error.message?.includes('Security violation')) {
       // Security violations from path resolution
@@ -288,7 +288,7 @@ export async function executeWorkflow(
   params: ExecuteWorkflowParams,
   context: PathContext
 ): Promise<ToolResult> {
-  let resolvedWorkflowPath: string;
+  let resolvedWorkflowPath: string | undefined;
 
   try {
     // Resolve workflow path (includes security validation)
@@ -417,7 +417,7 @@ export async function executeWorkflow(
       return {
         success: false,
         error: `Workflow file not found: ${params.workflow_path}`,
-        path: resolvedWorkflowPath!,
+        path: resolvedWorkflowPath || params.workflow_path,
       };
     } else if (error.message?.includes('Security violation')) {
       return {
