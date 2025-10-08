@@ -12,10 +12,11 @@
  */
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
-import { dirname, resolve, sep } from 'path';
+import { dirname, resolve, sep, basename } from 'path';
 import { load as parseYaml } from 'js-yaml';
 import { resolvePath, PathContext, loadBundleConfig, validateWritePath } from '@/lib/pathResolver';
 import { v4 as uuidv4 } from 'uuid';
+import { validateFilename } from '@/lib/files/filenameValidator';
 
 /**
  * Standard result format for all file operation tools
@@ -141,6 +142,19 @@ export async function executeSaveOutput(
   let resolvedPath: string;
 
   try {
+    // Story 6.5: Validate filename before resolving path
+    // Extract filename from path for validation
+    const filename = basename(params.file_path);
+    try {
+      validateFilename(filename);
+    } catch (error: any) {
+      return {
+        success: false,
+        error: error.message,
+        path: params.file_path,
+      };
+    }
+
     // Resolve path variables (includes security validation)
     resolvedPath = resolvePath(params.file_path, context);
 

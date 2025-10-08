@@ -69,6 +69,238 @@ Epic 6 follows an **incremental enhancement** pattern - no new services, only im
 | Animations | Framer Motion | 10.16.4 | Spring physics, layout animations |
 | Session Storage | JSON files (manifest.json) | Native fs | Aligns with file-based architecture |
 | State Management | React Context API | React 18+ | Already in use, sufficient for this scope |
+| Markdown Renderer | react-markdown | 9.x | GitHub-flavored markdown, extensible, secure |
+
+---
+
+### Markdown Rendering Implementation
+
+**Purpose:** Provide consistent, visually appealing markdown rendering for agent messages and file viewer content with full support for light and dark modes.
+
+#### Overview
+
+All agent messages and file viewer content are rendered as markdown with comprehensive styling that adapts to the user's system theme preference. The implementation uses `react-markdown` with custom CSS styling that follows the markdown rendering specification.
+
+#### Component Integration
+
+**Location:** Agent messages (ChatInterface) and File Viewer content display
+
+**Dependencies:**
+- `react-markdown` v9.x - Core markdown parser and renderer
+- `remark-gfm` - GitHub-flavored markdown support (tables, strikethrough, task lists)
+- CSS modules or Tailwind for styling
+
+**Implementation Pattern:**
+
+```typescript
+// components/chat/MessageBubble.tsx
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+
+export function MessageBubble({ message }: { message: Message }) {
+  const theme = useTheme(); // 'light' | 'dark'
+
+  return (
+    <div className={cn(
+      "message-content",
+      theme === 'dark' ? 'markdown-dark' : 'markdown-light'
+    )}>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          // Custom component overrides if needed
+          code: CustomCodeBlock,
+          a: CustomLink,
+        }}
+      >
+        {message.content}
+      </ReactMarkdown>
+    </div>
+  );
+}
+```
+
+#### Styling Architecture
+
+**CSS Class Structure:**
+
+Two primary container classes provide theme-specific styling:
+- `.markdown-light` - Light mode styling (default)
+- `.markdown-dark` - Dark mode styling
+
+**Style Specifications:**
+
+See `/docs/ux-specification.md` section "Markdown Rendering Specification" for complete details. Key highlights:
+
+**Light Mode:**
+- Headings: Blue accent borders (#3498db), dark gray text (#2c3e50)
+- Code: Light gray background (#ecf0f1), red text (#e74c3c)
+- Code blocks: Dark background (#2c3e50), light text (#ecf0f1)
+- Links: Blue (#3498db) with underline border
+
+**Dark Mode:**
+- Headings: Cyan accent borders (#4fc3f7), white text
+- Code: Dark background (#2d2d2d), red-orange text (#ff6b6b)
+- Code blocks: VSCode-style (#252526), light gray text (#d4d4d4)
+- Links: Cyan (#4fc3f7) with underline border
+
+#### Responsive Behavior
+
+**Mobile Adjustments (< 768px):**
+- Heading font sizes reduced by 20%
+- Padding reduced proportionally
+- Code blocks: horizontal scroll enabled
+- Tables: Consider card-style layout transformation
+
+**Font Size Adjustments:**
+- H1: 32px → 25.6px
+- H2: 26px → 20.8px
+- H3: 20px → 16px
+- H4: 18px → 14.4px
+
+#### Supported Markdown Features
+
+**Basic Formatting:**
+- Headings (H1-H6) with distinctive left-border accent
+- Paragraphs with optimal line-height (1.7)
+- Bold/strong and italic/emphasis
+- Links with hover effects
+
+**Advanced Features:**
+- Unordered and ordered lists
+- Nested lists with proper indentation
+- Code blocks with syntax highlighting colors
+- Inline code with distinctive background
+- Blockquotes with left accent border
+- Tables with alternating row backgrounds
+- Horizontal rules
+
+#### Theme Detection
+
+**Implementation:**
+
+```typescript
+// hooks/useTheme.ts
+export function useTheme() {
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+
+  useEffect(() => {
+    // Detect system preference
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    setTheme(mediaQuery.matches ? 'dark' : 'light');
+
+    const listener = (e: MediaQueryListEvent) => {
+      setTheme(e.matches ? 'dark' : 'light');
+    };
+
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, []);
+
+  return theme;
+}
+```
+
+#### CSS Implementation Options
+
+**Option 1: CSS Modules (Recommended)**
+```css
+/* styles/markdown.module.css */
+.markdown-light h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2c3e50;
+  border-left: 5px solid #3498db;
+  padding-left: 16px;
+  margin-bottom: 24px;
+}
+
+.markdown-dark h1 {
+  font-size: 32px;
+  font-weight: 700;
+  color: #ffffff;
+  border-left: 5px solid #4fc3f7;
+  padding-left: 16px;
+  margin-bottom: 24px;
+}
+/* ...continue for all elements */
+```
+
+**Option 2: Tailwind + Custom Classes**
+```tsx
+// Create Tailwind plugin in tailwind.config.js
+// Use @apply directives for markdown styling
+```
+
+**Option 3: Styled Components**
+```typescript
+// Use CSS-in-JS with theme provider
+const MarkdownContainer = styled.div<{ theme: 'light' | 'dark' }>`
+  /* Dynamic styling based on theme prop */
+`;
+```
+
+#### Security Considerations
+
+**XSS Prevention:**
+- `react-markdown` escapes HTML by default (secure)
+- Do NOT use `dangerouslySetInnerHTML`
+- Do NOT enable `rehype-raw` plugin (allows raw HTML)
+
+**Link Safety:**
+- External links: Add `target="_blank"` and `rel="noopener noreferrer"`
+- Validate file:// and javascript: protocols (block by default)
+
+#### Performance Optimization
+
+**Rendering Performance:**
+- Memoize markdown components to prevent re-renders
+- Lazy-load syntax highlighting if needed
+- Use `React.memo()` for MessageBubble component
+
+**Code Example:**
+```typescript
+export const MessageBubble = React.memo(({ message }: { message: Message }) => {
+  // ... rendering logic
+});
+```
+
+#### Testing Requirements
+
+**Visual Testing:**
+- [ ] All heading levels render correctly (H1-H6)
+- [ ] Code blocks have proper background and text color
+- [ ] Inline code is visually distinct
+- [ ] Tables display properly with alternating rows
+- [ ] Blockquotes have left accent border
+- [ ] Links are clickable and show hover state
+- [ ] Lists (ordered/unordered) indent correctly
+
+**Theme Testing:**
+- [ ] Light mode applies correct colors
+- [ ] Dark mode applies correct colors
+- [ ] Theme switches dynamically when system preference changes
+- [ ] No flash of unstyled content (FOUC)
+
+**Responsive Testing:**
+- [ ] Mobile breakpoint reduces font sizes correctly
+- [ ] Code blocks scroll horizontally on mobile
+- [ ] Tables adapt to narrow screens
+- [ ] Padding adjustments work as expected
+
+**Browser Testing:**
+- [ ] Chrome/Edge (Chromium)
+- [ ] Firefox
+- [ ] Safari
+- [ ] Mobile Safari
+- [ ] Mobile Chrome
+
+#### Related Documentation
+
+- Complete specification: `/docs/markdown-rendering-spec.md`
+- UX guidelines: `/docs/ux-specification.md` (Markdown Rendering Specification section)
+- Component library: Future component documentation
 
 ---
 

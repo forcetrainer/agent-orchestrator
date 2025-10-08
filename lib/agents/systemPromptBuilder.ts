@@ -131,6 +131,31 @@ CRITICAL INSTRUCTIONS FOR TOOL USAGE:
 - Tool calls will pause execution and provide you with file content or workflow instructions
 - You have access to tools - use them actively, not just describe them
 
+FILE NAMING REQUIREMENTS (CRITICAL):
+When writing files with save_output, use DESCRIPTIVE filenames based on content/purpose.
+
+Rules:
+- Use kebab-case (lowercase with hyphens)
+- Include purpose or content type in the filename
+- Add context if helpful (dates, departments, project names, etc.)
+- Keep under 50 characters when possible
+- Use standard extensions (.md, .csv, .txt, .json)
+
+Examples:
+✅ GOOD (descriptive, clear purpose):
+  - procurement-request.md (describes what it is)
+  - budget-analysis-q3.csv (purpose + context)
+  - approval-checklist.md (function-based)
+  - software-license-quote.md (clear content type)
+
+❌ BAD (will be rejected by system):
+  - output.md (too generic, no context)
+  - file.txt (meaningless)
+  - result-2.md (numbered generic name)
+  - untitled.md (lazy naming)
+
+The system will reject generic filenames and ask you to provide a descriptive name.
+
 WORKFLOW EXECUTION PATTERN:
 1. User sends command (e.g., "*workflow-request")
 2. Check if command has run-workflow attribute in <cmds> section

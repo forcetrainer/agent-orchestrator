@@ -239,7 +239,8 @@ Entry Point
 - Padding: 12px 16px
 - Font size: 15px
 - Line height: 1.5
-- Markdown rendering: Headings, lists, code blocks, links, bold, italic
+- **Markdown rendering**: Full support for headings, lists, code blocks, links, bold, italic, tables, blockquotes, and horizontal rules
+- **Content styling**: Follows markdown rendering specification (see Markdown Rendering section below)
 
 **Loading State (Agent Thinking):**
 ```
@@ -602,6 +603,178 @@ File: procurement/request-form.md          [↻ Refresh]
 - **Medium**: 20px
 - **Large**: 24px
 - **XLarge**: 32px
+
+---
+
+### Markdown Rendering Specification
+
+**Purpose:** Define consistent visual styling for markdown content in agent messages and file viewer.
+
+Agent messages and file viewer content support full markdown rendering with separate styling for light mode and dark mode. The application automatically applies appropriate styles based on the user's system theme preference.
+
+#### Light Mode Styling
+
+**Typography:**
+- **Font Family**: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif
+- **Base Font Size**: 16px
+- **Line Height**: 1.7
+
+**Headings:**
+- **H1**: 32px, weight 700, color #2c3e50, border-left 5px solid #3498db, padding-left 16px, margin-bottom 24px
+- **H2**: 26px, weight 700, color #2c3e50, border-left 4px solid #3498db, padding-left 12px, margin-top 30px, margin-bottom 16px
+- **H3**: 20px, weight 600, color #34495e, margin-top 24px, margin-bottom 12px
+- **H4**: 18px, weight 600, color #34495e, margin-top 20px, margin-bottom 10px
+
+**Body Text:**
+- **Paragraph**: color #2c3e50, margin-bottom 16px, line-height 1.7
+- **Strong/Bold**: weight 600, inherit color
+- **Emphasis/Italic**: italic, inherit color
+
+**Links:**
+- **Default**: color #3498db, no text-decoration, border-bottom 1px solid #3498db, transition 0.2s ease
+- **Hover**: color #2980b9, border-bottom color #2980b9
+
+**Code:**
+- **Inline Code**: background #ecf0f1, color #e74c3c, padding 2px 6px, border-radius 3px, font-family 'Consolas'/'Monaco'/'Courier New', font-size 90%, weight 500
+- **Code Blocks**: background #2c3e50, color #ecf0f1, padding 16px, border-radius 4px, margin-bottom 16px, overflow-x auto, font-size 14px, line-height 1.5
+- **Code Block Content**: color #a8e6cf (syntax highlighting)
+
+**Lists:**
+- **Unordered/Ordered**: padding-left 30px, margin-bottom 16px
+- **List Items**: margin-bottom 6px, line-height 1.7
+
+**Blockquotes:**
+- **Style**: border-left 4px solid #3498db, padding-left 16px, margin-left 0, margin-bottom 16px, color #555, italic, background #f8f9fa, padding-top/bottom 8px
+
+**Tables:**
+- **Container**: border-collapse collapse, width 100%, margin-bottom 16px
+- **Header**: background #3498db, color white, weight 600, padding 12px, text-align left
+- **Cells**: padding 10px 12px, border 1px solid #dfe6e9
+- **Alternating Rows**: background #f8f9fa (even rows)
+
+**Horizontal Rule:**
+- **Style**: no border, border-top 2px solid #e0e0e0, margin 24px 0
+
+#### Dark Mode Styling
+
+**Typography:**
+- **Font Family**: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif
+- **Base Font Size**: 16px
+- **Line Height**: 1.7
+- **Background**: #1a1a1a
+- **Base Text Color**: #e0e0e0
+
+**Headings:**
+- **H1**: 32px, weight 700, color #ffffff, border-left 5px solid #4fc3f7, padding-left 16px, margin-bottom 24px
+- **H2**: 26px, weight 700, color #ffffff, border-left 4px solid #4fc3f7, padding-left 12px, margin-top 30px, margin-bottom 16px
+- **H3**: 20px, weight 600, color #f0f0f0, margin-top 24px, margin-bottom 12px
+- **H4**: 18px, weight 600, color #f0f0f0, margin-top 20px, margin-bottom 10px
+
+**Body Text:**
+- **Paragraph**: color #e0e0e0, margin-bottom 16px, line-height 1.7
+- **Strong/Bold**: weight 600, color #ffffff
+- **Emphasis/Italic**: italic, inherit color
+
+**Links:**
+- **Default**: color #4fc3f7, no text-decoration, border-bottom 1px solid #4fc3f7, transition 0.2s ease
+- **Hover**: color #81d4fa, border-bottom color #81d4fa
+
+**Code:**
+- **Inline Code**: background #2d2d2d, color #ff6b6b, padding 2px 6px, border-radius 3px, border 1px solid #3a3a3a, font-family 'Consolas'/'Monaco'/'Courier New', font-size 90%, weight 500
+- **Code Blocks**: background #252526, color #d4d4d4, padding 16px, border-radius 4px, margin-bottom 16px, border 1px solid #3a3a3a, overflow-x auto, font-size 14px, line-height 1.5
+- **Code Block Content**: color #9cdcfe (syntax highlighting)
+
+**Lists:**
+- **Unordered/Ordered**: padding-left 30px, margin-bottom 16px
+- **List Items**: margin-bottom 6px, line-height 1.7, color #e0e0e0
+
+**Blockquotes:**
+- **Style**: border-left 4px solid #4fc3f7, padding-left 16px, margin-left 0, margin-bottom 16px, color #b0b0b0, italic, background #252526, padding-top/bottom 8px
+
+**Tables:**
+- **Container**: border-collapse collapse, width 100%, margin-bottom 16px
+- **Header**: background #4fc3f7, color #1a1a1a, weight 600, padding 12px, text-align left
+- **Cells**: padding 10px 12px, border 1px solid #3a3a3a, color #e0e0e0
+- **Alternating Rows**: background #252526 (even rows)
+
+**Horizontal Rule:**
+- **Style**: no border, border-top 2px solid #3a3a3a, margin 24px 0
+
+#### CSS Class Naming Convention
+
+Use a clear prefix system to distinguish between light and dark mode styles:
+- `.markdown-light` - Light mode container class
+- `.markdown-dark` - Dark mode container class
+
+#### Responsive Design for Markdown
+
+**Mobile Breakpoint (< 768px):**
+- Reduce heading font sizes by 20%
+- Reduce padding on all elements proportionally
+- Ensure code blocks have horizontal scroll enabled
+- Adjust table layouts for mobile viewing (consider card-style layout)
+
+**Mobile Adjustments:**
+- H1: 32px → 25.6px
+- H2: 26px → 20.8px
+- H3: 20px → 16px
+- H4: 18px → 14.4px
+- Padding Left (H1): 16px → 12px
+- Padding Left (H2): 12px → 8px
+
+#### Implementation with react-markdown
+
+When using react-markdown or similar libraries, apply these styles through:
+1. CSS modules scoped to markdown containers
+2. Tailwind CSS classes matching specifications
+3. Styled-components or CSS-in-JS matching specifications
+
+**Usage Example:**
+```jsx
+// Light mode
+<div className="markdown-light">
+  {/* Rendered markdown content */}
+</div>
+
+// Dark mode
+<div className="markdown-dark">
+  {/* Rendered markdown content */}
+</div>
+```
+
+#### Color Palette for Markdown
+
+**Light Mode:**
+- Primary Accent: #3498db (heading borders, links)
+- Dark Accent: #2980b9 (link hover)
+- Primary Text: #2c3e50 (body, headings)
+- Secondary Text: #34495e (H3/H4)
+- Code Highlight: #e74c3c (inline code)
+- Code Success: #a8e6cf (code blocks)
+- Background Gray: #ecf0f1 (inline code bg)
+- Light Background: #f8f9fa (blockquotes, tables)
+- Border Gray: #dfe6e9 (table borders)
+- Code Block BG: #2c3e50
+- HR Border: #e0e0e0
+
+**Dark Mode:**
+- Primary Accent: #4fc3f7 (heading borders, links, table headers)
+- Light Accent: #81d4fa (link hover)
+- Primary Text: #e0e0e0 (body, lists)
+- Secondary Text: #f0f0f0 (H3/H4)
+- Heading Text: #ffffff (H1/H2, strong)
+- Code Highlight: #ff6b6b (inline code)
+- Code Variable: #9cdcfe (code blocks)
+- Background: #1a1a1a (page)
+- Card Background: #252526 (code, blockquotes, tables)
+- Code Background: #2d2d2d (inline code)
+- Border Gray: #3a3a3a (borders, tables, HR)
+- Blockquote Text: #b0b0b0
+- Code Block Text: #d4d4d4
+
+**Related Documentation:**
+- Full specification: `/docs/markdown-rendering-spec.md`
+- Implementation details in Epic 6 tech spec
 
 ---
 
