@@ -1,0 +1,354 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.3</storyId>
+    <title>Session Display Names & Chat Context</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>session folders grouped by agent with compact, readable names</iWant>
+    <soThat>I can quickly find the conversation or workflow I'm looking for</soThat>
+    <tasks>
+      - Extend SessionManifest interface with 4 new optional fields
+      - Create smart timestamp formatting module (age-adaptive)
+      - Create display name generation logic with priority system
+      - Integrate with chat API for session creation
+      - Implement agent-grouped directory tree
+      - Add tooltip with full session details
+      - Update tests (unit, integration, E2E)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-1">SessionManifest interface extended with four new optional fields: displayName, displayTimestamp, userSummary, messageCount</criterion>
+    <criterion id="AC-2">Display name format: "{smartTimestamp} - {summary (35 char max)}"</criterion>
+    <criterion id="AC-3">Smart timestamp adapts to age: Today=`2:30p`, Yesterday=`Yday 2:30p`, This Week=`Mon 2:30p`, Older=`Oct 5`</criterion>
+    <criterion id="AC-4">Summary priority: user message > workflow input summary > workflow name > agent title</criterion>
+    <criterion id="AC-5">Chat API populates userSummary (first user message, 35 char limit) when creating session</criterion>
+    <criterion id="AC-6">Chat API increments messageCount on each message exchange</criterion>
+    <criterion id="AC-7">Display name computed and cached in displayName field on session creation</criterion>
+    <criterion id="AC-8">DirectoryTree groups sessions by agent (collapsible groups, sorted newest first within group)</criterion>
+    <criterion id="AC-9">Tooltip on hover shows full timestamp, message count, status, full user message, and UUID</criterion>
+    <criterion id="AC-10">Legacy sessions without displayName fall back to UUID (graceful degradation)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>2. Smart Session Naming (Stories 6.3, 6.4)</section>
+        <snippet>
+          UPDATED APPROACH (v0.3):
+
+          **Agent Grouping:**
+          - Sessions grouped by agent.title in directory tree
+          - Collapsible groups (default: expanded)
+          - Sessions sorted newest first within each group
+          - Natural mental model: users think "Alex conversation about X"
+
+          **Smart Timestamp Logic:**
+          - Today: "2:30p" (5 chars)
+          - Yesterday: "Yday 2:30p" (11 chars)
+          - This Week: "Mon 2:30p" (10 chars)
+          - Older: "Oct 5" (5-6 chars)
+
+          **Display Name Format:**
+          - "{smartTimestamp} - {summary (35 char max)}"
+          - 40% shorter than original format (42 chars vs 70 chars)
+          - Stored in displayName field for performance
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/SESSION-OUTPUT-SPEC.md</path>
+        <title>Session Output Specification</title>
+        <section>Manifest File Schema</section>
+        <snippet>
+          Existing SessionManifest structure (Story 5.0):
+          - version, session_id, agent {name, title, bundle}
+          - workflow {name, description}
+          - execution {started_at, completed_at, status, user}
+          - outputs array
+
+          NEW FIELDS (Story 6.3):
+          - displayName?: string (computed: "{smartTimestamp} - {summary}")
+          - displayTimestamp?: string (smart timestamp for sorting)
+          - userSummary?: string (first user message, 35 char max)
+          - messageCount?: number (total messages in conversation)
+        </snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Epic Breakdown</title>
+        <section>Story 6.3: Session Display Names & Chat Context</section>
+        <snippet>
+          Problem: Session folders use UUIDs, making conversations hard to find
+          Solution: Agent-grouped sessions with compact, readable names
+          Format: "2:30p - I need to purchase 10 laptops..." (under agent group)
+          UI: Collapsible agent groups, sorted newest first, tooltip for details
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/agents/sessionDiscovery.ts</path>
+        <kind>module</kind>
+        <symbol>SessionManifest</symbol>
+        <lines>21-48</lines>
+        <reason>Existing SessionManifest interface from Story 5.0. Story 6.3 extends this with 4 new optional fields: displayName, displayTimestamp, userSummary, messageCount. No schema duplication - pure extension pattern.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/agents/sessionDiscovery.ts</path>
+        <kind>module</kind>
+        <symbol>findSessions</symbol>
+        <lines>84-149</lines>
+        <reason>Existing session discovery function. Story 6.3 reuses this for loading manifests with new display name fields. No changes needed - already handles optional fields gracefully.</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>1-100</lines>
+        <reason>Chat API that needs to be modified to create session with displayName on first message. Must extract userSummary, call generateDisplayName(), save to manifest, and increment messageCount.</reason>
+      </artifact>
+      <artifact>
+        <path>components/DirectoryTree.tsx</path>
+        <kind>component</kind>
+        <symbol>DirectoryTree</symbol>
+        <lines>1-150</lines>
+        <reason>Directory tree component that needs agent grouping logic. Must group sessions by agent.title, implement collapsible groups, sort by newest first, and render displayName || UUID fallback.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">App Router for API routes</package>
+        <package name="react" version="^18">React hooks for agent grouping UI</package>
+        <package name="typescript" version="^5">TypeScript for SessionManifest extension</package>
+        <package name="framer-motion" version="^10.16.4">Smooth animations for collapsible groups</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Extend existing SessionManifest from Story 5.0 - no new interfaces or duplicate schemas</constraint>
+    <constraint>Display name format: "{smartTimestamp} - {summary (35 char max)}" - must not exceed ~45 chars total</constraint>
+    <constraint>Smart timestamp logic must adapt to age: today (5 chars), yesterday (11 chars), this week (10 chars), older (5-6 chars)</constraint>
+    <constraint>Summary priority: user message > workflow input summary > workflow name > agent title (4 levels of fallback)</constraint>
+    <constraint>Agent grouping: sessions grouped by agent.title, collapsible, sorted newest first within group</constraint>
+    <constraint>Tooltip displays full details: timestamp, user, message count, status, full message, UUID</constraint>
+    <constraint>Backward compatible: legacy sessions without displayName fall back to UUID (no crashes)</constraint>
+    <constraint>Performance: displayName computed once and cached (not on every render)</constraint>
+    <constraint>Truncation: 35 character max for summaries with "..." ellipsis if longer</constraint>
+    <constraint>File-based architecture: all metadata stored in manifest.json (no database)</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>SessionManifest (Extended)</name>
+      <kind>TypeScript interface</kind>
+      <signature>
+        // Existing fields from Story 5.0
+        interface SessionManifest {
+          version: string;
+          session_id: string;
+          agent: { name: string; title: string; bundle: string };
+          workflow: { name: string; description: string };
+          execution: { started_at: string; completed_at?: string; status: string; user: string };
+          outputs: Array&lt;{...}&gt;;
+
+          // NEW FIELDS (Story 6.3)
+          displayName?: string;        // "2:30p - I need to purchase 10 laptops..."
+          displayTimestamp?: string;   // "2:30p" (for sorting/grouping)
+          userSummary?: string;        // "I need to purchase 10 laptops for the..." (35 chars)
+          messageCount?: number;       // 8
+        }
+      </signature>
+      <path>lib/agents/sessionDiscovery.ts (EXTEND existing, lines 21-48)</path>
+    </interface>
+    <interface>
+      <name>formatSmartTimestamp</name>
+      <kind>function</kind>
+      <signature>
+        function formatSmartTimestamp(isoTimestamp: string): string
+        // Returns: "2:30p" (today), "Yday 2:30p" (yesterday), "Mon 2:30p" (this week), "Oct 5" (older)
+      </signature>
+      <path>lib/sessions/naming.ts (NEW FILE)</path>
+    </interface>
+    <interface>
+      <name>generateDisplayName</name>
+      <kind>function</kind>
+      <signature>
+        function generateDisplayName(manifest: SessionManifest): string
+        // Priority: userSummary > workflow inputs > workflow name > agent title
+        // Returns: "{smartTimestamp} - {summary (35 char max)}"
+      </signature>
+      <path>lib/sessions/naming.ts (NEW FILE)</path>
+    </interface>
+    <interface>
+      <name>AgentGroup (UI Component)</name>
+      <kind>React component</kind>
+      <signature>
+        interface AgentGroupProps {
+          agentTitle: string;
+          sessions: SessionManifest[];
+          defaultExpanded?: boolean;
+        }
+      </signature>
+      <path>components/DirectoryTree.tsx or new AgentGroup.tsx</path>
+    </interface>
+    <interface>
+      <name>SessionTooltip (UI Component)</name>
+      <kind>React component</kind>
+      <signature>
+        interface SessionTooltipProps {
+          session: SessionManifest;
+        }
+        // Displays: full timestamp, user, message count, status, full message, UUID
+      </signature>
+      <path>components/SessionTooltip.tsx (NEW FILE)</path>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest + React Testing Library. Unit tests for all naming utilities (formatSmartTimestamp, generateDisplayName, truncate). Integration tests for chat API session creation and DirectoryTree grouping. E2E tests for agent grouping UI and tooltip interaction. All tests must handle edge cases: empty strings, exact 35 chars, missing fields, legacy manifests.
+    </standards>
+
+    <locations>
+      - lib/sessions/__tests__/naming.test.ts (unit tests for smart timestamps and display names)
+      - app/api/chat/__tests__/route.test.ts (integration tests for session creation with displayName)
+      - components/__tests__/DirectoryTree.test.tsx (integration tests for agent grouping)
+      - e2e/ or __tests__/e2e/ (E2E tests for full user flow)
+    </locations>
+
+    <ideas>
+      <test ac="AC-1">Unit test: SessionManifest includes displayName, displayTimestamp, userSummary, messageCount fields</test>
+      <test ac="AC-2">Unit test: generateDisplayName returns format "{smartTimestamp} - {summary}"</test>
+      <test ac="AC-3">Unit test: formatSmartTimestamp returns "2:30p" for today, "Yday 2:30p" for yesterday, "Mon 2:30p" for this week, "Oct 5" for older</test>
+      <test ac="AC-4">Unit test: generateDisplayName priority - user message > workflow inputs > workflow name > agent title</test>
+      <test ac="AC-5">Integration test: Chat API populates userSummary on first message (35 char limit)</test>
+      <test ac="AC-6">Integration test: messageCount increments on each message exchange</test>
+      <test ac="AC-7">Integration test: displayName computed and saved to manifest.json on session creation</test>
+      <test ac="AC-8">Integration test: DirectoryTree groups sessions by agent.title, sorted newest first</test>
+      <test ac="AC-8">Integration test: Agent groups are collapsible with chevron icon (▼/▶)</test>
+      <test ac="AC-9">E2E test: Tooltip displays full timestamp, user, message count, status, full message, UUID on hover</test>
+      <test ac="AC-10">Integration test: Legacy sessions without displayName fall back to UUID (no crash)</test>
+      <test ac="AC-3">Edge case test: formatSmartTimestamp handles midnight, timezone boundaries, DST transitions</test>
+      <test ac="AC-2">Edge case test: Truncation works for short strings, exact 35 chars, long strings, empty strings</test>
+      <test ac="AC-8">Visual test: Agent groups render correctly with 0, 1, and many sessions</test>
+    </ideas>
+  </tests>
+
+  <ui-mockup>
+    <description>
+      Agent-grouped directory tree with compact session names:
+
+      ┌─────────────────────────────────────────────────────────┐
+      │  Agent Output Files                           [Close] ✕ │
+      ├─────────────────────────────────────────────────────────┤
+      │                                                          │
+      │  ▼ Alex - Requirements Facilitator                      │
+      │    📂 2:30p - I need to purchase 10 laptops...          │
+      │    📂 11:00a - Software licensing quote?                │
+      │    📂 Yday 4:45p - Looking for procurement...           │
+      │    📂 Oct 3 - Deep dive authentication flow             │
+      │                                                          │
+      │  ▼ Pixel - Story Writer                                 │
+      │    📂 3:15p - Help me write story 6.4                   │
+      │    📂 1:20p - Generate user stories Epic 7              │
+      │    📂 Yday 2:00p - Review PRD for mobile app            │
+      │                                                          │
+      │  ▶ Casey - Technical Analyst (collapsed)                │
+      │                                                          │
+      │  ▼ Workflows (No Chat)                                  │
+      │    📂 Oct 5 - intake-app: Time tracking                 │
+      │    📂 Oct 3 - deep-dive-itsm: Incident mgmt             │
+      │                                                          │
+      └─────────────────────────────────────────────────────────┘
+
+      Features:
+      - Agent groups collapsible (▼/▶ chevron)
+      - Sessions sorted newest first within each agent
+      - Compact timestamps adapt to age
+      - 35-char summaries with truncation
+      - Tooltip on hover shows full details
+    </description>
+  </ui-mockup>
+
+  <architecture-decisions>
+    <decision id="1">
+      <title>Extend SessionManifest (Not Duplicate)</title>
+      <context>Story 6.3 originally proposed new SessionMetadata interface with duplicate API endpoints. Story 5.0 already has manifest.json with SessionManifest.</context>
+      <decision>Extend existing SessionManifest with 4 optional fields instead of creating new schema</decision>
+      <impact>Reduced from 9 tasks to 7 tasks, eliminated API endpoint duplication</impact>
+      <benefit>Single source of truth, backward compatible, reuses existing utilities</benefit>
+    </decision>
+    <decision id="2">
+      <title>Agent Grouping + Smart Timestamps</title>
+      <context>Original format "Oct 7, 2:30 PM - {message}" was 70+ chars, hard to scan, no natural grouping</context>
+      <decision>Group by agent + smart timestamps that adapt to age (today="2:30p", older="Oct 5")</decision>
+      <impact>40% shorter names (42 chars vs 70 chars), natural mental model</impact>
+      <benefit>Compact, scannable, age-aware context without overwhelming detail</benefit>
+    </decision>
+    <decision id="3">
+      <title>Tooltip for Full Details</title>
+      <context>Compact names lose context - need way to show full details</context>
+      <decision>Keep names compact, show full details in tooltip on hover</decision>
+      <content>Full timestamp, user, message count, status, full message, UUID</content>
+      <benefit>Best of both worlds - compact view with detailed inspection capability</benefit>
+    </decision>
+  </architecture-decisions>
+
+  <examples>
+    <example type="chat-today">
+      <manifest>
+        {
+          "session_id": "a3f2c9d1-...",
+          "agent": { "name": "alex", "title": "Alex - Requirements Facilitator" },
+          "execution": { "started_at": "2025-10-07T14:30:00Z", "user": "Bryan" },
+          "userSummary": "I need to purchase 10 laptops for the...",
+          "displayName": "2:30p - I need to purchase 10 laptops...",
+          "displayTimestamp": "2:30p",
+          "messageCount": 8
+        }
+      </manifest>
+      <display>📂 2:30p - I need to purchase 10 laptops...</display>
+      <group>Alex - Requirements Facilitator</group>
+    </example>
+    <example type="workflow-older">
+      <manifest>
+        {
+          "session_id": "e7h6g1f5-...",
+          "agent": { "name": "alex", "title": "Alex - Requirements Facilitator" },
+          "workflow": { "name": "intake-app", "description": "Application intake" },
+          "execution": { "started_at": "2025-10-05T11:00:00Z", "user": "Bryan" },
+          "inputs": { "category": "Application", "project_name": "Time Tracking System" },
+          "displayName": "Oct 5 - intake-app: Time Tracking...",
+          "displayTimestamp": "Oct 5"
+        }
+      </manifest>
+      <display>📂 Oct 5 - intake-app: Time Tracking...</display>
+      <group>Workflows (No Chat)</group>
+    </example>
+    <example type="legacy-fallback">
+      <manifest>
+        {
+          "session_id": "old-uuid-123",
+          "agent": { "name": "alex", "title": "Alex" },
+          "execution": { "started_at": "2025-09-15T10:00:00Z" }
+          // No displayName field (old manifest)
+        }
+      </manifest>
+      <display>📂 old-uuid-123</display>
+      <group>Alex</group>
+      <note>Graceful fallback to UUID for legacy sessions</note>
+    </example>
+  </examples>
+</story-context>

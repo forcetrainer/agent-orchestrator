@@ -24,6 +24,32 @@ export interface BreadcrumbProps {
 }
 
 /**
+ * Find a node in the tree by its path, searching recursively through virtual groups
+ * Story 6.3: Handle virtual agent group folders
+ */
+function findNodeByPath(root: any, targetPath: string): any {
+  if (!root?.children) return null;
+
+  for (const child of root.children) {
+    // Check if this child's path matches (handles both direct and virtual group children)
+    if (child.path === targetPath || child.name === targetPath) {
+      return child;
+    }
+
+    // If this is a virtual group, search its children
+    if (child.metadata?.isVirtualGroup && child.children) {
+      for (const groupChild of child.children) {
+        if (groupChild.path === targetPath || groupChild.name === targetPath) {
+          return groupChild;
+        }
+      }
+    }
+  }
+
+  return null;
+}
+
+/**
  * Parse file path into breadcrumb segments
  * Replaces first segment (session UUID) with human-readable name from metadata
  */
@@ -42,8 +68,9 @@ function parsePath(
 
     // Try to find displayName from tree
     let displayName = segment;
-    if (currentNode?.children) {
-      const child = currentNode.children.find((c: any) => c.name === segment);
+    if (currentNode) {
+      // Story 6.3: Use findNodeByPath to handle virtual agent groups
+      const child = findNodeByPath(currentNode, segment);
       if (child) {
         displayName = child.displayName || child.name;
         currentNode = child;

@@ -14,6 +14,7 @@ import {
   validateMessage,
   validateConversationId,
 } from '@/lib/utils/validation';
+import { createChatSession, incrementMessageCount } from '@/lib/sessions/chatSessions';
 
 /**
  * POST /api/chat
@@ -50,11 +51,28 @@ export async function POST(request: NextRequest) {
     // Get or create conversation
     const conversation = getConversation(body.conversationId, body.agentId);
 
+    // Story 6.3: Create session manifest on first message
+    const isFirstMessage = conversation.messages.length === 0;
+    if (isFirstMessage) {
+      const { sessionId } = await createChatSession(
+        agent.id,
+        agent.title,
+        body.message,
+        'Bryan' // TODO: Get from config or request context
+      );
+      conversation.sessionId = sessionId;
+    }
+
     // Add user message to conversation
     const userMessage = addMessage(conversation.id, {
       role: 'user',
       content: body.message,
     });
+
+    // Story 6.3: Increment message count for subsequent messages
+    if (!isFirstMessage && conversation.sessionId) {
+      await incrementMessageCount(conversation.sessionId);
+    }
 
     // Build messages array for OpenAI (convert to ChatCompletionMessageParam format)
     // Filter out 'error' and 'system' messages (system is added by executeChatCompletion)
@@ -118,6 +136,10 @@ export async function POST(request: NextRequest) {
             content: typeof msg.content === 'string' ? msg.content : '',
             functionCalls: 'tool_calls' in msg ? (msg.tool_calls as any) : undefined,
           });
+          // Story 6.3: Increment message count for assistant response
+          if (conversation.sessionId) {
+            await incrementMessageCount(conversation.sessionId);
+          }
         } else if (msg.role === 'tool' && 'tool_call_id' in msg) {
           addMessage(conversation.id, {
             role: 'tool' as any,

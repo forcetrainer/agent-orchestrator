@@ -100,7 +100,11 @@ Each session directory MUST contain a `manifest.json` file describing the sessio
   ],
   "metadata": {
     "custom_field": "value"
-  }
+  },
+  "displayName": "2:30p - I need to purchase 10 laptops...",
+  "displayTimestamp": "2:30p",
+  "userSummary": "I need to purchase 10 laptops for the...",
+  "messageCount": 8
 }
 ```
 
@@ -119,6 +123,10 @@ Each session directory MUST contain a `manifest.json` file describing the sessio
 | `inputs` | object | No | Workflow input parameters |
 | `related_sessions` | array | No | Array of related session UUIDs |
 | `metadata` | object | No | Custom workflow-specific metadata |
+| `displayName` | string | No | **Story 6.3:** Computed display name: "{smartTimestamp} - {summary (35 char max)}" |
+| `displayTimestamp` | string | No | **Story 6.3:** Smart timestamp for sorting/grouping: "2:30p", "Yday 2:30p", "Mon 2:30p", "Oct 5" |
+| `userSummary` | string | No | **Story 6.3:** First user message, truncated to 35 characters |
+| `messageCount` | number | No | **Story 6.3:** Total number of messages in the conversation |
 
 #### `agent` Object
 

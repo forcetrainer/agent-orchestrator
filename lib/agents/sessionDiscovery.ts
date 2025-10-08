@@ -17,6 +17,7 @@ import { env } from '@/lib/utils/env';
 
 /**
  * Session manifest structure (v1.0.0)
+ * Extended in Story 6.3 with display name and chat context fields
  */
 export interface SessionManifest {
   version: string;
@@ -45,6 +46,16 @@ export interface SessionManifest {
   inputs?: Record<string, any>;
   related_sessions?: string[];
   metadata?: Record<string, any>;
+
+  // Story 6.3: Session Display Names & Chat Context
+  /** Computed display name: "{smartTimestamp} - {summary (35 char max)}" */
+  displayName?: string;
+  /** Smart timestamp for sorting/grouping: "2:30p" (today), "Yday 2:30p" (yesterday), "Mon 2:30p" (this week), "Oct 5" (older) */
+  displayTimestamp?: string;
+  /** First user message, truncated to 35 characters for display purposes */
+  userSummary?: string;
+  /** Total number of messages in the conversation */
+  messageCount?: number;
 }
 
 /**

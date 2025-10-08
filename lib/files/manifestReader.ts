@@ -1,19 +1,21 @@
 /**
  * Manifest Reader Utility
  * Story 5.2.1: Session Metadata Display Enhancement
+ * Story 6.3: Enhanced with smart timestamp and chat context display names
  *
  * Provides utilities for reading session manifest.json files and generating
  * human-readable display names for the UI.
  *
  * Features:
  * - parseManifest: Parse manifest.json from session folder
- * - generateDisplayName: Generate human-readable session name
+ * - generateDisplayName: Generate human-readable session name (Story 6.3 format)
  * - formatTimestamp: Format ISO 8601 timestamps for display
  */
 
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { SessionManifest } from '@/lib/agents/sessionDiscovery';
+import { generateDisplayName as generateSmartDisplayName } from '@/lib/sessions/naming';
 
 /**
  * SessionMetadata type alias (matches SessionManifest from Story 5.0)
@@ -67,11 +69,13 @@ export async function parseManifest(sessionPath: string): Promise<SessionMetadat
 /**
  * Generate human-readable display name from session metadata
  *
- * Story 5.2.1 AC-1, AC-5: Display name format "{Agent Title} - {Workflow Name} ({Date})"
+ * Story 6.3: Uses smart timestamp format (replaces Story 5.2.1 format)
+ * - If manifest has displayName cached, use it
+ * - Otherwise generate using Story 6.3 naming algorithm
  *
- * Format:
- * - Running sessions: "{Agent} - {Workflow} (In Progress)"
- * - Completed sessions: "{Agent} - {Workflow} ({Date})"
+ * Format: "{smartTimestamp} - {summary (35 char max)}"
+ * - Chat sessions: "2:30p - I need to purchase 10 laptops..."
+ * - Workflow sessions: "Oct 5 - intake-app: Time Tracking..."
  *
  * @param metadata - Session metadata from manifest.json
  * @returns Human-readable display name
@@ -79,26 +83,18 @@ export async function parseManifest(sessionPath: string): Promise<SessionMetadat
  * @example
  * ```typescript
  * const name = generateDisplayName(metadata);
- * // "Alex the Facilitator - Intake ITSM (Oct 6, 2025 5:09 PM)"
- * // "Pixel - Build Stories (In Progress)"
+ * // "2:30p - I need to purchase 10 laptops..."
+ * // "Oct 5 - intake-app: Time Tracking..."
  * ```
  */
 export function generateDisplayName(metadata: SessionMetadata): string {
-  const agentTitle = metadata.agent.title || metadata.agent.name;
-  const workflowName = metadata.workflow.name;
-
-  // Check execution status
-  const status = metadata.execution.status;
-
-  if (status === 'running') {
-    return `${agentTitle} - ${workflowName} (In Progress)`;
+  // Story 6.3 AC-7: Use cached displayName if present
+  if (metadata.displayName) {
+    return metadata.displayName;
   }
 
-  // Use completed_at if available, otherwise started_at
-  const timestamp = metadata.execution.completed_at || metadata.execution.started_at;
-  const formattedDate = formatTimestamp(timestamp);
-
-  return `${agentTitle} - ${workflowName} (${formattedDate})`;
+  // Generate using Story 6.3 smart naming algorithm
+  return generateSmartDisplayName(metadata);
 }
 
 /**

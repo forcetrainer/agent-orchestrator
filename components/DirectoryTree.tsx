@@ -22,6 +22,7 @@ import { useState, memo } from 'react';
  */
 
 import type { FileTreeNode } from '@/lib/files/treeBuilder';
+import type { SessionMetadata } from '@/lib/files/manifestReader';
 export type { FileTreeNode };
 
 export interface DirectoryTreeProps {
@@ -93,7 +94,9 @@ const TreeNode = memo(
     selectedFile?: string | null;
     newFiles?: string[];
   }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Story 6.3 AC-8: Agent groups default to expanded
+    const isAgentGroup = node.metadata && (node.metadata as any).isVirtualGroup;
+    const [isExpanded, setIsExpanded] = useState(isAgentGroup ? true : false);
     const isDirectory = node.type === 'directory';
     const hasChildren = isDirectory && node.children && node.children.length > 0;
     const isSelected = selectedFile === node.path;
@@ -118,6 +121,13 @@ const TreeNode = memo(
     // Story 5.2.1 AC-1: Use displayName if present, otherwise fallback to name
     const displayText = node.displayName || node.name;
 
+    // Story 6.3 AC-9: Build tooltip with full session details
+    const tooltipText = node.metadata && !isAgentGroup
+      ? buildSessionTooltip(node.metadata, node.name)
+      : node.displayName
+      ? node.name // Show UUID for renamed sessions
+      : undefined;
+
     return (
       <div>
         <div
@@ -128,7 +138,7 @@ const TreeNode = memo(
           `}
           style={{ paddingLeft: `${depth * 16 + 8}px` }} // AC-4: Proper indentation (16px per level)
           onClick={handleClick}
-          title={node.displayName ? node.name : undefined} // Show UUID on hover for renamed sessions
+          title={tooltipText}
         >
           {/* AC-3: Icons distinguish files from folders */}
           {isDirectory ? <FolderIcon isOpen={isExpanded} /> : <FileIcon />}
@@ -231,4 +241,63 @@ function formatFileSize(bytes: number): string {
   const sizes = ['B', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+/**
+ * Build tooltip text with full session details
+ * Story 6.3 AC-9: Tooltip shows full timestamp, message count, status, full message, UUID
+ */
+function buildSessionTooltip(metadata: SessionMetadata, uuid: string): string {
+  const lines: string[] = [];
+
+  // Full timestamp
+  if (metadata.execution?.started_at) {
+    const date = new Date(metadata.execution.started_at);
+    const formatted = date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
+    lines.push(`Started: ${formatted}`);
+  }
+
+  // User
+  if (metadata.execution?.user) {
+    lines.push(`User: ${metadata.execution.user}`);
+  }
+
+  // Message count (if present - chat sessions only)
+  if (metadata.messageCount !== undefined) {
+    lines.push(`Messages: ${metadata.messageCount}`);
+  }
+
+  // Status with icon
+  const statusIcons: Record<string, string> = {
+    running: '💬',
+    completed: '✓',
+    failed: '✗',
+    cancelled: '⊘',
+  };
+  const statusIcon = statusIcons[metadata.execution?.status || ''] || '';
+  lines.push(`Status: ${metadata.execution?.status || 'unknown'} ${statusIcon}`);
+
+  // Agent title
+  if (metadata.agent?.title) {
+    lines.push(`Agent: ${metadata.agent.title}`);
+  }
+
+  // Full user message (if present - chat sessions only)
+  if (metadata.userSummary) {
+    lines.push('');
+    lines.push(`Full message: "${metadata.userSummary}"`);
+  }
+
+  // UUID
+  lines.push('');
+  lines.push(`UUID: ${uuid}`);
+
+  return lines.join('\n');
 }

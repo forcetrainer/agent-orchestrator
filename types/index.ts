@@ -87,4 +87,6 @@ export interface Conversation {
   createdAt: Date;
   /** Last update timestamp */
   updatedAt: Date;
+  /** Story 6.3: Session ID for file-based session manifest (if created) */
+  sessionId?: string;
 }

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { handleApiError } from '@/lib/utils/errors';
 import { validatePath } from '@/lib/files/security';
 import { buildDirectoryTree, FileTreeNode } from '@/lib/files/treeBuilder';
+import { groupSessionsByAgent } from '@/lib/files/sessionGrouping';
 import { env } from '@/lib/utils/env';
 
 /**
@@ -33,7 +34,10 @@ export async function GET(request: NextRequest) {
     const validatedPath = validatePath('', env.OUTPUT_PATH);
 
     // Build recursive directory tree
-    const root = await buildDirectoryTree(validatedPath);
+    let root = await buildDirectoryTree(validatedPath);
+
+    // Story 6.3 AC-8: Group sessions by agent for directory tree
+    root = groupSessionsByAgent(root);
 
     return NextResponse.json<FileTreeResponse>(
       {
