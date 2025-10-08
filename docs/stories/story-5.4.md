@@ -1,6 +1,6 @@
 # Story 5.4: Markdown Rendering in File Viewer
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

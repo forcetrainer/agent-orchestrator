@@ -1,6 +1,6 @@
 # Story 5.3: Display File Contents
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

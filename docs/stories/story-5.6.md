@@ -1,6 +1,6 @@
 # Story 5.6: File Viewer Navigation Polish
 
-Status: Complete
+Status: Done
 
 ## Story
 

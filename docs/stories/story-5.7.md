@@ -1,6 +1,6 @@
 # Story 5.7: Security - Read-Only File Access
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 

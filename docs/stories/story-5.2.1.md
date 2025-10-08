@@ -1,6 +1,6 @@
 # Story 5.2.1: Session Metadata Display Enhancement
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 
