@@ -1,17 +1,19 @@
 /**
- * Tests for GET /api/files/tree endpoint
+ * Tests for /api/files/tree endpoint
  * Story 5.2: Display Directory Tree Structure
+ * Story 5.7: Security - Read-Only File Access
  *
  * Test Coverage:
  * - AC-1: Directory tree displays output folder structure
  * - AC-5: Empty folders show as empty (not hidden from tree)
  * - Security: Path traversal attempts blocked
+ * - Story 5.7 AC-2: POST/PUT/DELETE methods return 405 Method Not Allowed
  * - Error handling for unreadable directories
  *
  * @jest-environment node
  */
 
-import { GET } from '../route';
+import { GET, POST, PUT, DELETE } from '../route';
 import { NextRequest } from 'next/server';
 import * as treeBuilder from '@/lib/files/treeBuilder';
 import * as security from '@/lib/files/security';
@@ -398,6 +400,50 @@ describe('GET /api/files/tree', () => {
       expect(data.root.children).toHaveLength(100);
       // NFR-1: Should complete within reasonable time (< 1 second)
       expect(endTime - startTime).toBeLessThan(1000);
+    });
+  });
+});
+
+describe('Story 5.7: HTTP Method Security', () => {
+  describe('POST /api/files/tree', () => {
+    it('should return 405 Method Not Allowed for POST requests', async () => {
+      // Act
+      const response = await POST();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
+    });
+  });
+
+  describe('PUT /api/files/tree', () => {
+    it('should return 405 Method Not Allowed for PUT requests', async () => {
+      // Act
+      const response = await PUT();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
+    });
+  });
+
+  describe('DELETE /api/files/tree', () => {
+    it('should return 405 Method Not Allowed for DELETE requests', async () => {
+      // Act
+      const response = await DELETE();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
     });
   });
 });

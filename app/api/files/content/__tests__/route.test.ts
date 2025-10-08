@@ -1,6 +1,7 @@
 /**
- * Tests for GET /api/files/content endpoint
+ * Tests for /api/files/content endpoint
  * Story 5.3: Display File Contents
+ * Story 5.7: Security - Read-Only File Access
  *
  * Test Coverage:
  * - AC-1: Clicking file in tree loads its contents via API
@@ -8,12 +9,13 @@
  * - AC-4: Large files (>1MB) load without crashing browser (truncation)
  * - AC-5: Binary files show "Cannot preview" message
  * - Security: Path traversal attempts blocked
+ * - Story 5.7 AC-2: POST/PUT/DELETE methods return 405 Method Not Allowed
  * - Error handling for missing files, permission denied
  *
  * @jest-environment node
  */
 
-import { GET } from '../route';
+import { GET, POST, PUT, DELETE } from '../route';
 import { NextRequest } from 'next/server';
 import { readFile, stat } from 'fs/promises';
 import * as security from '@/lib/files/security';
@@ -556,6 +558,50 @@ describe('GET /api/files/content', () => {
       // Assert
       expect(data.mimeType).toBe('application/octet-stream');
       expect(data.isBinary).toBe(true); // Octet-stream treated as binary
+    });
+  });
+});
+
+describe('Story 5.7: HTTP Method Security', () => {
+  describe('POST /api/files/content', () => {
+    it('should return 405 Method Not Allowed for POST requests', async () => {
+      // Act
+      const response = await POST();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
+    });
+  });
+
+  describe('PUT /api/files/content', () => {
+    it('should return 405 Method Not Allowed for PUT requests', async () => {
+      // Act
+      const response = await PUT();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
+    });
+  });
+
+  describe('DELETE /api/files/content', () => {
+    it('should return 405 Method Not Allowed for DELETE requests', async () => {
+      // Act
+      const response = await DELETE();
+      const data = await response.json();
+
+      // Assert
+      expect(response.status).toBe(405);
+      expect(data.success).toBe(false);
+      expect(data.error).toBe('Method not allowed - file viewer is read-only');
+      expect(response.headers.get('Allow')).toBe('GET');
     });
   });
 });

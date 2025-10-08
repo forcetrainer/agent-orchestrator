@@ -1,0 +1,218 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>5</epicId>
+    <storyId>5.7</storyId>
+    <title>Security - Read-Only File Access</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-5.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>platform operator</asA>
+    <iWant>the file viewer to be read-only</iWant>
+    <soThat>users cannot modify or delete files through the UI</soThat>
+    <tasks>
+      - Task 1: Remove Write Capabilities from UI (AC: 1, 4, 5) - Audit FileViewerPanel, DirectoryTree, FileContentDisplay components for write actions, verify no download buttons
+      - Task 2: Enforce GET-Only API Endpoints (AC: 2, 3) - Review /api/files/tree and /api/files/content, ensure GET-only, add 405 responses for POST/PUT/DELETE, implement 403 for write attempts
+      - Task 3: Path Security Validation (AC: 6, 7) - Verify PathSecurityValidator blocks traversal, verify only output directory allowed, test bundle/core/source blocking, sanitize error messages, log violations
+      - Task 4: Security Testing Suite (AC: 6) - Create tests for path traversal (../), absolute paths, bundle/core/source directory access, POST/PUT/DELETE methods, valid output paths
+      - Task 5: Documentation and Validation (AC: all) - Document security model, update API docs for GET-only, add security testing section, perform penetration testing with curl, create validation checklist
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. No edit or delete buttons in file viewer UI
+    2. API endpoints only support GET operations (no POST/PUT/DELETE)
+    3. Write attempts return 403 error with clear message
+    4. File tree cannot trigger file deletions
+    5. File downloads disabled in MVP (view-only)
+    6. Security tested with manual API calls (path traversal attempts blocked)
+    7. Only output directory accessible (bundle/core directories blocked)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: File Management and Viewer</title>
+        <section>Story 5.7: Security - Read-Only File Access</section>
+        <snippet>
+          Epic 5 Story 5.7 defines comprehensive security requirements for read-only file viewer access.
+          Traceability Mapping AC 5.7.1-5.7.7 provides detailed test ideas:
+          - AC 5.7.1: Assert no write action buttons exist in UI
+          - AC 5.7.2: Test POST/PUT/DELETE return 405
+          - AC 5.7.3: Test write attempt returns 403
+          - AC 5.7.6: Test path traversal (?path=../../etc/passwd) returns 403
+          - AC 5.7.7: Test bundle/core paths blocked
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: File Management and Viewer</title>
+        <section>Security > Read-Only Access</section>
+        <snippet>
+          Security Requirements (NFR-4): No write operations exposed via file viewer APIs. No file deletion capabilities. No file upload endpoints. GET-only endpoints for /api/files/* routes. Directory scope restricted to OUTPUT_FOLDER_PATH environment variable. No access to bundle directories, core files, or agent sources. Error messages sanitized (no path information leakage).
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-5.md</path>
+        <title>Technical Specification: File Management and Viewer</title>
+        <section>Security > Path Traversal Prevention</section>
+        <snippet>
+          All file paths validated against output directory boundary. Reject paths containing ../ or absolute paths outside allowed directories. Use path.normalize() and path.resolve() for validation. Symbolic links resolved and validated (reuse Epic 4 Story 4.2 logic). Implementation: validateOutputPath(requestedPath) function blocks access outside OUTPUT_PATH, prevents traversal, sanitizes errors.
+        </snippet>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/prd.md</path>
+        <title>Agent Orchestrator Product Requirements Document (PRD)</title>
+        <section>NFR-4 Security Requirements</section>
+        <snippet>
+          Security requirements mandate protection of agent files, proper authentication/authorization, secure handling of API keys, protection against common attacks (injection, XSS, CSRF), audit logging of security events, and regular security testing.
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validatePath</symbol>
+        <lines>42-97</lines>
+        <reason>Primary security validation function that implements path traversal prevention, null byte detection, and directory boundary enforcement. Story 5.7 must ensure this is used correctly in file viewer API routes.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/files/security.ts</path>
+        <kind>module</kind>
+        <symbol>validateWritePath</symbol>
+        <lines>107-139</lines>
+        <reason>Write path validation that ensures writes only to OUTPUT_PATH. Story 5.7 Task 2 must verify file viewer APIs do NOT expose write operations using this or any similar function.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/files/tree/route.ts</path>
+        <kind>route</kind>
+        <symbol>GET</symbol>
+        <lines>29-44</lines>
+        <reason>File tree API endpoint currently implements GET method with validatePath security check. Story 5.7 Task 2 must add explicit rejection handlers for POST/PUT/DELETE methods (405 response).</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/files/content/route.ts</path>
+        <kind>route</kind>
+        <symbol>GET</symbol>
+        <lines>1-80</lines>
+        <reason>File content API endpoint implements GET with validatePath security, mime type detection, binary file handling. Story 5.7 Task 2 must add POST/PUT/DELETE rejection handlers and verify no write logic exists.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileViewerPanel.tsx</path>
+        <kind>component</kind>
+        <symbol>FileViewerPanel</symbol>
+        <lines>1-100</lines>
+        <reason>Main file viewer UI component manages tree data, file selection, loading states. Story 5.7 Task 1 must audit for write action buttons (edit, delete, download) and ensure none exist.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/DirectoryTree.tsx</path>
+        <kind>component</kind>
+        <symbol>DirectoryTree</symbol>
+        <lines>N/A</lines>
+        <reason>Tree navigation component displays file/folder structure. Story 5.7 Task 1 must verify no delete/edit context menus or action handlers exist in tree nodes.</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/components/FileContentDisplay.tsx</path>
+        <kind>component</kind>
+        <symbol>FileContentDisplay</symbol>
+        <lines>N/A</lines>
+        <reason>Content display component renders file contents with markdown/raw toggle. Story 5.7 Task 1 must confirm no edit mode, save button, or inline editing capabilities.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" purpose="Framework providing API route handlers (GET/POST/PUT/DELETE method support)" />
+        <package name="react" version="^18" purpose="UI component framework for FileViewerPanel and child components" />
+        <package name="react-dom" version="^18" purpose="DOM rendering for React components" />
+        <package name="jest" version="^30.2.0" purpose="Testing framework for unit and integration tests" devDependency="true" />
+        <package name="@testing-library/react" version="^16.3.0" purpose="React component testing utilities" devDependency="true" />
+        <package name="@testing-library/jest-dom" version="^6.9.1" purpose="Custom Jest matchers for DOM assertions" devDependency="true" />
+        <package name="typescript" version="^5" purpose="Type safety for API route handlers and component props" devDependency="true" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Security: File viewer must be strictly read-only with no write, edit, delete, or download capabilities in MVP
+    - API Design: Use Next.js route handler pattern with explicit method exports (GET, POST, PUT, DELETE) to control HTTP methods
+    - Error Handling: Return 405 Method Not Allowed for non-GET requests, 403 Forbidden for security violations (path traversal, directory boundary violations)
+    - Path Validation: All file operations must use validatePath from lib/files/security.ts to prevent traversal attacks and enforce OUTPUT_PATH boundary
+    - Logging: Log security violations with sanitized error messages that do not leak sensitive path information
+    - Testing: Follow Epic 4 security testing patterns with comprehensive test coverage for path traversal, method enforcement, and boundary violations
+    - UI Patterns: FileViewer components must not render write action buttons; ensure component props and state do not support edit/delete modes
+    - Backward Compatibility: Existing Stories 5.1-5.6 functionality must remain unchanged; only add security enforcement, no breaking changes
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>validatePath</name>
+      <kind>function</kind>
+      <signature>validatePath(relativePath: string, baseDir: string): string</signature>
+      <path>lib/files/security.ts</path>
+      <description>Validates that a relative path is safe and within the specified base directory. Throws Error with 'Access denied' message if path is invalid or contains security violations (traversal, null bytes, absolute paths outside allowed dirs).</description>
+    </interface>
+    <interface>
+      <name>GET /api/files/tree</name>
+      <kind>api-route</kind>
+      <signature>GET(): Promise&lt;NextResponse&lt;FileTreeResponse&gt;&gt;</signature>
+      <path>app/api/files/tree/route.ts</path>
+      <description>Returns directory tree structure for output folder. Uses validatePath('', env.OUTPUT_PATH) for security. Story 5.7 must add POST/PUT/DELETE handlers returning 405.</description>
+    </interface>
+    <interface>
+      <name>GET /api/files/content</name>
+      <kind>api-route</kind>
+      <signature>GET(request: NextRequest): Promise&lt;NextResponse&lt;FileContentResponse&gt;&gt;</signature>
+      <path>app/api/files/content/route.ts</path>
+      <description>Retrieves file contents for display. Accepts ?path query param, uses validatePath for security, returns content with mime type and metadata. Story 5.7 must add POST/PUT/DELETE handlers returning 405.</description>
+    </interface>
+    <interface>
+      <name>FileTreeResponse</name>
+      <kind>type</kind>
+      <signature>interface FileTreeResponse { success: boolean; root: FileTreeNode; error?: string; }</signature>
+      <path>app/api/files/tree/route.ts</path>
+      <description>Response structure for file tree API. Used in error responses for security violations (status 403).</description>
+    </interface>
+    <interface>
+      <name>FileContentResponse</name>
+      <kind>type</kind>
+      <signature>interface FileContentResponse { success: boolean; path: string; content: string; mimeType: string; size: number; modified: string; error?: string; isBinary?: boolean; }</signature>
+      <path>types/api.ts</path>
+      <description>Response structure for file content API. Used in error responses for security violations and invalid methods.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with ts-jest for TypeScript support. React components tested with @testing-library/react and @testing-library/jest-dom. API routes tested with @jest-environment node. Security tests follow Epic 4 patterns: unit tests for validation logic, integration tests for API method enforcement, manual penetration testing with curl. Test coverage goal: 80%+ for new security code. Critical paths must have comprehensive test coverage (path traversal, method enforcement, boundary violations).
+    </standards>
+    <locations>
+      - Unit tests: lib/files/__tests__/security.test.ts (existing security validation tests)
+      - API route tests: app/api/files/tree/__tests__/route.test.ts and app/api/files/content/__tests__/route.test.ts
+      - Component tests: components/__tests__/FileViewerPanel.test.tsx, components/__tests__/DirectoryTree.test.tsx, components/__tests__/FileContentDisplay.test.tsx
+      - Integration tests: __tests__/integration/api.integration.test.ts (for end-to-end security validation)
+      - Manual penetration tests: Use curl commands to verify security (documented in story Dev Notes)
+    </locations>
+    <ideas>
+      <test ac="1" idea="Render FileViewerPanel and assert no buttons with text/aria-label containing 'edit', 'delete', 'download', 'save' using @testing-library/react queries" />
+      <test ac="1" idea="Render DirectoryTree with mock file nodes and verify no context menu or action handlers for delete/edit operations" />
+      <test ac="1" idea="Render FileContentDisplay and verify no contentEditable attributes, no save buttons, no edit mode state" />
+      <test ac="2" idea="Unit test: POST to /api/files/tree should return 405 status with { success: false, error: 'Method not allowed' }" />
+      <test ac="2" idea="Unit test: PUT to /api/files/content should return 405 status with error message" />
+      <test ac="2" idea="Unit test: DELETE to /api/files/tree should return 405 status" />
+      <test ac="3" idea="Integration test: Attempt write operation via API (if hypothetically exposed) should return 403 with clear error message 'Access denied'" />
+      <test ac="6" idea="Security test: GET /api/files/content?path=../../etc/passwd should return 403 Forbidden with sanitized error (no path leakage)" />
+      <test ac="6" idea="Security test: GET /api/files/tree with traversal in nested path should trigger validatePath rejection and return 403" />
+      <test ac="6" idea="Security test: Null byte injection (/api/files/content?path=file\0.txt) should return 403" />
+      <test ac="7" idea="Security test: GET /api/files/content?path=/bmad/core/tasks/workflow.md should return 403 (core directory blocked)" />
+      <test ac="7" idea="Security test: GET /api/files/content?path=/bmad/custom/bundles/agent.md should return 403 (bundle directory blocked)" />
+      <test ac="7" idea="Security test: GET /api/files/content?path=/lib/files/security.ts should return 403 (source code directory blocked)" />
+      <test ac="7" idea="Security test: Valid path within OUTPUT_PATH should return 200 OK with file content" />
+      <test ac="all" idea="Manual penetration test: Document curl commands for all security test cases in story completion notes" />
+    </ideas>
+  </tests>
+</story-context>

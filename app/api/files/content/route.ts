@@ -273,3 +273,58 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+/**
+ * POST /api/files/content
+ *
+ * Story 5.7: Security - Read-Only File Access
+ * AC-2: API endpoints only support GET operations (no POST/PUT/DELETE)
+ * AC-3: Write attempts return 403 error with clear message
+ *
+ * @returns 405 Method Not Allowed
+ */
+export async function POST() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method not allowed - file viewer is read-only',
+    },
+    { status: 405, headers: { Allow: 'GET' } }
+  );
+}
+
+/**
+ * PUT /api/files/content
+ *
+ * Story 5.7: Security - Read-Only File Access
+ * AC-2: API endpoints only support GET operations (no POST/PUT/DELETE)
+ *
+ * @returns 405 Method Not Allowed
+ */
+export async function PUT() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method not allowed - file viewer is read-only',
+    },
+    { status: 405, headers: { Allow: 'GET' } }
+  );
+}
+
+/**
+ * DELETE /api/files/content
+ *
+ * Story 5.7: Security - Read-Only File Access
+ * AC-2: API endpoints only support GET operations (no POST/PUT/DELETE)
+ *
+ * @returns 405 Method Not Allowed
+ */
+export async function DELETE() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Method not allowed - file viewer is read-only',
+    },
+    { status: 405, headers: { Allow: 'GET' } }
+  );
+}
