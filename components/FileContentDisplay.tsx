@@ -263,62 +263,173 @@ export function FileContentDisplay({
       <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         {isMarkdown && viewMode === 'rendered' ? (
           // Story 5.4 AC-1, AC-3-7: Markdown rendering (reuses Epic 3 Story 3.3 config)
-          <div className="p-4">
+          // Story 6.3 Enhancement: Updated to use markdown-rendering-spec.md light mode styles
+          <div className="markdown-light p-4 leading-[1.7]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                // Headings (AC-3)
-                h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
-                h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
-                h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
-                h4: ({ children }) => <h4 className="text-base font-bold mb-1">{children}</h4>,
-                h5: ({ children }) => <h5 className="text-sm font-bold mb-1">{children}</h5>,
-                h6: ({ children }) => <h6 className="text-xs font-bold mb-1">{children}</h6>,
+                // Headings - Spec: Light Mode Typography
+                h1: ({ children }) => (
+                  <h1 className="text-[32px] font-bold mt-0 mb-6" style={{ color: '#2c3e50', borderLeft: '5px solid #3498db', paddingLeft: '16px' }}>
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-[26px] font-bold mt-[30px] mb-4" style={{ color: '#2c3e50', borderLeft: '4px solid #3498db', paddingLeft: '12px' }}>
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-[20px] font-semibold mt-6 mb-3" style={{ color: '#34495e' }}>
+                    {children}
+                  </h3>
+                ),
+                h4: ({ children }) => (
+                  <h4 className="text-[18px] font-semibold mt-5 mb-[10px]" style={{ color: '#34495e' }}>
+                    {children}
+                  </h4>
+                ),
+                h5: ({ children }) => <h5 className="text-base font-semibold mb-2" style={{ color: '#34495e' }}>{children}</h5>,
+                h6: ({ children }) => <h6 className="text-sm font-semibold mb-2" style={{ color: '#34495e' }}>{children}</h6>,
 
-                // Lists (AC-3)
-                ul: ({ children }) => <ul className="list-disc list-inside mb-2 space-y-1">{children}</ul>,
-                ol: ({ children }) => <ol className="list-decimal list-inside mb-2 space-y-1">{children}</ol>,
-                li: ({ children }) => <li className="ml-4">{children}</li>,
+                // Paragraphs - Spec: Body Text
+                p: ({ children }) => <p className="mb-4 leading-[1.7]" style={{ color: '#2c3e50' }}>{children}</p>,
 
-                // Code blocks (AC-5)
-                pre: ({ children }) => <pre className="bg-gray-100 rounded p-3 mb-2 overflow-x-auto">{children}</pre>,
-                code: ({ className, children }) => {
-                  // Inline code vs code block
-                  const isInline = !className;
-                  if (isInline) {
-                    return <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>;
-                  }
-                  return <code className="font-mono text-sm">{children}</code>;
-                },
+                // Bold and italic - Spec: Body Text
+                strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                em: ({ children }) => <em className="italic">{children}</em>,
 
-                // Links (AC-4) - Security: rel="noopener noreferrer" for external links
+                // Links - Spec: Links with hover
                 a: ({ href, children }) => (
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue-600 underline hover:text-blue-800"
+                    className="no-underline transition-colors duration-200 hover:border-[#2980b9]"
+                    style={{ color: '#3498db', borderBottom: '1px solid #3498db' }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = '#2980b9';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = '#3498db';
+                    }}
                   >
                     {children}
                   </a>
                 ),
 
-                // Bold and italic (AC-6)
-                strong: ({ children }) => <strong className="font-bold">{children}</strong>,
-                em: ({ children }) => <em className="italic">{children}</em>,
+                // Inline code - Spec: Inline Code
+                code: ({ className, children }) => {
+                  const isInline = !className;
+                  if (isInline) {
+                    return (
+                      <code
+                        className="px-1.5 py-0.5 rounded font-medium"
+                        style={{
+                          backgroundColor: '#ecf0f1',
+                          color: '#e74c3c',
+                          fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
+                          fontSize: '90%',
+                          fontWeight: 500
+                        }}
+                      >
+                        {children}
+                      </code>
+                    );
+                  }
+                  // Code inside pre blocks
+                  return (
+                    <code
+                      className="text-sm leading-[1.5]"
+                      style={{
+                        fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
+                        color: '#a8e6cf',
+                        backgroundColor: 'transparent'
+                      }}
+                    >
+                      {children}
+                    </code>
+                  );
+                },
 
-                // Paragraphs (AC-6)
-                p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-
-                // Tables (AC-3)
-                table: ({ children }) => (
-                  <table className="border-collapse border border-gray-300 mb-2 w-full">{children}</table>
+                // Code blocks - Spec: Code Blocks
+                pre: ({ children }) => (
+                  <pre
+                    className="rounded mb-4 overflow-x-auto p-4 text-sm leading-[1.5]"
+                    style={{
+                      backgroundColor: '#2c3e50',
+                      color: '#ecf0f1',
+                      fontFamily: '"Consolas", "Monaco", "Courier New", monospace'
+                    }}
+                  >
+                    {children}
+                  </pre>
                 ),
-                thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+
+                // Lists - Spec: Lists
+                ul: ({ children }) => (
+                  <ul className="mb-4 space-y-[6px] leading-[1.7]" style={{ paddingLeft: '30px' }}>
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="mb-4 space-y-[6px] leading-[1.7]" style={{ paddingLeft: '30px' }}>
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => <li className="mb-[6px] leading-[1.7]">{children}</li>,
+
+                // Blockquotes - Spec: Blockquotes
+                blockquote: ({ children }) => (
+                  <blockquote
+                    className="ml-0 mb-4 py-2 italic"
+                    style={{
+                      borderLeft: '4px solid #3498db',
+                      paddingLeft: '16px',
+                      color: '#555',
+                      backgroundColor: '#f8f9fa'
+                    }}
+                  >
+                    {children}
+                  </blockquote>
+                ),
+
+                // Tables - Spec: Tables
+                table: ({ children }) => (
+                  <table className="border-collapse w-full mb-4" style={{ border: 'none' }}>
+                    {children}
+                  </table>
+                ),
+                thead: ({ children }) => (
+                  <thead style={{ backgroundColor: '#3498db', color: 'white' }}>
+                    {children}
+                  </thead>
+                ),
                 tbody: ({ children }) => <tbody>{children}</tbody>,
-                tr: ({ children }) => <tr className="border-b border-gray-300">{children}</tr>,
-                th: ({ children }) => <th className="border border-gray-300 px-3 py-2 text-left font-semibold">{children}</th>,
-                td: ({ children }) => <td className="border border-gray-300 px-3 py-2">{children}</td>,
+                tr: ({ children, ...props }) => {
+                  // Apply alternating row background (even rows)
+                  const isEven = props.node?.position?.start.line ? props.node.position.start.line % 2 === 0 : false;
+                  return (
+                    <tr style={{ backgroundColor: isEven ? '#f8f9fa' : 'transparent' }}>
+                      {children}
+                    </tr>
+                  );
+                },
+                th: ({ children }) => (
+                  <th className="px-3 py-3 text-left font-semibold" style={{ border: '1px solid #dfe6e9' }}>
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-[10px]" style={{ border: '1px solid #dfe6e9' }}>
+                    {children}
+                  </td>
+                ),
+
+                // Horizontal Rule - Spec: Horizontal Rule
+                hr: () => (
+                  <hr className="my-6" style={{ border: 'none', borderTop: '2px solid #e0e0e0' }} />
+                ),
               }}
             >
               {content.content}
