@@ -14,9 +14,15 @@
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FileViewerPanel } from '../FileViewerPanel';
+import { FileViewerProvider } from '../file-viewer/FileViewerContext';
 
 // Mock fetch for API calls
 global.fetch = jest.fn();
+
+// Test helper to render with FileViewerProvider
+const renderWithProvider = (ui: React.ReactElement) => {
+  return render(<FileViewerProvider>{ui}</FileViewerProvider>);
+};
 
 describe('FileViewerPanel', () => {
   beforeEach(() => {
@@ -36,20 +42,20 @@ describe('FileViewerPanel', () => {
   });
 
   describe('AC-1, AC-2: Panel rendering and label', () => {
-    it('renders the file viewer panel with "Output Files" label', async () => {
-      render(<FileViewerPanel />);
+    it('renders the file viewer panel with "Agent Output Files" label', async () => {
+      renderWithProvider(<FileViewerPanel />);
 
       // Wait for initial fetch to complete
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
       });
 
-      // AC-2: Panel clearly labeled "Output Files"
-      expect(screen.getByText('Output Files')).toBeInTheDocument();
+      // AC-2: Panel clearly labeled "Agent Output Files"
+      expect(screen.getByText('Agent Output Files')).toBeInTheDocument();
     });
 
     it('renders with split-pane layout structure', () => {
-      const { container } = render(<FileViewerPanel />);
+      const { container } = renderWithProvider(<FileViewerPanel />);
 
       // AC-1: File viewer panel appears in UI (split-pane layout)
       const panel = container.firstChild as HTMLElement;
@@ -58,23 +64,208 @@ describe('FileViewerPanel', () => {
     });
   });
 
+  describe('Story 6.2: Top/Bottom Split Layout', () => {
+    it('renders with vertical split layout (flex-col)', async () => {
+      // Mock tree with files to show layout
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'file1.txt', path: 'file1.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      const { container } = renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      });
+
+      // Story 6.2 AC-1: Layout changes from left/right to top/bottom
+      const layoutContainer = container.querySelector('.flex-1.flex.flex-col.overflow-hidden');
+      expect(layoutContainer).toBeInTheDocument();
+      expect(layoutContainer).toHaveClass('flex-col');
+    });
+
+    it('top section (DirectoryTree) has 40% height with overflow', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'file1.txt', path: 'file1.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      const { container } = renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      });
+
+      // Story 6.2 AC-2: Top section has h-[40%] with overflow-y-auto
+      const topSection = container.querySelector('.h-\\[40\\%\\].overflow-y-auto.border-b');
+      expect(topSection).toBeInTheDocument();
+      expect(topSection).toHaveClass('h-[40%]', 'overflow-y-auto', 'border-b', 'border-gray-200');
+    });
+
+    it('bottom section (FileContent) has 60% height with overflow', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'file1.txt', path: 'file1.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      const { container } = renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      });
+
+      // Story 6.2 AC-3: Bottom section has h-[60%] with overflow-y-auto
+      const bottomSection = container.querySelector('.h-\\[60\\%\\].overflow-y-auto');
+      expect(bottomSection).toBeInTheDocument();
+      expect(bottomSection).toHaveClass('h-[60%]', 'overflow-y-auto');
+    });
+
+    it('sections have independent scrolling (overflow-y-auto on both)', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'file1.txt', path: 'file1.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      const { container } = renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      });
+
+      // Story 6.2 AC-7: Independent scrolling via overflow-y-auto
+      const topSection = container.querySelector('.h-\\[40\\%\\].overflow-y-auto.border-b');
+      const bottomSection = container.querySelector('.h-\\[60\\%\\].overflow-y-auto');
+
+      expect(topSection).toHaveClass('overflow-y-auto');
+      expect(bottomSection).toHaveClass('overflow-y-auto');
+    });
+
+    it('border separates top and bottom sections', async () => {
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'file1.txt', path: 'file1.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      const { container } = renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('file1.txt')).toBeInTheDocument();
+      });
+
+      // Story 6.2: Visual separation with border-b
+      const topSection = container.querySelector('.h-\\[40\\%\\].overflow-y-auto.border-b');
+      expect(topSection).toHaveClass('border-b', 'border-gray-200');
+    });
+
+    it('file selection in tree updates content in bottom section', async () => {
+      const user = userEvent.setup();
+
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          root: {
+            name: 'root',
+            path: '',
+            type: 'directory',
+            children: [
+              { name: 'test.txt', path: 'test.txt', type: 'file', size: 100 },
+            ],
+          },
+        }),
+      });
+
+      renderWithProvider(<FileViewerPanel />);
+
+      await waitFor(() => {
+        expect(screen.getByText('test.txt')).toBeInTheDocument();
+      });
+
+      // Mock file content response
+      (global.fetch as jest.Mock).mockResolvedValue({
+        json: async () => ({
+          success: true,
+          content: 'Test file content',
+          mimeType: 'text/plain',
+          size: 100,
+          isBinary: false,
+          truncated: false,
+        }),
+      });
+
+      // Story 6.2 AC-6: File selection in tree updates content
+      const fileItem = screen.getByText('test.txt');
+      await user.click(fileItem);
+
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith(
+          expect.stringContaining('/api/files/content?path=test.txt')
+        );
+      });
+    });
+  });
+
   describe('AC-3: Panel visibility', () => {
     it('renders by default (always visible for MVP)', () => {
-      const { container } = render(<FileViewerPanel />);
+      const { container } = renderWithProvider(<FileViewerPanel />);
 
       // AC-3: Panel always visible by default
       expect(container.firstChild).toBeInTheDocument();
     });
 
     it('hides when isVisible prop is false', () => {
-      const { container } = render(<FileViewerPanel isVisible={false} />);
+      const { container } = renderWithProvider(<FileViewerPanel isVisible={false} />);
 
       // AC-3: Panel toggleable via prop (for future extensibility)
       expect(container.firstChild).toBeNull();
     });
 
     it('shows when isVisible prop is true', () => {
-      const { container } = render(<FileViewerPanel isVisible={true} />);
+      const { container } = renderWithProvider(<FileViewerPanel isVisible={true} />);
 
       expect(container.firstChild).toBeInTheDocument();
     });
@@ -82,7 +273,7 @@ describe('FileViewerPanel', () => {
 
   describe('AC-4: Empty state display', () => {
     it('shows "No files yet" message when no files are present', () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       // AC-4: Empty state shows "No files yet" message
       expect(screen.getByText('No files yet')).toBeInTheDocument();
@@ -90,7 +281,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('displays empty state icon', () => {
-      const { container } = render(<FileViewerPanel />);
+      const { container } = renderWithProvider(<FileViewerPanel />);
 
       // Story 5.2 note: Multiple SVGs now exist (refresh button + empty state icon)
       // Find the empty state icon specifically (inside the empty state div)
@@ -103,9 +294,9 @@ describe('FileViewerPanel', () => {
 
   describe('Panel header', () => {
     it('renders header with correct styling', () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
-      const header = screen.getByText('Output Files').closest('div');
+      const header = screen.getByText('Agent Output Files').closest('div');
       expect(header).toHaveClass('flex', 'items-center', 'justify-between');
       expect(header).toHaveClass('px-4', 'py-3');
       expect(header).toHaveClass('border-b', 'border-gray-200', 'bg-gray-50');
@@ -114,7 +305,7 @@ describe('FileViewerPanel', () => {
 
   describe('Styling consistency', () => {
     it('uses Tailwind CSS classes for consistent styling', () => {
-      const { container } = render(<FileViewerPanel />);
+      const { container } = renderWithProvider(<FileViewerPanel />);
 
       const panel = container.firstChild as HTMLElement;
       // Verify Tailwind classes are applied (Epic 3 styling consistency)
@@ -125,7 +316,7 @@ describe('FileViewerPanel', () => {
 
   describe('Story 5.2: Directory tree integration', () => {
     it('fetches directory tree on mount', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalledWith('/api/files/tree');
@@ -133,7 +324,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('renders refresh button in header', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(global.fetch).toHaveBeenCalled();
@@ -149,7 +340,7 @@ describe('FileViewerPanel', () => {
         () => new Promise((resolve) => setTimeout(resolve, 100))
       );
 
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       // Should show loading immediately
       expect(screen.getByText('Loading files...')).toBeInTheDocument();
@@ -164,7 +355,7 @@ describe('FileViewerPanel', () => {
         }),
       });
 
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('Failed to load directory tree')).toBeInTheDocument();
@@ -174,7 +365,7 @@ describe('FileViewerPanel', () => {
     it('displays error message on network failure', async () => {
       (global.fetch as jest.Mock).mockRejectedValue(new Error('Network error'));
 
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('Network error loading directory tree')).toBeInTheDocument();
@@ -185,7 +376,7 @@ describe('FileViewerPanel', () => {
   describe('Story 5.5: Refresh File List', () => {
     describe('AC-1: Auto-refresh after agent response', () => {
       it('triggers refresh when agent-response-complete event fires', async () => {
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         // Wait for initial load
         await waitFor(() => {
@@ -236,7 +427,7 @@ describe('FileViewerPanel', () => {
 
         (global.fetch as jest.Mock).mockResolvedValue({ json: async () => treeWithFile });
 
-        const { rerender } = render(<FileViewerPanel />);
+        const { rerender } = renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalled();
@@ -252,7 +443,7 @@ describe('FileViewerPanel', () => {
 
     describe('AC-2: Manual refresh button', () => {
       it('renders manual refresh button with correct aria-label', async () => {
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalled();
@@ -265,7 +456,7 @@ describe('FileViewerPanel', () => {
 
       it('calls API when refresh button is clicked', async () => {
         const user = userEvent.setup();
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -293,7 +484,7 @@ describe('FileViewerPanel', () => {
         );
 
         const user = userEvent.setup();
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         const refreshButton = screen.getByTitle('Refresh directory tree');
 
@@ -326,7 +517,7 @@ describe('FileViewerPanel', () => {
         );
 
         const user = userEvent.setup();
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           const refreshButton = screen.getByTitle('Refresh directory tree');
@@ -356,7 +547,7 @@ describe('FileViewerPanel', () => {
           }),
         });
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -403,7 +594,7 @@ describe('FileViewerPanel', () => {
           }),
         });
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -450,7 +641,7 @@ describe('FileViewerPanel', () => {
       it('debounces rapid agent completion events', async () => {
         jest.useFakeTimers();
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         // Wait for initial load
         await waitFor(() => {
@@ -494,7 +685,7 @@ describe('FileViewerPanel', () => {
       it('prevents refresh calls more frequent than 2 seconds', async () => {
         jest.useFakeTimers();
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalledTimes(1);
@@ -542,7 +733,7 @@ describe('FileViewerPanel', () => {
           }),
         });
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalled();
@@ -577,7 +768,7 @@ describe('FileViewerPanel', () => {
           }),
         });
 
-        render(<FileViewerPanel />);
+        renderWithProvider(<FileViewerPanel />);
 
         await waitFor(() => {
           expect(global.fetch).toHaveBeenCalled();
@@ -657,7 +848,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('should navigate to next file on ArrowDown key press', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('file1.txt')).toBeInTheDocument();
@@ -689,7 +880,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('should navigate to previous file on ArrowUp key press', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('file1.txt')).toBeInTheDocument();
@@ -720,7 +911,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('should wrap navigation from last file to first file', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('file3.txt')).toBeInTheDocument();
@@ -775,7 +966,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('should ignore keyboard shortcuts when input has focus', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('file1.txt')).toBeInTheDocument();
@@ -801,7 +992,7 @@ describe('FileViewerPanel', () => {
     });
 
     it('should build flat file list in depth-first order', async () => {
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('file1.txt')).toBeInTheDocument();
@@ -863,7 +1054,7 @@ describe('FileViewerPanel', () => {
         }),
       });
 
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('No files yet')).toBeInTheDocument();
@@ -900,7 +1091,7 @@ describe('FileViewerPanel', () => {
         }),
       });
 
-      render(<FileViewerPanel />);
+      renderWithProvider(<FileViewerPanel />);
 
       await waitFor(() => {
         expect(screen.getByText('onlyfile.txt')).toBeInTheDocument();

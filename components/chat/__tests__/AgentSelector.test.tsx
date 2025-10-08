@@ -52,7 +52,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     expect(screen.getByText('Loading agents...')).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -87,7 +87,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Wait for agents to load and select to be enabled
     await waitFor(() => {
@@ -119,7 +119,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -137,7 +137,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -153,7 +153,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -172,7 +172,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -191,7 +191,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId="alex-facilitator" onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId="alex-facilitator" onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {
@@ -210,7 +210,7 @@ describe('AgentSelector', () => {
     const mockOnSelect = jest.fn();
 
     // Act
-    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} />);
+    render(<FileViewerProvider><AgentSelector selectedAgentId={undefined} onAgentSelect={mockOnSelect} /></FileViewerProvider>);
 
     // Assert
     await waitFor(() => {

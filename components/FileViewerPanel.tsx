@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { DirectoryTree } from './DirectoryTree';
 import { FileContentDisplay } from './FileContentDisplay';
+import { useFileViewer } from './file-viewer/FileViewerContext';
 
 /**
  * FileViewerPanel Component
@@ -54,6 +55,8 @@ interface FileViewerPanelProps {
 }
 
 export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
+  const { toggle } = useFileViewer();
+
   // State management using React hooks per tech spec constraint
   const [state, setState] = useState<FileViewerState>({
     treeData: null,
@@ -369,31 +372,57 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
 
   return (
     <div className="flex flex-col h-full border-l border-gray-200 bg-white">
-      {/* AC-2: Panel header with "Output Files" label */}
+      {/* AC-2: Panel header with "Agent Output Files" label */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-sm font-semibold text-gray-700">Output Files</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Agent Output Files</h2>
 
-        {/* Story 5.2 AC-6: Manual refresh button */}
-        <button
-          onClick={loadDirectoryTree}
-          disabled={state.isLoading}
-          className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          title="Refresh directory tree"
-        >
-          <svg
-            className={`h-4 w-4 ${state.isLoading ? 'animate-spin' : ''}`}
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <div className="flex items-center gap-2">
+          {/* Story 5.2 AC-6: Manual refresh button */}
+          <button
+            onClick={loadDirectoryTree}
+            disabled={state.isLoading}
+            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Refresh directory tree"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-        </button>
+            <svg
+              className={`h-4 w-4 ${state.isLoading ? 'animate-spin' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              />
+            </svg>
+          </button>
+
+          {/* Story 6.1/6.2: Close file viewer button */}
+          <button
+            onClick={toggle}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            aria-label="Close file viewer"
+            title="Close Files (Ctrl/Cmd + B)"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+            Close Files
+          </button>
+        </div>
       </div>
 
       {/* AC-4: Empty state display */}
@@ -435,11 +464,11 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
         </div>
       )}
 
-      {/* File tree and content */}
+      {/* Story 6.2: File tree and content (top/bottom split) */}
       {!isEmpty && !state.isLoading && (
-        <div className="flex-1 flex overflow-hidden">
-          {/* Story 5.2: Directory tree navigation (left pane) */}
-          <div className="w-64 flex-shrink-0 border-r border-gray-200 overflow-auto">
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Story 6.2 AC-2: Directory tree navigation (top section - 40% height) */}
+          <div className="h-[40%] overflow-y-auto border-b border-gray-200">
             <DirectoryTree
               root={state.treeData}
               onFileSelect={handleFileSelect}
@@ -448,8 +477,8 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
             />
           </div>
 
-          {/* Story 5.3: File content display (right pane) */}
-          <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Story 6.2 AC-3: File content display (bottom section - 60% height) */}
+          <div className="h-[60%] overflow-y-auto">
             {/* Story 5.6 AC-2: FileContentDisplay now includes breadcrumb */}
             <FileContentDisplay
               content={state.fileContent}

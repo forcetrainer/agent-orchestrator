@@ -119,31 +119,15 @@ export function AgentSelector({
               New Conversation
             </button>
           )}
-          {/* Story 6.1: File Viewer Toggle Button (AC-1, AC-2) */}
-          <button
-            onClick={toggle}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
-            aria-label={isOpen ? 'Close file viewer' : 'Open file viewer'}
-            title={isOpen ? 'Close file viewer (Ctrl/Cmd + B)' : 'Open file viewer (Ctrl/Cmd + B)'}
-          >
-            {isOpen ? (
-              // Close icon when viewer is open
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            ) : (
-              // Files icon when viewer is closed
+          {/* Story 6.1: File Viewer Toggle Button (AC-1, AC-2) - Only show when viewer is closed */}
+          {!isOpen && (
+            <button
+              onClick={toggle}
+              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+              aria-label="Open file viewer"
+              title="Open file viewer (Ctrl/Cmd + B)"
+            >
+              {/* Files icon */}
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -158,9 +142,9 @@ export function AgentSelector({
                   d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
                 />
               </svg>
-            )}
-            {isOpen ? 'Close' : 'Files'}
-          </button>
+              Files
+            </button>
+          )}
         </div>
       </div>
     );
@@ -248,31 +232,15 @@ export function AgentSelector({
             New Conversation
           </button>
         )}
-        {/* Story 6.1: File Viewer Toggle Button (AC-1, AC-2) */}
-        <button
-          onClick={toggle}
-          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
-          aria-label={isOpen ? 'Close file viewer' : 'Open file viewer'}
-          title={isOpen ? 'Close file viewer (Ctrl/Cmd + B)' : 'Open file viewer (Ctrl/Cmd + B)'}
-        >
-          {isOpen ? (
-            // Close icon when viewer is open
-            <svg
-              className="w-4 h-4"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          ) : (
-            // Files icon when viewer is closed
+        {/* Story 6.1: File Viewer Toggle Button (AC-1, AC-2) - Only show when viewer is closed */}
+        {!isOpen && (
+          <button
+            onClick={toggle}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            aria-label="Open file viewer"
+            title="Open file viewer (Ctrl/Cmd + B)"
+          >
+            {/* Files icon */}
             <svg
               className="w-4 h-4"
               fill="none"
@@ -287,9 +255,9 @@ export function AgentSelector({
                 d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"
               />
             </svg>
-          )}
-          {isOpen ? 'Close' : 'Files'}
-        </button>
+            Files
+          </button>
+        )}
       </div>
     </div>
   );

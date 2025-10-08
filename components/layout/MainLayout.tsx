@@ -35,16 +35,16 @@ export function MainLayout({ children }: MainLayoutProps) {
           <motion.aside
             key="file-viewer"
             initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 'auto', opacity: 1 }}
+            animate={{ width: '40%', opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{
               type: 'spring',
               damping: 20,
               stiffness: 300,
             }}
-            className="overflow-hidden"
+            className="overflow-hidden min-w-[400px]"
           >
-            <div className="w-96 min-w-[320px] max-w-[480px] h-full">
+            <div className="w-full h-full">
               <FileViewerPanel />
             </div>
           </motion.aside>

@@ -1,0 +1,195 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.2</storyId>
+    <title>File Viewer Layout Redesign (Top/Bottom Split)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>file content displayed in a wider format</iWant>
+    <soThat>I can read files more easily (current narrow side panel is cramped)</soThat>
+    <tasks>
+      - Task 1: Update FileViewer component layout (AC: #1, #2, #3)
+        - Change FileViewerPanel from horizontal to vertical split (flex-col)
+        - Set top section (DirectoryTree) to 40% height with overflow-y-auto
+        - Set bottom section (FileContent) to 60% height with overflow-y-auto
+        - Add border-b between sections for visual separation
+
+      - Task 2: Optimize DirectoryTree for horizontal space (AC: #2, #5)
+        - Review existing DirectoryTree component for compact layout
+        - Ensure tree remains fully functional (expand/collapse, selection)
+        - Consider horizontal scrolling for deep nesting if needed
+        - Preserve all existing tree functionality (no feature regression)
+
+      - Task 3: Update FileContent display (AC: #3, #4, #6)
+        - Verify FileContent uses full panel width (100%)
+        - Test with various markdown files (ensure no horizontal scroll for typical content)
+        - Confirm file selection in tree triggers content update
+        - Ensure long code blocks wrap or scroll appropriately
+
+      - Task 4: Implement independent scrolling (AC: #7)
+        - Verify DirectoryTree scrolls independently (overflow-y-auto)
+        - Verify FileContent scrolls independently (overflow-y-auto)
+        - Test with long file lists and large file contents
+        - Ensure scroll position persists when switching between files
+
+      - Task 5: Update tests (All ACs)
+        - Update FileViewerPanel tests for new layout structure
+        - Test DirectoryTree functionality in top section
+        - Test FileContent display in bottom section
+        - Test independent scrolling behavior
+        - Verify no horizontal scrolling for typical markdown content
+        - Test in Chrome, Firefox, Safari, Edge
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="1">File viewer internal layout changes from left/right to top/bottom split</ac>
+    <ac id="2">Top section (40% height): Directory tree (compact or horizontal layout)</ac>
+    <ac id="3">Bottom section (60% height): File content display (full width of panel)</ac>
+    <ac id="4">File content is easier to read with wider format (no horizontal scrolling for normal content)</ac>
+    <ac id="5">Directory tree remains fully functional in top section</ac>
+    <ac id="6">File selection in tree updates content in bottom section</ac>
+    <ac id="7">Both sections have independent scrolling</ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-6.md" section="1. Dynamic File Viewer (Stories 6.1, 6.2)">
+        Implementation details for FileViewer component with top/bottom split layout.
+
+        Component Structure (lines 148-163):
+        ```typescript
+        export function FileViewer() {
+          return (
+            &lt;div className="flex flex-col h-full"&gt;
+              {/* Top: Directory Tree (40%) */}
+              &lt;div className="h-[40%] overflow-y-auto border-b border-gray-200"&gt;
+                &lt;DirectoryTree /&gt;
+              &lt;/div&gt;
+
+              {/* Bottom: File Content (60%) */}
+              &lt;div className="h-[60%] overflow-y-auto"&gt;
+                &lt;FileContent /&gt;
+              &lt;/div&gt;
+            &lt;/div&gt;
+          );
+        }
+        ```
+      </doc>
+      <doc path="docs/epics.md" section="Story 6.2">
+        Acceptance criteria and prerequisites. Story depends on Story 6.1 (toggle functionality) being complete. Top/bottom split provides wider content area for improved markdown readability. 40/60 ratio prioritizes content viewing over navigation.
+      </doc>
+      <doc path="docs/PRD.md" section="Epic 6: Enhanced UX &amp; Interactive Features">
+        Business value: Addresses user feedback that file viewer narrow side panel is cramped. Improves readability before production deployment. Part of UX improvements essential before Docker deployment (Epic 7).
+      </doc>
+      <doc path="docs/epic-6-architecture.md" section="Component Specifications">
+        Architectural design for file viewer layout changes. Flexbox column layout with independent scrolling. No new dependencies required (pure layout change).
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="components/FileViewerPanel.tsx" kind="component" symbol="FileViewerPanel" lines="1-467" reason="Main container component that needs layout change from horizontal (left/right) to vertical (top/bottom) split. Currently uses flex with w-64 left pane and flex-1 right pane (lines 440-463). Must change to flex-col with h-[40%] top and h-[60%] bottom sections.">
+        Current implementation:
+        - Lines 440-463: Horizontal split using `flex` and `w-64` for tree, `flex-1` for content
+        - Line 442: DirectoryTree in left pane with w-64 width
+        - Line 452: FileContentDisplay in right pane with flex-1
+        - Must refactor to vertical split (flex-col) with height-based sections
+      </artifact>
+
+      <artifact path="components/DirectoryTree.tsx" kind="component" symbol="DirectoryTree" lines="1-234" reason="Tree navigation component that will move to top section (40% height). Already has overflow-auto (line 202). No changes needed to tree functionality, but verify compact layout works well in horizontal space.">
+        Existing features to preserve:
+        - Lines 96-116: Expand/collapse functionality (AC #5)
+        - Lines 108-115: File selection callback (AC #6)
+        - Lines 96-151: Proper indentation and icons (maintain in top section)
+        - Line 202: Already has overflow-auto for scrolling (AC #7)
+      </artifact>
+
+      <artifact path="components/FileContentDisplay.tsx" kind="component" symbol="FileContentDisplay" lines="1-347" reason="Content display component that will move to bottom section (60% height). Already has overflow scrolling (line 263 scrollContainerRef). Must verify full-width display works correctly.">
+        Existing features to preserve:
+        - Lines 263-334: Content scrolling container with ref (AC #7)
+        - Lines 264-326: Markdown rendering with full-width display (AC #4)
+        - Lines 50-57: File selection triggers content load (AC #6)
+        - Lines 85-96: Scroll reset on file change (AC #7 - scroll position management)
+      </artifact>
+
+      <artifact path="components/__tests__/FileViewerPanel.test.tsx" kind="test" symbol="FileViewerPanel tests" reason="Test suite that needs updates for new vertical layout structure. Must verify top/bottom sections render correctly and test independent scrolling."/>
+    </code>
+
+    <dependencies>
+      <node>
+        <pkg name="react" version="^18"/>
+        <pkg name="react-dom" version="^18"/>
+        <pkg name="next" version="14.2.0"/>
+        <pkg name="framer-motion" version="^10.16.4"/>
+        <pkg name="react-markdown" version="^10.1.0"/>
+        <pkg name="remark-gfm" version="^4.0.1"/>
+      </node>
+      <testing>
+        <pkg name="@testing-library/react" version="^16.3.0"/>
+        <pkg name="@testing-library/jest-dom" version="^6.9.1"/>
+        <pkg name="@testing-library/user-event" version="^14.6.1"/>
+        <pkg name="@types/jest" version="^30.0.0"/>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="layout">Flexbox column layout for FileViewerPanel: `flex flex-col h-full`. Top section: `h-[40%] overflow-y-auto border-b border-gray-200`. Bottom section: `h-[60%] overflow-y-auto`. Independent scrolling via overflow-y-auto on each section.</constraint>
+    <constraint id="no-regression">Preserve ALL existing file viewer functionality from Epic 5. DirectoryTree must maintain expand/collapse, file selection, session metadata display. FileContent must maintain markdown rendering, scroll management, breadcrumb navigation.</constraint>
+    <constraint id="dependencies">Requires Story 6.1 complete (toggle functionality). No new dependencies - pure layout change using existing Tailwind CSS utilities.</constraint>
+    <constraint id="design-rationale">Top/bottom split provides wider content area (improves markdown readability). 40/60 ratio prioritizes content viewing over navigation. Independent scrolling prevents scroll interference between tree and content.</constraint>
+    <constraint id="testing">Must test with various file types (markdown, text, code) to ensure no horizontal scrolling. Test with long file lists and large contents to verify independent scrolling. Cross-browser testing (Chrome, Firefox, Safari, Edge).</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="FileViewerPanel" kind="component" signature="({ isVisible?: boolean }): JSX.Element" path="components/FileViewerPanel.tsx">
+      Main container component. Props: isVisible (optional boolean, default true). Currently renders horizontal split, must change to vertical split.
+    </interface>
+
+    <interface name="DirectoryTree" kind="component" signature="({ root, onFileSelect, selectedFile, newFiles }): JSX.Element" path="components/DirectoryTree.tsx">
+      Tree navigation component. Props: root (FileTreeNode | null), onFileSelect ((path: string) => void), selectedFile (string | null), newFiles (string[]). No changes to interface, only container layout changes.
+    </interface>
+
+    <interface name="FileContentDisplay" kind="component" signature="({ content, isLoading, error, currentFilePath, treeData, onBreadcrumbNavigate }): JSX.Element" path="components/FileContentDisplay.tsx">
+      Content display component. Props include FileContentResponse, loading/error states, breadcrumb data. No changes to interface, only container layout changes.
+    </interface>
+
+    <interface name="FileViewerState" kind="type" signature="{ treeData, selectedFile, fileContent, isLoading, viewMode, ... }" path="components/FileViewerPanel.tsx">
+      State interface for file viewer. Lines 34-50. No changes needed - layout change doesn't affect state structure.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing follows Epic 5 established patterns using Jest and React Testing Library. Component tests verify rendering and behavior. Integration tests verify component interactions (tree selection triggers content update). Visual regression tests ensure layout works with various content types. Cross-browser compatibility verified through test assertions.
+
+      Test structure from Story 6.1:
+      - Unit tests: Component rendering and behavior
+      - Integration tests: Component interactions (tree → content)
+      - Visual tests: Layout verification with various content
+      - Accessibility tests: Keyboard navigation, ARIA labels
+    </standards>
+
+    <locations>
+      - components/__tests__/FileViewerPanel.test.tsx (primary test suite to update)
+      - components/__tests__/DirectoryTree.test.tsx (verify no regression)
+      - components/__tests__/FileContentDisplay.test.tsx (verify no regression)
+      - components/__tests__/ChatPanelFileViewerIntegration.test.tsx (integration tests)
+    </locations>
+
+    <ideas>
+      <test ac="1,2,3">Test FileViewerPanel renders with vertical layout (flex-col). Verify top section has h-[40%] class and bottom section has h-[60%] class. Verify border-b between sections.</test>
+      <test ac="2,5">Test DirectoryTree renders in top section. Verify expand/collapse still works. Verify file selection callback triggers. Test with deeply nested folders.</test>
+      <test ac="3,4,6">Test FileContentDisplay renders in bottom section with full width. Mock various markdown content widths. Verify no horizontal scroll for typical content. Verify file selection updates content.</test>
+      <test ac="7">Test independent scrolling. Mock long file list in tree and large content. Verify scrolling tree doesn't affect content scroll position and vice versa.</test>
+      <test ac="4">Visual regression test: Render markdown with code blocks, tables, long lines. Assert no horizontal overflow (scrollWidth &lt;= clientWidth).</test>
+      <test ac="all">Integration test: Click file in tree → verify content updates in bottom section → verify both sections scroll independently.</test>
+    </ideas>
+  </tests>
+</story-context>
