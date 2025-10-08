@@ -35,7 +35,7 @@ Agent Orchestrator provides three core capabilities:
 - **Framework**: Next.js 14 (App Router)
 - **Runtime**: Node.js 18+
 - **Language**: TypeScript
-- **AI Provider**: OpenAI API (GPT-4/GPT-3.5)
+- **AI Provider**: OpenAI API - Testeing primarily with gpt-5-mini
 - **UI Library**: React 18
 - **Styling**: Tailwind CSS
 - **Testing**: Jest + React Testing Library
