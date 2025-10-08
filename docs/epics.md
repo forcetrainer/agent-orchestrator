@@ -1,40 +1,45 @@
 # Agent Orchestrator - Epic Breakdown
 
 **Author:** Bryan
-**Date:** 2025-10-02 (Updated: 2025-10-05)
+**Date:** 2025-10-02 (Updated: 2025-10-07)
 **Project Level:** Level 3 (Full Product)
-**Target Scale:** 52 stories across 7 epics
+**Target Scale:** 62 stories across 8 epics
 
 ---
 
 ## Epic Overview
 
-This epic breakdown supports the Agent Orchestrator PRD, organizing development into 7 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
+This epic breakdown supports the Agent Orchestrator PRD, organizing development into 8 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
 
 **IMPORTANT ARCHITECTURAL PIVOT (October 2025):**
 Epic 2 and Epic 3 validation testing revealed that the initial OpenAI integration approach did not properly implement the agentic execution loop required for BMAD agents. Epic 4 "Agent Execution Architecture & Bundle System" was created to implement the correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md, replacing the deprecated Epic 2 implementation.
 
+**NEW EPIC ADDED (October 2025):**
+Epic 6 "Enhanced UX & Interactive Features" was added based on user feedback from Epics 1-5. Users reported that the always-visible file viewer reduces chat space, sessions/files are hard to distinguish, and waiting for full responses feels slow. Epic 6 addresses these pain points before Docker deployment.
+
 **Epic Sequencing (Solo Developer - Revised Sequential Order):**
 1. **Epic 1** (Backend Foundation) - ✅ COMPLETE
 2. **Epic 2** (OpenAI Integration) - ⚠️ DEPRECATED (learning preserved, replaced by Epic 4)
-3. **Epic 3** (Chat Interface) - 🔄 PARTIALLY COMPLETE (Stories 3.1-3.8 done, 3.4/3.9/3.10 blocked)
-4. **Epic 4** (Agent Execution Architecture & Bundle System) - 🚧 IN PROGRESS (NEW - replaces Epic 2)
-5. **Epic 5** (File Viewer) - Requires Epic 4 complete
-6. **Epic 6** (Docker Deployment) - Requires fully working application (Epics 1-5 complete)
-7. **Epic 7** (Polish & Docs) - Final polish after all features complete
+3. **Epic 3** (Chat Interface) - ✅ COMPLETE
+4. **Epic 4** (Agent Execution Architecture & Bundle System) - ✅ COMPLETE
+5. **Epic 5** (File Viewer) - ✅ COMPLETE
+6. **Epic 6** (Enhanced UX & Interactive Features) - 🎯 NEXT (NEW - added based on user feedback)
+7. **Epic 7** (Docker Deployment) - Requires fully working application (Epics 1-6 complete)
+8. **Epic 8** (Polish & Docs) - Final polish after all features complete
 
-**Critical Dependency Chain (Solo Developer):** Epic 1 ✅ → Epic 4 🚧 → Epic 3 (complete) → Epic 5 → Epic 6 → Epic 7
+**Critical Dependency Chain (Solo Developer):** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → **Epic 6 🎯** → Epic 7 → Epic 8
 
 **⚠️ Solo Developer Warning:** Unlike team environments where epics can overlap, as a solo developer you MUST complete each epic fully before moving to the next. Half-built epics create technical debt and context switching overhead.
 
-**Total Estimated Effort:** 52 stories (Level 3 scope: 12-40 stories, expanded due to architectural correction)
+**Total Estimated Effort:** 62 stories (Level 3 scope: 12-40 stories, expanded due to architectural correction + UX improvements)
 - Epic 1: 6 stories ✅ COMPLETE
 - Epic 2: 10 stories ⚠️ DEPRECATED
-- Epic 3: 9 stories (6 complete, 3 blocked)
-- Epic 4: 12 stories 🚧 IN PROGRESS
-- Epic 5: 7 stories
-- Epic 6: 6 stories
-- Epic 7: 8 stories
+- Epic 3: 9 stories ✅ COMPLETE
+- Epic 4: 12 stories ✅ COMPLETE
+- Epic 5: 7 stories ✅ COMPLETE
+- Epic 6: 10 stories 🎯 NEXT
+- Epic 7: 6 stories (Docker)
+- Epic 8: 8 stories (Polish)
 
 ---
 
@@ -1441,7 +1446,384 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-### Epic 6: Docker Deployment and Configuration
+### Epic 6: Enhanced UX & Interactive Features
+
+**Epic Goal:** Improve usability and add real-time interactive capabilities based on user feedback from Epics 1-5
+
+**Business Value:** Addresses key user pain points: file viewer takes up too much chat space, sessions/files are hard to distinguish, waiting for full responses feels slow, and generic status messages don't communicate what's happening. These UX improvements are essential before production deployment (Docker).
+
+**Success Criteria:**
+- File viewer can be collapsed to give chat 100% width
+- File content displays in top/bottom split (better readability than narrow side panel)
+- Session folders have user-friendly names (not just UUIDs)
+- Files have descriptive names based on purpose (not "output.md")
+- Users can drag files from viewer into chat to provide context
+- Agent responses stream token-by-token (like ChatGPT)
+- Status messages show actual tool activity ("Reading X...", "Writing Y...")
+
+**Dependencies:** Epic 5 (File Viewer) must be complete - Epic 6 enhances existing file viewer and chat components
+
+**Estimated Stories:** 10 stories (34 points, 2-3 sprints)
+
+**Related Documentation:** `/docs/epic-6-architecture.md`
+
+---
+
+#### Story 6.1: Dynamic File Viewer Toggle
+
+**As a** user
+**I want** to collapse and expand the file viewer
+**So that** I can use full screen width for chat when I need focused reading
+
+**Prerequisites:** Epic 5 complete (file viewer exists)
+
+**Acceptance Criteria:**
+1. Toggle button appears in top-right navigation bar
+2. Button shows "Files" icon when viewer closed, "Close" icon when open
+3. Clicking button smoothly collapses/expands file viewer with 300ms animation
+4. When viewer closed, chat panel uses 100% width (not 70%)
+5. When viewer open, layout is 70% chat / 30% file viewer (current behavior preserved)
+6. Keyboard shortcut `Ctrl/Cmd + B` toggles file viewer
+7. Animation uses spring physics (natural feel, not linear)
+8. Viewer state persists during session (if closed, stays closed until user reopens)
+
+**Technical Notes:**
+- Use Framer Motion for smooth collapse/expand animation
+- CSS Grid adjusts dynamically: `grid-template-columns: 1fr` (closed) vs `1fr 30%` (open)
+- `AnimatePresence` component handles mount/unmount animations
+- State managed via `useFileViewer` hook (React Context)
+
+**Definition of Done:**
+- User can toggle file viewer on/off
+- Chat panel expands to full width when viewer closed
+- Animation is smooth and natural-feeling
+- Keyboard shortcut works
+- No layout jank or flash of unstyled content
+
+---
+
+#### Story 6.2: File Viewer Layout Redesign (Top/Bottom Split)
+
+**As a** user
+**I want** file content displayed in a wider format
+**So that** I can read files more easily (current narrow side panel is cramped)
+
+**Prerequisites:** Story 6.1 (toggle functionality)
+
+**Acceptance Criteria:**
+1. File viewer internal layout changes from left/right to top/bottom split
+2. Top section (40% height): Directory tree (compact or horizontal layout)
+3. Bottom section (60% height): File content display (full width of panel)
+4. File content is easier to read with wider format (no horizontal scrolling for normal content)
+5. Directory tree remains fully functional in top section
+6. File selection in tree updates content in bottom section
+7. Both sections have independent scrolling
+
+**Technical Notes:**
+- Use Flexbox for internal file viewer layout: `flex-direction: column`
+- Directory tree: `height: 40%; overflow-y: auto`
+- File content: `height: 60%; overflow-y: auto`
+- Consider horizontal file tree layout (row of folders) or compact vertical
+- Preserve all existing file tree functionality (expand/collapse, file selection)
+
+**Definition of Done:**
+- File content displays in bottom section with full panel width
+- Directory tree in top section (compact layout)
+- Both sections scroll independently
+- All existing file viewer features work
+- Layout is responsive and doesn't break on smaller screens
+
+---
+
+#### Story 6.3: Session Metadata System
+
+**As a** developer
+**I want** session metadata stored alongside outputs
+**So that** I can generate user-friendly session names and track session details
+
+**Prerequisites:** Epic 5 complete (output directory structure exists)
+
+**Acceptance Criteria:**
+1. `manifest.json` file created in each session folder (e.g., `output/{uuid}/manifest.json`)
+2. Manifest contains: `id`, `agentName`, `agentId`, `workflowName`, `timestamp`, `lastModified`, `userSummary`, `displayName`, `files[]`, `messageCount`, `status`
+3. POST `/api/sessions` endpoint creates new session and generates manifest
+4. GET `/api/sessions` endpoint returns all sessions with metadata
+5. PATCH `/api/sessions/:id` endpoint updates session metadata (e.g., add files)
+6. Display name generated using algorithm: "Oct 7, 2:30 PM - {first 40 chars of user message}"
+7. Falls back to "{workflowName} - {timestamp}" if no user message
+8. Falls back to "{agentName} - {timestamp}" if no workflow
+9. Session creation returns `{ id, displayName, timestamp }`
+
+**Technical Notes:**
+- Use `crypto.randomUUID()` for session IDs
+- Store manifest as JSON in `output/{uuid}/manifest.json`
+- Naming algorithm in `lib/sessions/naming.ts`
+- Metadata operations in `lib/sessions/metadata.ts`
+- TypeScript interfaces in `types/session.ts`
+
+**Definition of Done:**
+- manifest.json created for every new session
+- API endpoints work and return proper data
+- Display names generated correctly with fallbacks
+- Manifest format is well-documented
+- Existing sessions without manifest handled gracefully
+
+---
+
+#### Story 6.4: Smart Session Display in File Viewer
+
+**As a** user
+**I want** to see friendly session names instead of UUIDs
+**So that** I can quickly find the session I'm looking for
+
+**Prerequisites:** Story 6.3 (session metadata system)
+
+**Acceptance Criteria:**
+1. Directory tree displays session `displayName` instead of UUID folder name
+2. Sessions sorted by timestamp (newest first)
+3. Hovering over session shows full UUID in tooltip
+4. If manifest.json missing, fallback to showing UUID (don't crash)
+5. Session list refreshes when new session created
+6. Old sessions (pre-Epic 6) without manifest still appear with UUID names
+
+**Technical Notes:**
+- GET `/api/sessions` returns array of SessionMetadata
+- Frontend maps UUID folder names to display names from manifest
+- Sort sessions by `timestamp` field (descending)
+- Cache session list with 1-minute TTL for performance
+- Handle missing manifest gracefully (log warning, use UUID)
+
+**Definition of Done:**
+- Users see "Oct 7, 2:30 PM - Purchase 10 laptops..." instead of UUID
+- Sessions sorted newest first
+- Tooltip shows UUID on hover
+- No crashes if manifest missing
+- Performance is acceptable (no lag when loading session list)
+
+---
+
+#### Story 6.5: Context-Aware File Naming Validation
+
+**As an** agent builder
+**I want** agents to use descriptive file names
+**So that** users can identify files without opening them
+
+**Prerequisites:** Epic 4 complete (file operations exist)
+
+**Acceptance Criteria:**
+1. Backend validates filenames in `write_file()` tool call
+2. Generic patterns rejected: `output.md`, `output-2.md`, `result.txt`, `file.txt`, `untitled.md`
+3. Error message returned to agent: "Generic filename not allowed. Use descriptive name (e.g., 'procurement-request.md')"
+4. System prompt updated with filename guidelines (examples of good/bad names)
+5. Validation allows descriptive names: `procurement-request.md`, `budget-analysis-q3.csv`, `approval-checklist.md`
+6. Path traversal prevention (no `../`, special chars)
+7. Filename sanitization (kebab-case recommended but not enforced)
+
+**Technical Notes:**
+- Validation in `lib/files/operations.ts` -> `validateFilename()`
+- Regex patterns for generic names: `/^output(-\d+)?\.md$/`, `/^result\./`, `/^file\d*\./`
+- Agent guidance added to system prompt in `lib/openai/client.ts`
+- Keep validation simple (don't be too strict, just block obviously generic names)
+
+**Definition of Done:**
+- Generic filenames rejected with helpful error
+- Agents receive clear guidance in system prompt
+- Descriptive filenames pass validation
+- Path traversal attacks prevented
+- Error messages guide agents to better naming
+
+---
+
+#### Story 6.6: File Reference Attachment UI (Drag & Drop)
+
+**As a** user
+**I want** to drag files from the viewer into the chat input
+**So that** I can reference existing files as context for my next message
+
+**Prerequisites:** Epic 5 complete (file viewer), Story 6.2 (file viewer layout)
+
+**Acceptance Criteria:**
+1. Files in directory tree are draggable (cursor changes to "move")
+2. Chat input area accepts dropped files (shows blue highlight when hovering with file)
+3. Dropped file appears as pill/chip in input area above text field
+4. Pill shows filename and has remove button (× icon)
+5. User can attach multiple files (up to 10)
+6. Clicking × on pill removes attachment
+7. Folders cannot be dragged (only files)
+8. Keyboard alternative: Select file in tree, press Space, then "Attach to Chat" button appears
+9. Screen reader announces "File attached: {filename}"
+10. Drag-drop works with keyboard (Tab to file, Space to grab, Arrow keys to move, Space to drop)
+
+**Technical Notes:**
+- Install `react-dnd` library for drag-drop
+- `DirectoryTree.tsx`: Implement `useDrag()` hook on file items (type: 'FILE_REFERENCE')
+- `MessageInput.tsx`: Implement `useDrop()` hook for drop zone
+- `FileAttachment.tsx`: New pill component (blue background, rounded, with × button)
+- Drag item payload: `{ filepath: string, filename: string }`
+- State: `const [attachments, setAttachments] = useState<FileReference[]>([])`
+
+**Definition of Done:**
+- Users can drag files from tree to chat input
+- Pills appear in input area
+- Remove button works on each pill
+- Keyboard navigation fully functional
+- Accessible (screen reader support)
+- Cannot drag folders (validation)
+
+---
+
+#### Story 6.7: File Attachment Backend Processing
+
+**As a** system
+**I want** to read attached file contents and inject into conversation context
+**So that** the agent can reference file contents in its response
+
+**Prerequisites:** Story 6.6 (UI drag-drop)
+
+**Acceptance Criteria:**
+1. POST `/api/chat` endpoint accepts `attachments` array in request
+2. Backend validates file paths (must be within `output/` directory)
+3. Backend reads file contents for each attachment (max 1MB per file)
+4. File contents injected into conversation as system message before user message
+5. Format: "Files attached by user:\nFile: {filename}\n---\n{content}\n---"
+6. Multiple attachments handled correctly (all files injected)
+7. File not found error handled gracefully (return error to frontend)
+8. File too large error (>1MB) returned to frontend
+9. Path traversal attacks prevented (no `../../etc/passwd`)
+
+**Technical Notes:**
+- New endpoint: POST `/api/files/reference` to read file content
+- Security: `path.resolve()` and check `startsWith(outputDir)`
+- Size check: `fs.stat()` before reading, reject if >1MB
+- Build messages array with system message containing file contents
+- Error responses: 403 (forbidden path), 413 (too large), 404 (not found)
+
+**Definition of Done:**
+- Attached files' contents available to agent
+- Agent can reference file content in responses
+- Security validated (path traversal prevented)
+- File size limits enforced
+- Error handling works (file not found, too large, etc.)
+
+---
+
+#### Story 6.8: OpenAI Streaming Integration
+
+**As a** user
+**I want** to see agent responses appear token-by-token
+**So that** I know the agent is working and can read partial results
+
+**Prerequisites:** Epic 4 complete (OpenAI integration exists)
+
+**Acceptance Criteria:**
+1. Backend uses OpenAI streaming API (`stream: true`)
+2. POST `/api/chat` returns Server-Sent Events (SSE) stream
+3. Frontend receives tokens one-by-one and appends to message bubble
+4. Streaming cursor (▋) appears at end of text while streaming
+5. Tokens batch for 16ms (1 frame) before rendering (avoid layout thrashing)
+6. Stop button cancels stream mid-response
+7. Errors during streaming handled gracefully (connection lost, API error)
+8. Stream completes with `[DONE]` event
+9. Final message saved to conversation history
+10. Perceived latency reduced compared to waiting for full response
+
+**Technical Notes:**
+- OpenAI SDK: `await openai.chat.completions.create({ stream: true })`
+- Backend: Return `ReadableStream` with SSE format
+- Frontend hook: `useStreamingChat()` manages stream state
+- Decode stream: `TextDecoder()` + parse SSE format (`data: {...}\n\n`)
+- React: Accumulate tokens in `streamingContent` state, render in `MessageBubble`
+- Headers: `Content-Type: text/event-stream`, `Cache-Control: no-cache`
+
+**Definition of Done:**
+- Responses stream token-by-token (visible to user)
+- Streaming cursor animates during streaming
+- Stop button cancels stream
+- Errors handled without crashing
+- Performance is smooth (60fps, no jank)
+- Final message appears in history
+
+---
+
+#### Story 6.9: Dynamic Status Messages (Tool-Aware)
+
+**As a** user
+**I want** to see what the agent is actually doing
+**So that** I understand the progress instead of just "thinking..."
+
+**Prerequisites:** Story 6.8 (streaming integration)
+
+**Acceptance Criteria:**
+1. Status indicator shows tool-specific messages during execution
+2. "Reading {filename}..." when agent calls `read_file()`
+3. "Writing {filename}..." when agent calls `write_file()`
+4. "Browsing files..." when agent calls `list_files()`
+5. "Processing..." for other actions or when no tool call
+6. Status updates in real-time as streaming occurs
+7. Status clears when agent completes response
+8. Status has animated pulsing dot indicator
+
+**Technical Notes:**
+- `lib/openai/status-mapper.ts`: Map tool calls to status messages
+- Extract filename from tool arguments: `args.path.split('/').pop()`
+- Emit status event via SSE: `data: {"type":"status","message":"Reading workflow.md..."}\n\n`
+- Frontend: Display in `StatusIndicator` component
+- CSS: Pulsing animation on status dot + text
+
+**Definition of Done:**
+- Status shows specific tool activity (not generic "thinking")
+- Filename extracted from tool call and displayed
+- Status updates in real-time during streaming
+- Visual pulsing animation
+- Accessible (screen reader announces status changes)
+
+---
+
+#### Story 6.10: Epic 6 Polish, Testing & Documentation
+
+**As a** developer
+**I want** Epic 6 features polished and well-tested
+**So that** the UX improvements are production-ready
+
+**Prerequisites:** Stories 6.1-6.9 complete
+
+**Acceptance Criteria:**
+1. Cross-browser testing (Chrome, Firefox, Safari, Edge) - all features work
+2. Accessibility audit passed:
+   - File viewer toggle keyboard accessible
+   - Drag-drop has keyboard alternative
+   - Status announcements work with screen reader
+   - Focus management correct (no focus traps)
+3. Performance testing:
+   - 100 sessions load without lag
+   - File viewer toggle is smooth (60fps)
+   - Streaming maintains 60fps rendering
+4. Documentation updated:
+   - README mentions new features (streaming, file attachments, collapsible viewer)
+   - User guide includes screenshots of file attachment flow
+   - Developer docs explain session metadata format
+5. Code quality:
+   - No console errors or warnings
+   - TypeScript strict mode passing
+   - ESLint clean
+   - Unused code removed
+
+**Technical Notes:**
+- Use Playwright for E2E tests (drag-drop, streaming, toggle)
+- Lighthouse audit for accessibility score
+- Chrome DevTools Performance tab for FPS profiling
+- Test with large session counts (generate 100 dummy sessions)
+
+**Definition of Done:**
+- All browsers tested and working
+- Accessibility checklist complete
+- Performance targets met (60fps, <1s load times)
+- Documentation updated
+- Code quality high (no warnings, clean linting)
+
+---
+
+### Epic 7: Docker Deployment and Configuration
 
 **Epic Goal:** Package platform for easy deployment via Docker with minimal configuration
 
@@ -1623,7 +2005,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-### Epic 7: Polish, Testing, and Documentation
+### Epic 8: Polish, Testing, and Documentation
 
 **Epic Goal:** Ensure platform is production-ready with good UX and clear documentation
 

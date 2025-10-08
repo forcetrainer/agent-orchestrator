@@ -575,6 +575,8 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 ### Epic 5: File Management and Viewer
 **Goal:** Enable users to view and verify agent-generated outputs
 
+**Status:** COMPLETE
+
 **Scope:**
 - File viewer for output directory (read-only)
 - Directory navigation and traversal
@@ -589,8 +591,44 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 ---
 
-### Epic 6: Docker Deployment and Configuration
+### Epic 6: Enhanced UX & Interactive Features
+**Goal:** Improve usability and add real-time interactive capabilities based on user feedback
+
+**Status:** PLANNED
+
+**Scope:**
+
+**UI/UX Refinements:**
+- Dynamic file viewer with collapsible toggle (free up chat space)
+- Layout redesign: Top/bottom split for file content (better readability)
+- Smart session naming (timestamp + user summary instead of UUID-only)
+- Context-aware file naming (descriptive names instead of "output.md")
+
+**New Capabilities:**
+- File reference attachments (drag files from viewer into chat as context)
+- Streaming responses (token-by-token display like ChatGPT)
+- Dynamic status messages (tool-aware: "Reading X...", "Writing Y...")
+
+**Value:** Addresses real user feedback from Epics 1-5. File viewer was always visible (reduces chat space), sessions/files hard to distinguish, waiting for full responses feels slow, generic status messages don't communicate what's happening. These enhancements prepare foundation for production deployment.
+
+**Architecture Highlights:**
+- Server-Sent Events for streaming responses
+- React DnD for accessible drag-drop
+- Framer Motion for smooth animations
+- Session metadata stored in manifest.json files
+- No new services (enhances existing components)
+
+**Estimated Stories:** 10 stories
+**Estimated Effort:** 2-3 sprints
+
+**Related Documentation:** `/docs/epic-6-architecture.md`
+
+---
+
+### Epic 7: Docker Deployment and Configuration
 **Goal:** Package platform for easy deployment via Docker with minimal configuration
+
+**Status:** PLANNED
 
 **Scope:**
 - Dockerfile for Next.js application
@@ -611,11 +649,13 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 ---
 
-### Epic 7: Polish, Testing, and Documentation
+### Epic 8: Polish, Testing, and Documentation
 **Goal:** Ensure platform is production-ready with good UX and clear documentation
 
+**Status:** PLANNED
+
 **Scope:**
-- UI/UX polish and refinement
+- UI/UX polish and refinement (beyond Epic 6 enhancements)
 - Error message improvements
 - Cross-browser testing
 - Performance optimization
@@ -637,26 +677,27 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 ---
 
-**Total Estimated Stories:** 52 stories across 7 epics
+**Total Estimated Stories:** 62 stories across 8 epics
 
 **Epic Summary:**
 - Epic 1: Backend Foundation - 6 stories ✅ COMPLETE
 - Epic 2: OpenAI Integration (DEPRECATED) - 10 stories (learning preserved)
-- Epic 3: Chat Interface - 9 stories (6 complete, 3 blocked)
-- Epic 4: Agent Execution & Bundle System (NEW) - 12 stories (IN PROGRESS)
-- Epic 5: File Viewer - 7 stories
-- Epic 6: Docker Deployment - 6 stories
-- Epic 7: Polish & Documentation - 8 stories
+- Epic 3: Chat Interface - 9 stories ✅ COMPLETE
+- Epic 4: Agent Execution & Bundle System - 12 stories ✅ COMPLETE
+- Epic 5: File Viewer - 7 stories ✅ COMPLETE
+- Epic 6: Enhanced UX & Interactive Features - 10 stories (NEXT)
+- Epic 7: Docker Deployment - 6 stories (PLANNED)
+- Epic 8: Polish & Documentation - 8 stories (PLANNED)
 
-**Timeline Impact:** Original 6 epics became 7 epics with +1.5-2 sprint addition for Epic 4
+**Timeline Impact:** Added Epic 6 (2-3 sprints) for UX improvements before Docker deployment
 
 **Critical Architectural Note:** Epic 1 (Backend Foundation) must be completed first before any other epic can begin. This is the foundational infrastructure that enables both OpenAI integration and the chat interface.
 
 **Solo Developer Execution Plan:**
-- **Revised Sequential Order:** Epic 1 → Epic 4 → Epic 3 (complete) → Epic 5 → Epic 6 → Epic 7
+- **Revised Sequential Order:** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → **Epic 6 (NEXT)** → Epic 7 → Epic 8
 - **Complete each epic 100%** before moving to the next - no epic overlap
-- **Epic 4 gates Epic 3:** Correct agent execution architecture must be in place before completing Epic 3 stories 3.4, 3.9, 3.10
-- **Epic 4 gates Epic 5+:** All subsequent epics depend on proper agent execution
+- **Epic 6 builds on Epic 5:** File viewer and chat interface foundation required
+- **Epic 6 before Docker (Epic 7):** UX improvements make platform production-ready
 - **Test thoroughly** at the end of each epic before proceeding
 - **Epic 2 Deprecated:** Learning from Epic 2 informs Epic 4 implementation
 
@@ -668,12 +709,13 @@ The following features are explicitly deferred to post-MVP phases:
 
 ### Phase 2 Features (Enhanced UX)
 - Session persistence across browser sessions (pause/resume conversations)
-- Streaming responses (token-by-token display)
+- ~~Streaming responses (token-by-token display)~~ **→ MOVED TO EPIC 6**
 - Syntax highlighting for code in chat and file viewer
 - File download capability (currently view-only)
 - File versioning and history
 - Search/filter capabilities for output files
 - Real-time file update notifications
+- ~~File attachments for context~~ **→ MOVED TO EPIC 6** (file reference attachments)
 
 ### Phase 3 Features (Multi-Agent & Marketplace)
 - Multiple simultaneous agent conversations (Slack-style channels)

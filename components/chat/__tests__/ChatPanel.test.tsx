@@ -14,11 +14,18 @@
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ChatPanel } from '../ChatPanel';
+import { FileViewerProvider } from '@/components/file-viewer/FileViewerContext';
+import { ReactElement } from 'react';
 
 // Mock scrollTo for JSDOM environment
 beforeAll(() => {
   Element.prototype.scrollTo = jest.fn();
 });
+
+// Test helper: wrap component with FileViewerProvider (Story 6.1)
+const renderWithProvider = (ui: ReactElement) => {
+  return render(<FileViewerProvider>{ui}</FileViewerProvider>);
+};
 
 // Mock fetch for AgentSelector
 // Story 4.6: Updated to include bundle metadata fields
@@ -46,27 +53,24 @@ describe('ChatPanel', () => {
 
   // Story 3.5: Starts with empty messages array
   it('renders centered layout when no messages exist', () => {
-    const { container } = render(<ChatPanel />);
-    const mainContainer = container.firstChild as HTMLElement;
+    const { container } = renderWithProvider(<ChatPanel />);
 
-    // Story 5.1: Now renders split-pane layout (chat + file viewer)
-    expect(mainContainer).toHaveClass('flex', 'h-screen');
-
-    // Chat panel (left side) should have centered content
-    const chatPanel = container.querySelector('.flex-col.flex-1.min-w-0.bg-gray-50');
+    // Story 6.1: MainLayout wraps ChatPanel now (grid layout)
+    // Chat panel should have centered content
+    const chatPanel = container.querySelector('.flex-col.h-screen.bg-gray-50');
     expect(chatPanel).toBeInTheDocument();
   });
 
   // Story 3.1: Layout test
   it('applies full-screen height to layout', () => {
-    const { container } = render(<ChatPanel />);
+    const { container } = renderWithProvider(<ChatPanel />);
     const chatPanel = container.firstChild as HTMLElement;
     expect(chatPanel).toHaveClass('h-screen');
   });
 
   // Story 3.5: InputField component rendered
   it('renders InputField component', () => {
-    render(<ChatPanel />);
+    renderWithProvider(<ChatPanel />);
 
     const sendButton = screen.getByRole('button', { name: /send message/i });
     expect(sendButton).toBeInTheDocument();
@@ -77,7 +81,7 @@ describe('ChatPanel', () => {
 
   // Story 3.4: Agent selector rendered
   it('renders AgentSelector component', () => {
-    render(<ChatPanel />);
+    renderWithProvider(<ChatPanel />);
 
     // AgentSelector should be present (look for the container)
     const selector = screen.getByRole('combobox');
@@ -86,7 +90,7 @@ describe('ChatPanel', () => {
 
   // Story 3.5: Initializes with empty messages
   it('initializes with empty messages array', () => {
-    render(<ChatPanel />);
+    renderWithProvider(<ChatPanel />);
 
     // No MessageList should be rendered when messages are empty (centered layout instead)
     const messageHistory = screen.queryByRole('log', { name: /message history/i });
@@ -143,7 +147,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       const agentSelect = screen.getByRole('combobox');
@@ -216,7 +220,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       const agentSelect = screen.getByRole('combobox');
@@ -281,7 +285,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       const agentSelect = screen.getByRole('combobox');
@@ -340,7 +344,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       const agentSelect = screen.getByRole('combobox');
@@ -369,7 +373,7 @@ describe('ChatPanel', () => {
 
     // Subtask 6.6: Test no loading indicator when not loading
     it('does not show loading indicator when not loading', () => {
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Loading indicator should not be present
       expect(screen.queryByText(/Agent is thinking/i)).not.toBeInTheDocument();
@@ -422,7 +426,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents and select one
       const agentSelect = screen.getByRole('combobox');
@@ -456,7 +460,7 @@ describe('ChatPanel', () => {
 
     // AC-7.1, AC-7.6: Button is visible and clearly labeled
     it('renders New Conversation button with clear label', async () => {
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       await waitFor(() => {
@@ -498,7 +502,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents and select one
       const agentSelect = screen.getByRole('combobox');
@@ -569,7 +573,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents and select one
       const agentSelect = screen.getByRole('combobox');
@@ -605,7 +609,7 @@ describe('ChatPanel', () => {
     it('New Conversation button is keyboard accessible', async () => {
       const user = userEvent.setup();
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Wait for agents to load
       await waitFor(() => {
@@ -667,7 +671,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -727,7 +731,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -783,7 +787,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -839,7 +843,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -921,7 +925,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1015,7 +1019,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1104,7 +1108,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1190,7 +1194,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1278,7 +1282,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1350,7 +1354,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent and wait for initialization
       const agentSelect = screen.getByRole('combobox');
@@ -1427,7 +1431,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');
@@ -1479,7 +1483,7 @@ describe('ChatPanel', () => {
         return Promise.reject(new Error('Unknown URL'));
       }) as jest.Mock;
 
-      render(<ChatPanel />);
+      renderWithProvider(<ChatPanel />);
 
       // Select agent
       const agentSelect = screen.getByRole('combobox');

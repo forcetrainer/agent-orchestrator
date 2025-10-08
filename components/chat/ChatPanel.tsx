@@ -5,7 +5,6 @@ import { MessageList } from './MessageList';
 import { MessageInput } from './MessageInput';
 import { InputField } from './InputField';
 import { AgentSelector } from './AgentSelector';
-import { FileViewerPanel } from '../FileViewerPanel';
 import { Message } from '@/lib/types';
 import { mapErrorToUserMessage } from '@/lib/errorMapping';
 import { AgentSummary } from '@/types/api';
@@ -321,30 +320,22 @@ export function ChatPanel() {
   // Centered layout before first message (ChatGPT/Claude.ai style)
   // Story 3.5 Task 3.1-3.5: Integrate InputField component
   // Story 4.7: Show full layout during initialization to display loading indicator (AC-4.7.6)
-  // Story 5.1: Split-pane layout with FileViewerPanel (AC-1, AC-5)
-  // AC-6: Responsive layout for desktop browsers
+  // Story 6.1: File viewer now handled by MainLayout wrapper
   if (messages.length === 0 && !isLoading) {
     return (
-      <div className="flex h-screen">
-        {/* Chat panel - left side with minimum width for usability */}
-        <div className="flex flex-col flex-1 min-w-0 bg-gray-50">
-          <AgentSelector
-            selectedAgentId={selectedAgentId}
-            onAgentSelect={handleAgentSelect}
-            onNewConversation={handleNewConversation}
-          />
-          <div className="flex-1 flex items-center justify-center">
-            <div className="w-full max-w-3xl px-4">
-              {/* Task 3.1: Render InputField component */}
-              {/* Task 3.2: Pass handleSendMessage as onSend callback */}
-              {/* Task 3.3: Pass isLoading as disabled prop */}
-              <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
-            </div>
+      <div className="flex flex-col h-screen bg-gray-50">
+        <AgentSelector
+          selectedAgentId={selectedAgentId}
+          onAgentSelect={handleAgentSelect}
+          onNewConversation={handleNewConversation}
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="w-full max-w-3xl px-4">
+            {/* Task 3.1: Render InputField component */}
+            {/* Task 3.2: Pass handleSendMessage as onSend callback */}
+            {/* Task 3.3: Pass isLoading as disabled prop */}
+            <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
           </div>
-        </div>
-        {/* File viewer panel - right side (AC-1: split-pane, AC-6: responsive width) */}
-        <div className="w-96 min-w-[320px] max-w-[480px]">
-          <FileViewerPanel />
         </div>
       </div>
     );
@@ -353,32 +344,24 @@ export function ChatPanel() {
   // Full layout after conversation starts - Story 3.2 Task 1.4
   // AC-5.1: Clicking send button submits message
   // AC-5.5: Input is disabled while waiting for agent response
-  // Story 5.1: Split-pane layout with FileViewerPanel (AC-1, AC-5)
-  // AC-6: Responsive layout for desktop browsers
+  // Story 6.1: File viewer now handled by MainLayout wrapper
   return (
-    <div className="flex h-screen">
-      {/* Chat panel - left side with minimum width for usability */}
-      <div className="flex flex-col flex-1 min-w-0">
-        <AgentSelector
-          selectedAgentId={selectedAgentId}
-          onAgentSelect={handleAgentSelect}
-          onNewConversation={handleNewConversation}
-        />
-        {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
-        {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
-        {/* Story 4.7: Pass loadingMessage to show context-specific loading text */}
-        <MessageList messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
+    <div className="flex flex-col h-screen">
+      <AgentSelector
+        selectedAgentId={selectedAgentId}
+        onAgentSelect={handleAgentSelect}
+        onNewConversation={handleNewConversation}
+      />
+      {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
+      {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
+      {/* Story 4.7: Pass loadingMessage to show context-specific loading text */}
+      <MessageList messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
 
-        {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
-        {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}
-        {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
-        {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
-        <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
-      </div>
-      {/* File viewer panel - right side (AC-1: split-pane, AC-6: responsive width) */}
-      <div className="w-96 min-w-[320px] max-w-[480px]">
-        <FileViewerPanel />
-      </div>
+      {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
+      {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}
+      {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
+      {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
+      <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
     </div>
   );
 }

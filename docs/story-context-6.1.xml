@@ -1,0 +1,163 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>1</storyId>
+    <title>Dynamic File Viewer Toggle</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-07</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to collapse and expand the file viewer</iWant>
+    <soThat>I can use full screen width for chat when I need focused reading</soThat>
+    <tasks>
+      - Task 1: Install and configure Framer Motion (AC: #3, #7)
+      - Task 2: Create useFileViewer hook (AC: #6, #8)
+      - Task 3: Update MainLayout component (AC: #4, #5, #7)
+      - Task 4: Create toggle button in navigation (AC: #1, #2)
+      - Task 5: Testing (All ACs)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    1. Toggle button appears in top-right navigation bar
+    2. Button shows "Files" icon when viewer closed, "Close" icon when open
+    3. Clicking button smoothly collapses/expands file viewer with 300ms animation
+    4. When viewer closed, chat panel uses 100% width (not 70%)
+    5. When viewer open, layout is 70% chat / 30% file viewer (current behavior preserved)
+    6. Keyboard shortcut `Ctrl/Cmd + B` toggles file viewer
+    7. Animation uses spring physics (natural feel, not linear)
+    8. Viewer state persists during session (if closed, stays closed until user reopens)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-6.md" title="Epic 6 Technical Specification" section="1. Dynamic File Viewer (Stories 6.1, 6.2)">
+        Provides complete implementation details including component structure, Framer Motion configuration, and testing checklist. Includes code examples for MainLayout, useFileViewer hook, and FileViewer component with spring animation parameters (damping: 20, stiffness: 300).
+      </doc>
+      <doc path="docs/epic-6-architecture.md" title="Epic 6 Architecture Document" section="Component Specifications">
+        Defines incremental enhancement pattern - no new services, only improvements to existing components. Details React Context API usage for state management.
+      </doc>
+      <doc path="docs/epics.md" title="Epic Breakdown" section="Story 6.1">
+        Source of all acceptance criteria and prerequisites. Confirms Epic 5 complete (file viewer foundation exists).
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Epic 6: Enhanced UX & Interactive Features">
+        Business context: addresses user feedback that always-visible file viewer reduces chat space. UX principle: maximize chat readability when user needs focused reading.
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="components/FileViewerPanel.tsx" kind="component" symbol="FileViewerPanel" lines="1-478" reason="Existing file viewer component that will be enhanced with toggle capability. Currently always visible (isVisible prop defaults to true). Contains DirectoryTree and FileContentDisplay sub-components.">
+        Full-featured file viewer with directory tree, file content display, keyboard navigation, and refresh functionality. Built during Epic 5. Uses client-side rendering ('use client') and React hooks for state management.
+      </artifact>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" symbol="ChatPanel" lines="1-100" reason="Main chat container that currently uses fixed layout. Will need to integrate with useFileViewer context to respond to viewer state changes. Contains AgentSelector, MessageList, MessageInput, and FileViewerPanel.">
+        Current layout structure integrates ChatPanel and FileViewerPanel. Layout needs to be extracted to new MainLayout component to support dynamic grid columns based on file viewer toggle state.
+      </artifact>
+      <artifact path="app/page.tsx" kind="page" symbol="Home" lines="1-12" reason="Application home page that renders ChatPanel. May need to be wrapped with MainLayout component to enable split-pane grid layout.">
+        Simple page component that renders ChatPanel directly. Will likely need MainLayout wrapper for grid-based layout control.
+      </artifact>
+      <artifact path="app/layout.tsx" kind="layout" symbol="RootLayout" lines="1-29" reason="Root layout component with environment validation. Uses Inter font and contains basic HTML structure. MainLayout will be added as child layout component.">
+        Root Next.js layout with global CSS and metadata. No layout grid currently - ChatPanel renders full-width.
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node ecosystem="Node.js/React">
+        <package name="framer-motion" version="10.16.4" purpose="Spring-based animations for smooth collapse/expand transitions. Provides AnimatePresence and motion components.">
+          Required: Install via `npm install framer-motion@10.16.4`
+        </package>
+        <package name="react" version="^18" purpose="React Context API for useFileViewer hook state management">
+          Already installed - Context API available
+        </package>
+        <package name="next" version="14.2.0" purpose="Next.js App Router for layout component structure">
+          Already installed - App Router in use
+        </package>
+        <package name="tailwindcss" version="^3.4.0" purpose="Utility classes for dynamic grid layout and responsive design">
+          Already installed - Used throughout project
+        </package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Session-only state persistence (AC #8): Use React useState, NOT localStorage or sessionStorage
+    - Layout grid must be CSS Grid (not Flexbox) for precise 70/30 split control
+    - Animation must use spring physics (AC #7): Framer Motion config { type: "spring", damping: 20, stiffness: 300 }
+    - Keyboard shortcut must not interfere with browser shortcuts or accessibility (Ctrl/Cmd + B safe choice)
+    - File viewer component (FileViewerPanel) already exists - do NOT rewrite, only wrap with animation
+    - Must work in Chrome, Firefox, Safari, Edge (cross-browser testing required)
+    - Animation must achieve 60fps performance (no jank) - use Chrome DevTools Performance tab to verify
+    - Toggle button must be in top-right navigation - create NavBar component if doesn't exist
+    - Preserve all existing file viewer functionality (directory tree, content display, keyboard navigation from Story 5.6)
+  </constraints>
+
+  <interfaces>
+    <interface name="useFileViewer" kind="hook" signature="useFileViewer(): { isOpen: boolean; toggle: () => void }">
+      React hook that provides file viewer state and toggle function. Used by MainLayout for grid column control and NavBar for toggle button. Implements keyboard shortcut handler internally.
+    </interface>
+    <interface name="FileViewerContext" kind="context" signature="FileViewerContext: React.Context<{ isOpen: boolean; toggle: () => void }>">
+      React Context for sharing file viewer state across components. Provider wraps application tree in MainLayout or root layout.
+    </interface>
+    <interface name="MainLayout" kind="component" signature="MainLayout({ children }: { children: React.ReactNode }): JSX.Element">
+      Grid layout component with dynamic columns. Renders chat panel in main area and FileViewerPanel in aside. Uses AnimatePresence for smooth mount/unmount of file viewer.
+    </interface>
+    <interface name="NavBar" kind="component" signature="NavBar(): JSX.Element">
+      Top navigation bar component containing toggle button. Shows "Files" icon when viewer closed, "Close" or "X" icon when open. Calls useFileViewer toggle function.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest + React Testing Library for unit/component tests, and Playwright for E2E tests. Tests live in __tests__ directories alongside components. TypeScript strict mode enabled. All tests must pass before story completion.
+
+      Testing approach for this story:
+      1. Unit tests: useFileViewer hook toggle logic and keyboard handler
+      2. Component tests: MainLayout grid columns respond to isOpen state, NavBar button icon updates
+      3. Integration tests: Full toggle flow (click → state change → animation → layout)
+      4. E2E tests: User interactions (button click, keyboard shortcut), visual verification (width changes)
+    </standards>
+
+    <locations>
+      - components/file-viewer/__tests__/useFileViewer.test.ts (NEW - hook tests)
+      - components/layout/__tests__/MainLayout.test.tsx (NEW - layout tests)
+      - components/navigation/__tests__/NavBar.test.tsx (NEW - nav button tests)
+      - e2e/file-viewer-toggle.spec.ts (NEW - Playwright E2E)
+    </locations>
+
+    <ideas>
+      Test Idea 1 (AC #1, #2, #4, #5): NavBar toggle button renders and updates icon based on state
+      - Render NavBar with viewer open → verify button shows "Close" icon
+      - Render NavBar with viewer closed → verify button shows "Files" icon
+      - Click button → verify toggle function called
+
+      Test Idea 2 (AC #3, #7): MainLayout responds to state changes with correct grid columns
+      - Render MainLayout with isOpen=true → verify grid-cols-[1fr_30%]
+      - Render MainLayout with isOpen=false → verify grid-cols-[1fr]
+      - Toggle state → verify smooth transition (animation mocked)
+
+      Test Idea 3 (AC #6, #8): useFileViewer hook keyboard shortcut and state persistence
+      - Simulate Ctrl+B keypress → verify toggle called
+      - Simulate Cmd+B keypress (Mac) → verify toggle called
+      - Toggle state multiple times → verify state persists in session
+      - Input field focused → verify keyboard shortcut ignored (accessibility)
+
+      Test Idea 4 (AC #3, #7): Animation performance and smoothness (E2E)
+      - User clicks toggle → record animation duration → verify ~300ms
+      - Use Playwright to capture screenshots during animation → verify smooth transition
+      - Chrome DevTools Performance recording → verify 60fps
+
+      Test Idea 5 (AC #4, #5): Chat panel width verification (E2E)
+      - File viewer open → measure chat panel width → verify ~70% of viewport
+      - File viewer closed → measure chat panel width → verify ~100% of viewport
+      - Toggle multiple times → verify layout remains stable
+
+      Test Idea 6 (Cross-browser, implicit): All tests run in Chrome, Firefox, Safari, Edge
+      - Playwright config includes all browsers
+      - Verify toggle works consistently across browsers
+      - Verify keyboard shortcuts work (Meta key on Mac, Ctrl on Windows/Linux)
+    </ideas>
+  </tests>
+</story-context>
