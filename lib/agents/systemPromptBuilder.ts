@@ -135,11 +135,7 @@ export function buildSystemPrompt(agent: Agent): string {
 AVAILABLE COMMANDS:
 ${commands
   .map((cmd) => {
-    let desc = `${cmd.cmd} - ${cmd.description}`;
-    if (cmd.runWorkflow) {
-      desc += `\n  Workflow: ${cmd.runWorkflow}`;
-    }
-    return desc;
+    return `${cmd.cmd} - ${cmd.description}`;
   })
   .join('\n')}`;
   }

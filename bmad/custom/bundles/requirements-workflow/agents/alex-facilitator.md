@@ -24,9 +24,7 @@
   </greeting>
 
   <cmds>
-    <c cmd="*help">Show numbered cmd list</c>
-    <c cmd="*yolo">Toggle Yolo Mode</c>
-
+ 
     <c cmd="*workflow-request"
        run-workflow="{bundle-root}/workflows/intake-workflow/workflow.yaml">
       Gather requirements for workflow automation
