@@ -1279,125 +1279,200 @@ agent-orchestrator/
 
 ## 15. Testing Strategy
 
-### 15.1 Unit Tests
+**Philosophy:** Minimal, high-value testing focused on critical failure scenarios.
 
-**Scope:** Test business logic in `/lib` independently
+### 15.1 Core Testing Principles
 
-**Framework:** Jest + TypeScript
+**DO NOT TEST:**
+- ❌ Simple CRUD operations (reads/writes with no logic)
+- ❌ Code that just calls other tested code (pass-through functions)
+- ❌ React component rendering (checking if elements exist)
+- ❌ CSS classes or styling implementation details
+- ❌ Type exports or re-exports (`expect(x).toBe(x)`)
+- ❌ Anything requiring more than 10 lines of setup
 
-**Example Tests:**
+**DO TEST:**
+- ✅ Edge cases (boundary conditions, null/undefined, empty inputs)
+- ✅ Error handling (what happens when things fail)
+- ✅ Business logic (calculations, transformations, decisions)
+- ✅ Security vulnerabilities (path traversal, injection attacks)
+- ✅ Critical failure scenarios (data corruption, auth bypass)
+
+**Guiding Rule:** Write 2-3 tests for the most critical failure scenarios, not comprehensive coverage.
+
+### 15.2 TypeScript Over Runtime Tests
+
+**Prefer type safety over runtime validation tests:**
 
 ```typescript
-// lib/agents/__tests__/parser.test.ts
-describe('parseAgent', () => {
-  it('should parse valid agent.md file', () => {
-    const content = '# Agent Name\nDescription here'
-    const agent = parseAgent(content)
-    expect(agent.name).toBe('Agent Name')
-  })
+// ✅ GOOD: Let TypeScript catch this at compile time
+interface AgentConfig {
+  id: string
+  name: string
+  apiKey: string  // Required, not optional
+}
 
-  it('should throw error for invalid format', () => {
-    expect(() => parseAgent('')).toThrow('Invalid agent format')
-  })
+// ❌ BAD: Testing what TypeScript already guarantees
+it('should require apiKey', () => {
+  expect(() => createAgent({ id: '1', name: 'test' })).toThrow()
 })
+```
 
-// lib/files/__tests__/security.test.ts
-describe('validatePath', () => {
-  it('should allow valid paths within base directory', () => {
-    const result = validatePath('subfolder/file.md', '/output')
-    expect(result).toContain('/output/subfolder/file.md')
+**Exception:** Test runtime inputs that TypeScript can't validate (user input, file contents, API responses).
+
+### 15.3 What We Actually Test
+
+**Security-Critical Tests (lib/pathResolver.security.test.ts):**
+```typescript
+// KEEP: These prevent actual security vulnerabilities
+describe('validateWritePath', () => {
+  it('should block path traversal to /etc/passwd', () => {
+    expect(() => validateWritePath('/etc/passwd', context)).toThrow('Security violation')
   })
 
-  it('should reject path traversal attempts', () => {
-    expect(() => validatePath('../../etc/passwd', '/output'))
-      .toThrow('directory traversal')
+  it('should block write to source code directories', () => {
+    expect(() => validateWritePath('lib/malicious.ts', context)).toThrow('Security violation')
   })
 })
 ```
 
-**Coverage Goal:** 70% for `/lib` modules (focus on critical paths)
-
-### 15.2 Integration Tests
-
-**Scope:** Test API routes with mocked OpenAI
-
-**Framework:** Jest + Supertest
-
-**Example Tests:**
-
+**Business Logic Tests (where actual bugs hide):**
 ```typescript
-// app/api/agents/__tests__/route.test.ts
-describe('GET /api/agents', () => {
-  it('should return list of agents', async () => {
-    const response = await request(app).get('/api/agents')
-    expect(response.status).toBe(200)
-    expect(response.body.agents).toBeInstanceOf(Array)
+// KEEP: Tests critical failure scenarios
+describe('executeAgent with function calling', () => {
+  it('should handle OpenAI rate limit errors gracefully', async () => {
+    mockOpenAI.mockRejectedValue(new RateLimitError())
+    const result = await executeAgent(agent, 'test')
+    expect(result.error).toContain('Rate limit exceeded')
   })
-})
 
-// app/api/chat/__tests__/route.test.ts
-describe('POST /api/chat', () => {
-  it('should return agent response', async () => {
-    // Mock OpenAI response
-    mockOpenAI.chat.completions.create.mockResolvedValue({...})
-
-    const response = await request(app)
-      .post('/api/chat')
-      .send({ agentId: 'test', message: 'Hello' })
-
-    expect(response.status).toBe(200)
-    expect(response.body.message.content).toBeDefined()
+  it('should prevent infinite tool-calling loops', async () => {
+    // Agent keeps calling read_file recursively
+    const result = await executeAgent(agentWithInfiniteLoop, 'test')
+    expect(result.iterations).toBeLessThanOrEqual(MAX_ITERATIONS)
   })
 })
 ```
 
-**Coverage Goal:** 80% for API routes
-
-### 15.3 E2E Tests
-
-**Scope:** Test critical user flows in browser
-
-**Framework:** Playwright (lightweight, modern)
-
-**Example Tests:**
-
+**Error Handling Tests (resilience):**
 ```typescript
-// e2e/chat-flow.spec.ts
-test('user can send message and receive response', async ({ page }) => {
-  await page.goto('http://localhost:3000')
-
-  // Select agent
-  await page.click('[data-testid="agent-selector"]')
-  await page.click('text=Test Agent')
-
-  // Send message
-  await page.fill('[data-testid="message-input"]', 'Hello')
-  await page.click('[data-testid="send-button"]')
-
-  // Verify response appears
-  await expect(page.locator('.agent-message')).toBeVisible()
+// KEEP: Verifies system handles failures gracefully
+describe('Session creation', () => {
+  it('should handle corrupt manifest.json gracefully', async () => {
+    await writeFile('session-123/manifest.json', '{ invalid json')
+    const sessions = await getSessions()
+    expect(sessions).toBeDefined() // Doesn't crash
+  })
 })
 ```
 
-**Coverage:** 3-5 critical flows (agent selection, chat, file viewing)
+### 15.4 What We Delete
 
-### 15.4 Coverage Goals
+**Remove entirely:**
+1. **lib/utils/__tests__/index.test.ts** - Tests re-exports exist (332 lines)
+2. **components/chat/__tests__/MessageInput.test.tsx** - Tests disabled form renders (65 lines)
+3. **components/chat/__tests__/LoadingIndicator.test.tsx** - Tests CSS classes (68 lines)
+4. **components/chat/__tests__/ErrorMessage.test.tsx** - Tests styling (167 lines)
+5. **lib/files/__tests__/reader.test.ts** - Performance tests (<100ms file reads are brittle)
 
-**Overall Coverage Targets:**
-- Business Logic (`/lib`): 70%
-- API Routes (`/app/api`): 80%
-- Components (`/components`): 50% (focus on logic, not UI rendering)
-- E2E: 100% of critical user journeys
+**Reduce drastically:**
+6. **app/api/chat/__tests__/route.test.ts** - From 460 lines to ~50 lines (keep 2-3 critical tests)
 
-**Why These Numbers?**
-- High coverage for business logic and API (where bugs are costly)
-- Lower coverage for UI components (visual bugs caught manually)
-- 100% E2E for critical paths (proves the app works end-to-end)
+### 15.5 Testing Budget
 
-**Simplicity Note:**
-- For MVP, manual testing is acceptable
-- Add automated tests when stabilizing for production
-- Don't over-test prototype code that will change
+**Target:** 2-3 tests per critical module, ~30-50 tests total (down from 100+)
+
+**Allocation:**
+- Security tests: ~15 tests (path validation, auth bypass prevention)
+- Business logic: ~15 tests (agentic loop, critical workflows)
+- Error handling: ~10 tests (graceful degradation, corrupt data)
+- Integration: ~5 tests (end-to-end critical paths)
+
+**Coverage:** We don't track coverage percentages. Instead ask: "What's the worst thing that could go wrong?" and test that.
+
+### 15.6 Manual Testing Checklist
+
+**Before every release, manually verify:**
+
+- [ ] Agent selection works
+- [ ] Send message → receive response
+- [ ] File viewer shows outputs
+- [ ] File operations (read/write) work
+- [ ] Error messages are helpful (not stack traces)
+- [ ] Works in Chrome, Firefox, Safari
+
+**Time estimate:** 10 minutes of manual testing replaces hours of test maintenance.
+
+### 15.7 When to Write a Test
+
+**Decision tree:**
+
+1. Is it a security vulnerability? → ✅ Write test
+2. Is it a critical business logic bug that could lose data? → ✅ Write test
+3. Is it an edge case that caused a production incident? → ✅ Write test
+4. Does it test styling, rendering, or simple CRUD? → ❌ No test
+5. Would the test require >10 lines of setup/mocking? → ❌ No test
+6. Can TypeScript catch this at compile time? → ❌ No test
+
+**When in doubt, skip the test.** It's easier to add tests later when bugs appear than to maintain tests that provide no value.
+
+### 15.8 Examples of Good vs Bad Tests
+
+**❌ BAD: Testing implementation details**
+```typescript
+it('renders textarea with placeholder text', () => {
+  render(<MessageInput />)
+  const textarea = screen.getByPlaceholderText('Type your message...')
+  expect(textarea).toBeInTheDocument()
+  expect(textarea.tagName).toBe('TEXTAREA')
+})
+```
+*Why bad:* Tests that a textarea exists. If it exists, React would crash. No value.
+
+**✅ GOOD: Testing critical failure scenario**
+```typescript
+it('should prevent XSS injection in markdown rendering', () => {
+  const maliciousMarkdown = '<script>alert("XSS")</script>'
+  const { container } = render(<MessageBubble content={maliciousMarkdown} />)
+  expect(container.querySelector('script')).toBeNull() // Script tags stripped
+})
+```
+*Why good:* Prevents actual security vulnerability.
+
+**❌ BAD: Testing API validation with 10 similar tests**
+```typescript
+it('should return 400 when agentId is missing', async () => { ... })
+it('should return 400 when message is missing', async () => { ... })
+it('should return 400 when agentId is not a string', async () => { ... })
+it('should return 400 when message is not a string', async () => { ... })
+it('should return 400 when agentId is empty', async () => { ... })
+// ... 5 more similar tests
+```
+*Why bad:* Testing the same validation logic 10 times. One test is enough.
+
+**✅ GOOD: Testing critical failure scenario**
+```typescript
+it('should return 500 and log error on OpenAI API failure', async () => {
+  mockOpenAI.mockRejectedValue(new Error('API down'))
+  const response = await POST(request)
+  expect(response.status).toBe(500)
+  expect(response.body.error).toBe('An unexpected error occurred')
+  expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('API down'))
+})
+```
+*Why good:* Verifies error handling and logging work correctly.
+
+### 15.9 Framework & Tools
+
+**Keep:**
+- Jest for unit tests
+- React Testing Library (only for critical component logic)
+- Manual testing for UI/UX
+
+**Remove:**
+- Playwright/E2E tests (too slow, manual testing is faster for prototypes)
+- Snapshot tests (brittle, fail on irrelevant changes)
+- Coverage tools (we don't track coverage %)
 
 ## 16. DevOps and CI/CD
 

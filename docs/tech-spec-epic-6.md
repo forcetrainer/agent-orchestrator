@@ -1241,152 +1241,81 @@ Story 6.10 (Polish & Testing) ← depends on all above
 
 ## Testing Strategy
 
-### Unit Tests
+**Philosophy:** Minimal, high-value testing. See `/docs/solution-architecture.md` Section 15 for complete testing guidelines.
+
+### What We Test for Epic 6
+
+**Focus on 2-3 critical failure scenarios per feature:**
 
 ```typescript
 // lib/sessions/naming.test.ts
 describe('generateDisplayName', () => {
-  it('includes user message when provided', () => {
+  // Test edge case: Very long user message
+  it('truncates long messages to 40 characters', () => {
+    const longMessage = 'I need to purchase 50 laptops, 20 monitors, and 30 keyboards for the marketing team';
     const result = generateDisplayName({
-      agentName: 'Test Agent',
-      userMessage: 'I need to purchase 10 laptops for marketing team',
+      agentName: 'Test',
+      userMessage: longMessage,
       timestamp: '2025-10-07T14:30:00Z'
     });
-    expect(result).toMatch(/Oct 7.*I need to purchase 10 laptops.../);
+    expect(result.length).toBeLessThanOrEqual(60); // timestamp + truncated message
   });
 
-  it('falls back to workflow name', () => {
-    const result = generateDisplayName({
-      agentName: 'Test Agent',
-      workflowName: 'Intake Workflow',
-      timestamp: '2025-10-07T14:30:00Z'
-    });
-    expect(result).toMatch(/Intake Workflow - Oct 7/);
+  // Test error handling: Invalid timestamp
+  it('handles invalid timestamp gracefully', () => {
+    expect(() => generateDisplayName({
+      agentName: 'Test',
+      timestamp: 'invalid'
+    })).not.toThrow(); // Should fallback, not crash
   });
 });
 
-// lib/files/operations.test.ts
-describe('validateFilename', () => {
-  it('rejects generic filenames', () => {
-    expect(() => validateFilename('output.md')).toThrow('Generic filename');
-    expect(() => validateFilename('result.txt')).toThrow('Generic filename');
-  });
-
-  it('accepts descriptive filenames', () => {
-    expect(() => validateFilename('procurement-request.md')).not.toThrow();
-    expect(() => validateFilename('budget-analysis.csv')).not.toThrow();
-  });
-
-  it('prevents path traversal', () => {
+// lib/files/operations.test.ts - ONLY security tests
+describe('validateFilename security', () => {
+  it('prevents path traversal attacks', () => {
     expect(() => validateFilename('../etc/passwd')).toThrow();
+    expect(() => validateFilename('../../etc/passwd')).toThrow();
+  });
+
+  it('blocks special characters that could break filesystem', () => {
+    expect(() => validateFilename('file<>.txt')).toThrow();
   });
 });
-```
 
-### Integration Tests
-
-```typescript
-// app/api/sessions/route.test.ts
+// app/api/sessions/route.test.ts - ONLY critical path
 describe('POST /api/sessions', () => {
-  it('creates session with manifest', async () => {
-    const response = await fetch('/api/sessions', {
-      method: 'POST',
-      body: JSON.stringify({
-        agentName: 'Test Agent',
-        userMessage: 'Test message'
-      })
-    });
+  it('handles corrupted manifest.json gracefully', async () => {
+    // Simulate existing corrupted manifest
+    await writeFile('output/test-session/manifest.json', '{ invalid');
 
-    const data = await response.json();
-    expect(data.id).toMatch(/^[0-9a-f-]{36}$/); // UUID format
-    expect(data.displayName).toContain('Test message');
-
-    // Verify manifest file created
-    const manifestPath = `output/${data.id}/manifest.json`;
-    const exists = await fs.access(manifestPath).then(() => true).catch(() => false);
-    expect(exists).toBe(true);
+    const response = await POST(createRequest({ agentName: 'Test' }));
+    expect(response.status).toBe(200); // Doesn't crash
   });
 });
 ```
 
-### E2E Tests (Playwright)
+### What We Don't Test
 
-```typescript
-// e2e/file-viewer-toggle.spec.ts
-test('file viewer toggle works', async ({ page }) => {
-  await page.goto('/');
+**Deleted tests (see deletion script):**
+- ❌ E2E tests - Too slow, use manual testing
+- ❌ UI rendering tests - If it renders, React works
+- ❌ Animation tests - Visual QA catches these
+- ❌ Performance benchmarks - Brittle, use Chrome DevTools manually
 
-  // File viewer should be visible initially
-  await expect(page.locator('[data-testid="file-viewer"]')).toBeVisible();
+### Manual Testing Checklist (10 minutes before deploy)
 
-  // Click toggle button
-  await page.click('[data-testid="file-viewer-toggle"]');
+**Epic 6 Specific:**
+- [ ] File viewer toggles on/off smoothly
+- [ ] Sessions show descriptive names (not UUIDs)
+- [ ] Drag file from viewer → appears as pill in chat
+- [ ] Agent responses stream word-by-word
+- [ ] Status shows "Reading X..." / "Writing Y..."
+- [ ] Generic filenames rejected (try "output.md")
 
-  // File viewer should be hidden
-  await expect(page.locator('[data-testid="file-viewer"]')).toBeHidden();
-
-  // Chat should use full width
-  const chatPanel = page.locator('[data-testid="chat-panel"]');
-  const boundingBox = await chatPanel.boundingBox();
-  expect(boundingBox?.width).toBeGreaterThan(900); // Approximate full width
-});
-
-// e2e/file-attachment.spec.ts
-test('drag file from viewer to chat', async ({ page }) => {
-  await page.goto('/');
-
-  // Drag file from tree
-  const file = page.locator('[data-testid="file-item"]').first();
-  const chatInput = page.locator('[data-testid="chat-input"]');
-
-  await file.dragTo(chatInput);
-
-  // Verify pill appears
-  await expect(page.locator('[data-testid="file-attachment-pill"]')).toBeVisible();
-
-  // Send message
-  await page.fill('[data-testid="message-input"]', 'Review this file');
-  await page.click('[data-testid="send-button"]');
-
-  // Verify agent receives file context (check response)
-  // ... (implementation-specific)
-});
-
-// e2e/streaming.spec.ts
-test('responses stream token-by-token', async ({ page }) => {
-  await page.goto('/');
-
-  await page.fill('[data-testid="message-input"]', 'Hello');
-  await page.click('[data-testid="send-button"]');
-
-  // Wait for first token to appear
-  await page.waitForSelector('[data-testid="streaming-cursor"]');
-
-  // Verify tokens are appearing incrementally
-  const messageBubble = page.locator('[data-testid="agent-message"]').last();
-  const initialText = await messageBubble.textContent();
-
-  await page.waitForTimeout(500); // Wait for more tokens
-
-  const updatedText = await messageBubble.textContent();
-  expect(updatedText).not.toBe(initialText); // Text should have grown
-
-  // Wait for completion
-  await expect(page.locator('[data-testid="streaming-cursor"]')).toBeHidden();
-});
-```
-
-### Performance Testing
-
-```typescript
-// Performance targets:
-// - File viewer toggle: <300ms, 60fps animation
-// - Session list load (100 sessions): <1s
-// - Streaming render: Maintain 60fps during token updates
-// - File attachment drag-drop: <100ms response time
-
-// Use Chrome DevTools Performance tab to measure
-```
+**Performance (spot check):**
+- Open DevTools Performance tab
+- Toggle file viewer → should be <300ms, 60fps
+- Stream a response → no dropped frames
 
 ---
 
