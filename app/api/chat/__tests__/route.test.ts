@@ -269,7 +269,8 @@ describe('POST /api/chat', () => {
     const messagesInSecondCall = secondCallArgs[2]; // 3rd parameter is conversation history
 
     // Should include first user message and assistant response
-    expect(messagesInSecondCall.length).toBeGreaterThanOrEqual(2);
+    expect(messagesInSecondCall).toBeDefined();
+    expect(messagesInSecondCall!.length).toBeGreaterThanOrEqual(2);
   });
 
   it('should handle OpenAI API errors gracefully', async () => {

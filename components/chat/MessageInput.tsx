@@ -78,7 +78,7 @@ export function MessageInput({ centered = false }: { centered?: boolean }) {
         )}
 
         <div
-          ref={drop}
+          ref={drop as any}
           className={`bg-white rounded-2xl shadow-lg border px-4 py-4 transition-colors ${
             isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-200'
           }`}
@@ -123,7 +123,7 @@ export function MessageInput({ centered = false }: { centered?: boolean }) {
         )}
 
         <div
-          ref={drop}
+          ref={drop as any}
           className={`border rounded-lg p-3 transition-colors ${
             isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-300'
           }`}

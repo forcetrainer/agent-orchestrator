@@ -140,7 +140,7 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
           )}
 
           <div
-            ref={drop}
+            ref={drop as any}
             className={`border rounded-lg p-3 transition-colors ${
               isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-300'
             }`}

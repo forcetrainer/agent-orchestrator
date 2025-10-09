@@ -161,7 +161,7 @@ const TreeNode = memo(
     return (
       <div>
         <div
-          ref={dragRef}
+          ref={dragRef as any}
           className={`
             flex items-center gap-2 px-2 py-1 cursor-pointer
             hover:bg-gray-100 rounded transition-colors

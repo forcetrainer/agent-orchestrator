@@ -36,6 +36,7 @@ describe('MessageBubble', () => {
   // Task 5.3: Test assistant message styling
   it('renders assistant message with left-aligned gray styling', () => {
     const assistantMessage: Message = {
+      id: 'assistant-1',
       role: 'assistant',
       content: 'Hello, user!',
     };
@@ -52,6 +53,7 @@ describe('MessageBubble', () => {
   // Task 5.4: Test content rendering
   it('displays message content correctly', () => {
     const message: Message = {
+      id: 'msg-1',
       role: 'user',
       content: 'This is my message content',
     };

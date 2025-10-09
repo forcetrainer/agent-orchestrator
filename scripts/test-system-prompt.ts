@@ -15,6 +15,7 @@ const mockAgent: Agent = {
   name: 'TestBot',
   title: 'Test Agent',
   path: '/test/path',
+  mainFile: '/test/path/agent.md',
   bundlePath: '/test/bundle',
   bundleName: 'test-bundle',
   fullContent: `

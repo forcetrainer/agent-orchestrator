@@ -47,9 +47,9 @@ describe('MessageList', () => {
   // Task 6.2: Multiple messages test
   it('renders multiple messages in correct order', () => {
     const messages: Message[] = [
-      { role: 'user', content: 'First message' },
-      { role: 'assistant', content: 'Second message' },
-      { role: 'user', content: 'Third message' },
+      { id: '1', role: 'user', content: 'First message' },
+      { id: '2', role: 'assistant', content: 'Second message' },
+      { id: '3', role: 'user', content: 'Third message' },
     ];
 
     render(<MessageList messages={messages} />);
@@ -68,6 +68,7 @@ describe('MessageList', () => {
   // Task 6.4: Scrollable container with long lists
   it('handles long message lists with scrollable container', () => {
     const longMessageList: Message[] = Array.from({ length: 20 }, (_, i) => ({
+      id: `msg-${i + 1}`,
       role: i % 2 === 0 ? ('user' as const) : ('assistant' as const),
       content: `Message ${i + 1}`,
     }));

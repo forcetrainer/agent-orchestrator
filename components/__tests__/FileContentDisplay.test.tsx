@@ -1169,9 +1169,11 @@ describe('FileContentDisplay', () => {
       // Arrange
       const fileContent: FileContentResponse = {
         success: true,
+        path: 'session-123/test.txt',
         content: 'Test content',
         mimeType: 'text/plain',
         size: 12,
+        modified: '2025-10-07T12:00:00Z',
         isBinary: false,
         truncated: false,
       };
@@ -1219,9 +1221,11 @@ describe('FileContentDisplay', () => {
 
       const fileContent: FileContentResponse = {
         success: true,
+        path: 'session-123/folder/test.txt',
         content: 'Test content',
         mimeType: 'text/plain',
         size: 12,
+        modified: '2025-10-07T12:00:00Z',
         isBinary: false,
         truncated: false,
       };
@@ -1278,9 +1282,11 @@ describe('FileContentDisplay', () => {
       // Arrange
       const fileContent: FileContentResponse = {
         success: true,
+        path: 'test.txt',
         content: 'Test content',
         mimeType: 'text/plain',
         size: 12,
+        modified: '2025-10-07T12:00:00Z',
         isBinary: false,
         truncated: false,
       };

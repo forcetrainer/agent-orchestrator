@@ -24,7 +24,9 @@ describe('types/index', () => {
         name: 'Test Agent',
         title: 'Test Title',
         description: 'Test description',
-        path: '/agents/test'
+        bundleName: 'test-bundle',
+        bundlePath: '/agents/test-bundle',
+        filePath: '/agents/test/agent.md'
       }
       expect(agentSummary).toBeDefined()
 

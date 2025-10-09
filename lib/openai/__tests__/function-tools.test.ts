@@ -25,15 +25,15 @@ describe('Function Tools', () => {
     });
 
     it('should have required parameters defined', () => {
-      expect(READ_FILE_TOOL.function.parameters.required).toContain('path');
-      expect(READ_FILE_TOOL.function.parameters.properties.path).toBeDefined();
-      expect(READ_FILE_TOOL.function.parameters.properties.path.type).toBe('string');
+      expect(READ_FILE_TOOL.function.parameters?.required).toContain('path');
+      expect((READ_FILE_TOOL.function.parameters?.properties as any)?.path).toBeDefined();
+      expect((READ_FILE_TOOL.function.parameters?.properties as any)?.path?.type).toBe('string');
     });
 
     it('should have valid JSON schema structure', () => {
-      expect(READ_FILE_TOOL.function.parameters.type).toBe('object');
-      expect(READ_FILE_TOOL.function.parameters.properties).toBeDefined();
-      expect(typeof READ_FILE_TOOL.function.parameters.properties).toBe('object');
+      expect(READ_FILE_TOOL.function.parameters?.type).toBe('object');
+      expect(READ_FILE_TOOL.function.parameters?.properties).toBeDefined();
+      expect(typeof READ_FILE_TOOL.function.parameters?.properties).toBe('object');
     });
   });
 
@@ -51,18 +51,18 @@ describe('Function Tools', () => {
     });
 
     it('should have required parameters defined', () => {
-      expect(WRITE_FILE_TOOL.function.parameters.required).toContain('path');
-      expect(WRITE_FILE_TOOL.function.parameters.required).toContain('content');
-      expect(WRITE_FILE_TOOL.function.parameters.properties.path).toBeDefined();
-      expect(WRITE_FILE_TOOL.function.parameters.properties.content).toBeDefined();
-      expect(WRITE_FILE_TOOL.function.parameters.properties.path.type).toBe('string');
-      expect(WRITE_FILE_TOOL.function.parameters.properties.content.type).toBe('string');
+      expect(WRITE_FILE_TOOL.function.parameters?.required).toContain('path');
+      expect(WRITE_FILE_TOOL.function.parameters?.required).toContain('content');
+      expect((WRITE_FILE_TOOL.function.parameters?.properties as any)?.path).toBeDefined();
+      expect((WRITE_FILE_TOOL.function.parameters?.properties as any)?.content).toBeDefined();
+      expect((WRITE_FILE_TOOL.function.parameters?.properties as any)?.path?.type).toBe('string');
+      expect((WRITE_FILE_TOOL.function.parameters?.properties as any)?.content?.type).toBe('string');
     });
 
     it('should have valid JSON schema structure', () => {
-      expect(WRITE_FILE_TOOL.function.parameters.type).toBe('object');
-      expect(WRITE_FILE_TOOL.function.parameters.properties).toBeDefined();
-      expect(typeof WRITE_FILE_TOOL.function.parameters.properties).toBe('object');
+      expect(WRITE_FILE_TOOL.function.parameters?.type).toBe('object');
+      expect(WRITE_FILE_TOOL.function.parameters?.properties).toBeDefined();
+      expect(typeof WRITE_FILE_TOOL.function.parameters?.properties).toBe('object');
     });
   });
 
@@ -80,15 +80,15 @@ describe('Function Tools', () => {
     });
 
     it('should have required parameters defined', () => {
-      expect(LIST_FILES_TOOL.function.parameters.required).toContain('path');
-      expect(LIST_FILES_TOOL.function.parameters.properties.path).toBeDefined();
-      expect(LIST_FILES_TOOL.function.parameters.properties.path.type).toBe('string');
+      expect(LIST_FILES_TOOL.function.parameters?.required).toContain('path');
+      expect((LIST_FILES_TOOL.function.parameters?.properties as any)?.path).toBeDefined();
+      expect((LIST_FILES_TOOL.function.parameters?.properties as any)?.path?.type).toBe('string');
     });
 
     it('should have valid JSON schema structure', () => {
-      expect(LIST_FILES_TOOL.function.parameters.type).toBe('object');
-      expect(LIST_FILES_TOOL.function.parameters.properties).toBeDefined();
-      expect(typeof LIST_FILES_TOOL.function.parameters.properties).toBe('object');
+      expect(LIST_FILES_TOOL.function.parameters?.type).toBe('object');
+      expect(LIST_FILES_TOOL.function.parameters?.properties).toBeDefined();
+      expect(typeof LIST_FILES_TOOL.function.parameters?.properties).toBe('object');
     });
   });
 
@@ -130,10 +130,10 @@ describe('Function Tools', () => {
         expect(tool.function.name).toBeTruthy();
         expect(tool.function.description).toBeTruthy();
         expect(tool.function.parameters).toBeDefined();
-        expect(tool.function.parameters.type).toBe('object');
-        expect(tool.function.parameters.properties).toBeDefined();
-        expect(tool.function.parameters.required).toBeDefined();
-        expect(Array.isArray(tool.function.parameters.required)).toBe(true);
+        expect(tool.function.parameters?.type).toBe('object');
+        expect(tool.function.parameters?.properties).toBeDefined();
+        expect(tool.function.parameters?.required).toBeDefined();
+        expect(Array.isArray(tool.function.parameters?.required)).toBe(true);
       });
     });
   });
