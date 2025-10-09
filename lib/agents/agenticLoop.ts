@@ -61,6 +61,11 @@ export interface ExecutionResult {
 import { processCriticalActions } from './criticalActions';
 
 /**
+ * Import shared tool executor
+ */
+import { executeToolCall } from '@/lib/tools/toolExecutor';
+
+/**
  * Builds system prompt with tool usage instructions.
  *
  * STUB: This is a placeholder for Story 4.8 - System Prompt Builder
@@ -81,75 +86,6 @@ import { processCriticalActions } from './criticalActions';
 function getToolDefinitions() {
   const { readFileTool, saveOutputTool, executeWorkflowTool } = require('@/lib/tools/toolDefinitions');
   return [readFileTool, saveOutputTool, executeWorkflowTool];
-}
-
-/**
- * Executes a single tool call with path resolution.
- *
- * Story 4.9: Updated to use Story 4.5 file operation tools with PathContext
- *
- * @param toolCall - Tool call from OpenAI
- * @param context - Path resolution context (bundleRoot, coreRoot, etc.)
- * @returns Tool execution result
- */
-async function executeToolCall(toolCall: any, context: any): Promise<any> {
-  const functionName = toolCall.function.name;
-  const functionArgs = JSON.parse(toolCall.function.arguments);
-
-  console.log(`[agenticLoop] Executing tool: ${functionName}`, functionArgs);
-
-  // Import new file operation functions from Story 4.5
-  const { executeReadFile, executeSaveOutput, executeWorkflow } = require('@/lib/tools/fileOperations');
-
-  let result: any;
-
-  try {
-    switch (functionName) {
-      case 'read_file':
-        const timestamp = new Date().toISOString();
-        console.log(`[read_file #${context.toolCallCount || 1}] 📂 Loading: ${functionArgs.file_path} at ${timestamp}`);
-        result = await executeReadFile(functionArgs, context);
-        if (result.success) {
-          console.log(`[read_file #${context.toolCallCount || 1}] ✅ Loaded ${result.size} bytes from: ${result.path}`);
-        } else {
-          console.error(`[read_file #${context.toolCallCount || 1}] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      case 'save_output':
-        console.log(`[save_output] 💾 Writing to: ${functionArgs.file_path}`);
-        result = await executeSaveOutput(functionArgs, context);
-        if (result.success) {
-          console.log(`[save_output] ✅ Written ${result.size} bytes to: ${result.path}`);
-        } else {
-          console.error(`[save_output] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      case 'execute_workflow':
-        console.log(`[execute_workflow] 🔄 Loading workflow: ${functionArgs.workflow_path}`);
-        result = await executeWorkflow(functionArgs, context);
-        if (result.success) {
-          console.log(`[execute_workflow] ✅ Workflow loaded: ${result.workflow?.name || 'unknown'}`);
-        } else {
-          console.error(`[execute_workflow] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      default:
-        throw new Error(`Unknown function: ${functionName}`);
-    }
-
-    return result;
-  } catch (err: any) {
-    const error = err.message || String(err);
-    console.error(`[agenticLoop] Tool ${functionName} failed:`, error);
-    // Return structured error format for OpenAI
-    return {
-      success: false,
-      error: error
-    };
-  }
 }
 
 /**

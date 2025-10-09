@@ -135,6 +135,9 @@ export function buildSystemPrompt(agent: Agent): string {
 AVAILABLE COMMANDS:
 ${commands
   .map((cmd) => {
+    if (cmd.runWorkflow) {
+      return `${cmd.cmd} - ${cmd.description} [Workflow: ${cmd.runWorkflow}]`;
+    }
     return `${cmd.cmd} - ${cmd.description}`;
   })
   .join('\n')}`;

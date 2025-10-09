@@ -23,6 +23,7 @@ import { getOpenAIClient } from '@/lib/openai/client';
 import { buildSystemPrompt } from '@/lib/agents/systemPromptBuilder';
 import { processCriticalActions } from '@/lib/agents/criticalActions';
 import { mapToolCallToStatus } from '@/lib/openai/status-mapper'; // Story 6.9
+import { executeToolCall } from '@/lib/tools/toolExecutor'; // Shared tool executor
 
 /**
  * POST /api/chat
@@ -222,6 +223,11 @@ export async function POST(request: NextRequest) {
           while (iterations < MAX_ITERATIONS) {
             iterations++;
 
+            // Send "Agent is thinking..." status at start of each iteration
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'status', message: 'Agent is thinking...' })}\n\n`)
+            );
+
             // AC-6.8.2: Call OpenAI with streaming enabled
             const response = await client.chat.completions.create({
               model,
@@ -244,6 +250,13 @@ export async function POST(request: NextRequest) {
 
               // AC-6.8.3: Stream tokens when delta.content present
               if (delta?.content) {
+                // Clear "Agent is thinking..." status when first content arrives
+                if (assistantMessage.content === '') {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '' })}\n\n`)
+                  );
+                }
+
                 assistantMessage.content += delta.content;
                 accumulatedContent += delta.content;
 
@@ -390,68 +403,6 @@ export async function POST(request: NextRequest) {
   }
 }
 
-/**
- * Execute a single tool call with path resolution.
- * (Copied from agenticLoop.ts to avoid circular dependencies)
- */
-async function executeToolCall(toolCall: any, context: any): Promise<any> {
-  const functionName = toolCall.function.name;
-  const functionArgs = JSON.parse(toolCall.function.arguments);
-
-  console.log(`[/api/chat] Executing tool: ${functionName}`, functionArgs);
-
-  // Import file operation functions
-  const { executeReadFile, executeSaveOutput, executeWorkflow } = require('@/lib/tools/fileOperations');
-
-  let result: any;
-
-  try {
-    switch (functionName) {
-      case 'read_file':
-        const timestamp = new Date().toISOString();
-        console.log(`[read_file #${context.toolCallCount || 1}] 📂 Loading: ${functionArgs.file_path} at ${timestamp}`);
-        result = await executeReadFile(functionArgs, context);
-        if (result.success) {
-          console.log(`[read_file #${context.toolCallCount || 1}] ✅ Loaded ${result.size} bytes from: ${result.path}`);
-        } else {
-          console.error(`[read_file #${context.toolCallCount || 1}] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      case 'save_output':
-        console.log(`[save_output] 💾 Writing to: ${functionArgs.file_path}`);
-        result = await executeSaveOutput(functionArgs, context);
-        if (result.success) {
-          console.log(`[save_output] ✅ Written ${result.size} bytes to: ${result.path}`);
-        } else {
-          console.error(`[save_output] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      case 'execute_workflow':
-        console.log(`[execute_workflow] 🔄 Loading workflow: ${functionArgs.workflow_path}`);
-        result = await executeWorkflow(functionArgs, context);
-        if (result.success) {
-          console.log(`[execute_workflow] ✅ Workflow loaded: ${result.workflow?.name || 'unknown'}`);
-        } else {
-          console.error(`[execute_workflow] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      default:
-        throw new Error(`Unknown function: ${functionName}`);
-    }
-
-    return result;
-  } catch (err: any) {
-    const error = err.message || String(err);
-    console.error(`[/api/chat] Tool ${functionName} failed:`, error);
-    return {
-      success: false,
-      error: error
-    };
-  }
-}
-
 // Story 6.9: mapToolCallToStatus moved to lib/openai/status-mapper.ts
 // for context-aware status messaging (distinguishes user-attached files from internal files)
+// executeToolCall moved to lib/tools/toolExecutor.ts to eliminate duplication
