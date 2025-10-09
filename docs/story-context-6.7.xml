@@ -1,0 +1,240 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.7</storyId>
+    <title>File Attachment Backend Processing</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.7.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>system</asA>
+    <iWant>to read attached file contents and inject into conversation context</iWant>
+    <soThat>the agent can reference file contents in its response</soThat>
+    <tasks>
+      <task id="1" status="pending">Update POST /api/chat endpoint to accept attachments array</task>
+      <task id="2" status="pending">Implement file path security validation</task>
+      <task id="3" status="pending">Implement file reading with size limits (max 1MB)</task>
+      <task id="4" status="pending">Build file context system message</task>
+      <task id="5" status="pending">Inject file context into conversation messages</task>
+      <task id="6" status="pending">Error handling for file operations</task>
+      <task id="7" status="pending">Frontend integration with message send</task>
+      <task id="8" status="pending">Security and performance testing</task>
+      <task id="9" status="pending">Documentation and validation</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">POST /api/chat endpoint accepts attachments array in request</criterion>
+    <criterion id="2">Backend validates file paths (must be within output/ directory)</criterion>
+    <criterion id="3">Backend reads file contents for each attachment (max 1MB per file)</criterion>
+    <criterion id="4">File contents injected into conversation as system message before user message</criterion>
+    <criterion id="5">Format: "Files attached by user:\nFile: {filename}\n---\n{content}\n---"</criterion>
+    <criterion id="6">Multiple attachments handled correctly (all files injected)</criterion>
+    <criterion id="7">File not found error handled gracefully (return error to frontend)</criterion>
+    <criterion id="8">File too large error (>1MB) returned to frontend</criterion>
+    <criterion id="9">Path traversal attacks prevented (no ../../etc/passwd)</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>docs/tech-spec-epic-6.md</path>
+        <title>Epic 6: Enhanced UX & Interactive Features - Technical Specification</title>
+        <section>4. File Reference Attachments</section>
+        <snippet>Backend integration: POST /api/chat accepts attachments array, validates paths, reads files with 1MB limit, injects as system messages. Security: path validation prevents traversal attacks.</snippet>
+      </doc>
+      <doc>
+        <path>docs/epics.md</path>
+        <title>Agent Orchestrator - Epic Breakdown</title>
+        <section>Story 6.7: File Attachment Backend Processing</section>
+        <snippet>Backend file reading and context injection for drag-drop attachments. Validates paths, enforces size limits, handles errors gracefully. Enables agents to reference user-provided files in responses.</snippet>
+      </doc>
+      <doc>
+        <path>docs/PRD.md</path>
+        <title>Agent Orchestrator Product Requirements Document</title>
+        <section>Goals and Context</section>
+        <snippet>Platform bridges gap between agent development in Claude Code and production deployment. File-based architecture aligns with BMAD methodology. Security and user experience are critical for production readiness.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>34-178</lines>
+        <reason>Main chat endpoint that needs to be extended with attachments support. Currently accepts ChatRequest { agentId, message, conversationId } - needs to add attachments field and processing logic.</reason>
+      </artifact>
+      <artifact>
+        <path>types/api.ts</path>
+        <kind>type-definitions</kind>
+        <symbol>ChatRequest</symbol>
+        <lines>18-22</lines>
+        <reason>Request type that needs attachments field added: attachments?: FileReference[]. Already has agentId, message, conversationId fields.</reason>
+      </artifact>
+      <artifact>
+        <path>types/index.ts</path>
+        <kind>type-definitions</kind>
+        <symbol>FileReference</symbol>
+        <lines>98-100</lines>
+        <reason>Defines file attachment structure with filepath and filename. Already implemented in Story 6.6 for frontend drag-drop.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/files/reader.ts</path>
+        <kind>utility</kind>
+        <symbol>readFileContent</symbol>
+        <lines>27-102</lines>
+        <reason>Existing file reader with dual-folder search pattern (agents, bmad, output). Security validation via validatePath. Can be reused or adapted for attachment reading with size limits.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/tools/fileOperations.ts</path>
+        <kind>utility</kind>
+        <symbol>executeReadFile</symbol>
+        <lines>78-100</lines>
+        <reason>Tool-based file reading with path variable resolution and error handling patterns. Demonstrates security validation and structured error responses.</reason>
+      </artifact>
+      <artifact>
+        <path>components/chat/InputField.tsx</path>
+        <kind>component</kind>
+        <symbol>InputField</symbol>
+        <lines>1-200</lines>
+        <reason>Frontend component with attachments state from Story 6.6. handleSend() function needs to pass attachments array to POST /api/chat endpoint.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package>next</package>
+        <version>14.2.0</version>
+        <purpose>Next.js framework for API routes and server-side logic</purpose>
+      </node>
+      <node>
+        <package>openai</package>
+        <version>^4.104.0</version>
+        <purpose>OpenAI SDK for chat completions with message context</purpose>
+      </node>
+      <node>
+        <package>uuid</package>
+        <version>^13.0.0</version>
+        <purpose>UUID generation for unique identifiers</purpose>
+      </node>
+      <node>
+        <package>@types/node</package>
+        <version>^20</version>
+        <purpose>Node.js type definitions for fs/promises, path modules</purpose>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>
+      <type>security</type>
+      <description>All file paths MUST be validated to prevent path traversal attacks. Use path.resolve() and startsWith() check against output directory base path. Reject paths containing '../' after normalization.</description>
+    </constraint>
+    <constraint>
+      <type>security</type>
+      <description>Never leak internal system paths in error messages. Return generic "Access denied" for path validation failures without revealing directory structure.</description>
+    </constraint>
+    <constraint>
+      <type>performance</type>
+      <description>Enforce 1MB file size limit before reading. Use fs.stat() to check size, reject with 413 Payload Too Large if exceeded. Prevents memory exhaustion.</description>
+    </constraint>
+    <constraint>
+      <type>architecture</type>
+      <description>File context message must be injected BEFORE user message in conversation array: [...conversationHistory, fileContextMessage, userMessage]. System role for file context.</description>
+    </constraint>
+    <constraint>
+      <type>error-handling</type>
+      <description>Return structured errors to frontend: { success: false, error: string, code: number }. Map errors: 403 (path validation), 404 (file not found), 413 (too large), 500 (read error).</description>
+    </constraint>
+    <constraint>
+      <type>testing</type>
+      <description>Unit tests for path validation, file reading, context building. Integration tests for end-to-end attachment flow. Security tests for path traversal attack patterns.</description>
+    </constraint>
+    <constraint>
+      <type>ux</type>
+      <description>Frontend must display backend errors clearly (file not found, too large, access denied). Keep attachments in state if send fails to allow retry.</description>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>ChatRequest (updated)</name>
+      <kind>type</kind>
+      <signature>interface ChatRequest { agentId: string; message: string; conversationId?: string; attachments?: FileReference[]; }</signature>
+      <path>types/api.ts</path>
+      <usage>Add attachments field to existing ChatRequest interface</usage>
+    </interface>
+    <interface>
+      <name>FileReference</name>
+      <kind>type</kind>
+      <signature>interface FileReference { filepath: string; filename: string; }</signature>
+      <path>types/index.ts:98-100</path>
+      <usage>Already defined in Story 6.6, reuse for attachments array</usage>
+    </interface>
+    <interface>
+      <name>validateFilePath</name>
+      <kind>function</kind>
+      <signature>function validateFilePath(filepath: string, baseDir: string): { valid: boolean; error?: string; }</signature>
+      <path>lib/files/security.ts (new)</path>
+      <usage>Create new security module with path validation function. Use path.resolve() and startsWith() check.</usage>
+    </interface>
+    <interface>
+      <name>readFileForAttachment</name>
+      <kind>function</kind>
+      <signature>async function readFileForAttachment(filepath: string): Promise&lt;{ success: true; content: string; } | { success: false; error: string; code: number; }&gt;</signature>
+      <path>lib/files/reader.ts (new function)</path>
+      <usage>Create new function for attachment reading with size limit enforcement. Check fs.stat() before reading.</usage>
+    </interface>
+    <interface>
+      <name>buildFileContextMessage</name>
+      <kind>function</kind>
+      <signature>function buildFileContextMessage(attachments: Array&lt;{ filepath: string; filename: string; content: string; }&gt;): { role: 'system'; content: string; }</signature>
+      <path>lib/chat/fileContext.ts (new)</path>
+      <usage>Create new module to build system message from attachments. Format: "Files attached by user:\nFile: {filename}\n---\n{content}\n---"</usage>
+    </interface>
+    <interface>
+      <name>fs/promises</name>
+      <kind>module</kind>
+      <signature>import { readFile, stat } from 'fs/promises';</signature>
+      <path>Node.js built-in</path>
+      <usage>Use fs.promises.readFile() for async file reading and fs.promises.stat() for size checking</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <paragraph>
+        Project uses Jest 30.2.0 with React Testing Library 16.3.0 for unit and integration tests.
+        TypeScript with ts-jest for type-safe testing.
+        Test files follow __tests__ directory pattern or .test.ts suffix.
+        Tests must cover: unit logic (path validation, file reading, context building), integration (end-to-end attachment flow), security (path traversal attacks, size limits).
+        Mock fs/promises for file operations in unit tests.
+        Use real files in integration tests to verify end-to-end behavior.
+        Test error scenarios thoroughly (file not found, permission denied, path traversal, file too large).
+      </paragraph>
+    </standards>
+    <locations>
+      <location>lib/files/__tests__/security.test.ts (new)</location>
+      <location>lib/files/__tests__/reader.test.ts (extend)</location>
+      <location>lib/chat/__tests__/fileContext.test.ts (new)</location>
+      <location>app/api/chat/__tests__/route.test.ts (extend)</location>
+      <location>__tests__/integration/fileAttachment.test.ts (new)</location>
+      <location>__tests__/security/pathTraversal.test.ts (new)</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Test ChatRequest type accepts attachments array field</idea>
+      <idea ac="2">Test path validation rejects ../../../etc/passwd and other traversal attempts</idea>
+      <idea ac="2">Test path validation allows valid paths within output directory</idea>
+      <idea ac="3">Test file reading rejects files >1MB with 413 error</idea>
+      <idea ac="3">Test file reading succeeds for files &lt;1MB</idea>
+      <idea ac="4,5">Test file context message format with single file</idea>
+      <idea ac="4,5,6">Test file context message format with multiple files</idea>
+      <idea ac="7">Test file not found returns 404 error to frontend</idea>
+      <idea ac="8">Test file too large returns 413 error to frontend</idea>
+      <idea ac="9">Test path traversal attempts return 403 error</idea>
+      <idea ac="all">Integration test: Attach valid file → Send message → Verify agent receives content in context</idea>
+    </ideas>
+  </tests>
+</story-context>

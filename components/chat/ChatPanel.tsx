@@ -155,12 +155,13 @@ export function ChatPanel() {
 
   // Story 3.5 Task 2.3-2.9: Create handleSendMessage function
   // Story 3.8 Task 2: Implement error handling in ChatPanel API calls
+  // Story 6.7: Now accepts attachments parameter for file reference attachments
   // AC-5.4: User message immediately appears
   // AC-5.8: Agent response appears when received
   // AC-8.1: API errors display as error messages in chat
   // AC-8.6: User can still send new messages after error
   // AC-8.7: Errors don't crash the interface
-  const handleSendMessage = async (messageContent: string) => {
+  const handleSendMessage = async (messageContent: string, attachments?: Array<{ filepath: string; filename: string }>) => {
     // Validation: Require agent selection
     if (!selectedAgentId) {
       console.error('[ChatPanel] No agent selected');
@@ -201,6 +202,7 @@ export function ChatPanel() {
 
       // Task 2.6: POST to /api/chat with {agentId, message, conversationId} payload
       // Story 3.8 Task 2.1: Wrap fetch call in try/catch
+      // Story 6.7: Include attachments in request if present
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -208,6 +210,7 @@ export function ChatPanel() {
           agentId: selectedAgentId,
           message: messageContent,
           conversationId,
+          attachments, // Story 6.7: Pass attachments array
         }),
       });
 

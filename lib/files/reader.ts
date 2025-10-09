@@ -8,7 +8,7 @@
  * Performance: Async/await with fs/promises for non-blocking I/O.
  */
 
-import { readFile } from 'fs/promises';
+import { readFile, stat } from 'fs/promises';
 import { validatePath } from './security';
 import { env } from '@/lib/utils/env';
 
@@ -98,5 +98,64 @@ export async function readFileContent(relativePath: string): Promise<string> {
       '\nStack:', error.stack
     );
     throw error;
+  }
+}
+
+/**
+ * Reads a file for attachment processing with size limit enforcement.
+ * Story 6.7: File attachment backend processing
+ *
+ * Unlike readFileContent which searches multiple folders, this function
+ * reads from an explicit absolute path and enforces a 1MB size limit.
+ *
+ * @param filepath - Absolute file path (already validated by security module)
+ * @returns Success result with content, or error result with code and message
+ */
+export async function readFileForAttachment(
+  filepath: string
+): Promise<{ success: true; content: string } | { success: false; error: string; code: number }> {
+  const MAX_FILE_SIZE = 1024 * 1024; // 1MB
+
+  try {
+    // Check file size first before reading
+    const stats = await stat(filepath);
+
+    if (stats.size > MAX_FILE_SIZE) {
+      return {
+        success: false,
+        error: `File too large (${Math.round(stats.size / 1024)}KB). Maximum size is 1MB.`,
+        code: 413
+      };
+    }
+
+    // Read file contents
+    const content = await readFile(filepath, 'utf-8');
+
+    return {
+      success: true,
+      content
+    };
+  } catch (error: any) {
+    if (error.code === 'ENOENT') {
+      return {
+        success: false,
+        error: 'File not found',
+        code: 404
+      };
+    }
+
+    if (error.code === 'EACCES') {
+      return {
+        success: false,
+        error: 'Permission denied',
+        code: 403
+      };
+    }
+
+    return {
+      success: false,
+      error: 'Failed to read file',
+      code: 500
+    };
   }
 }

@@ -435,6 +435,34 @@ function resolvePath(pathTemplate, context) {
 - Explicit instructions to USE TOOLS, not just acknowledge
 - Available commands and their descriptions
 - Tool usage patterns
+- Conversational style guidelines (context-aware communication)
+
+#### 6.1 Conversational Style Guidelines
+
+The system prompt must include context-aware communication rules that adapt based on workflow patterns:
+
+**For Guided Workflows (containing `<step n="X">` tags):**
+- Always display step number and goal (e.g., "Step 2: Refine problem statement")
+- Provide helpful context and analysis to orient the user within the workflow
+- When `<action>` tags suggest providing guidance (e.g., "Suggest questions...", "Guide through...", "Prompt:..."):
+  - May provide multiple related items as helpful guidance
+  - These are suggestions for the user to consider, not direct questions
+- When `<ask>` tags request direct input from the user:
+  - Ask ONE question clearly and wait for response
+  - This prevents overwhelming the user with barrage of questions
+
+**General Conversational Rules (all agents):**
+- Keep responses purposeful and focused (2-4 sentences unless context requires more)
+- When asking user directly for input, ask ONE clear question at a time
+- Use empathetic, conversational language (not robotic data collection mode)
+- Paraphrase user's answers to show understanding before moving forward
+- If something is unclear, ask follow-up questions to clarify BEFORE proceeding
+
+**Rationale:**
+- Workflows like Casey's deep-dive need to suggest multiple questions for the BA to ask the user (guidance mode)
+- But the agent should only ask the BA/developer ONE direct question at a time (input mode)
+- This prevents confusion between "questions the agent suggests for the BA" vs "questions the agent asks the BA directly"
+- Maintains good UX by avoiding overwhelming users with too many questions at once
 
 **Implementation**:
 ```javascript

@@ -6,7 +6,7 @@
  * enabling chat sessions to appear in the file viewer with friendly names.
  */
 
-import { writeFile, mkdir, readFile } from 'fs/promises';
+import { writeFile, mkdir, readFile, readdir, rm } from 'fs/promises';
 import { resolve, join } from 'path';
 import { randomUUID } from 'crypto';
 import type { SessionManifest } from '@/lib/agents/sessionDiscovery';
@@ -30,6 +30,11 @@ export async function createChatSession(
   firstUserMessage: string,
   userName: string = 'User'
 ): Promise<{ sessionId: string; sessionFolder: string }> {
+  // Clean up abandoned sessions for this user (async, don't wait)
+  cleanupAbandonedSessions(userName).catch((error) => {
+    console.error('[createChatSession] Failed to cleanup abandoned sessions:', error);
+  });
+
   const sessionId = randomUUID();
   const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
   const sessionFolder = join(agentOutputsFolder, sessionId);
@@ -140,4 +145,76 @@ export async function finalizeChatSession(sessionId: string): Promise<boolean> {
     }
     throw error;
   }
+}
+
+/**
+ * Clean up abandoned chat sessions for a specific user
+ *
+ * Removes sessions that are:
+ * - Status: "running" (never completed)
+ * - No output files (only manifest.json exists)
+ * - Belong to the specified user
+ * - Older than 1 hour (to avoid deleting active sessions in another tab)
+ *
+ * This is safe to call on new session creation to clean up orphaned sessions
+ * from previous browser sessions.
+ *
+ * @param userName - User whose abandoned sessions should be cleaned
+ * @returns Number of sessions cleaned up
+ */
+export async function cleanupAbandonedSessions(userName: string): Promise<number> {
+  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+  let cleanedCount = 0;
+  const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+  try {
+    const sessionDirs = await readdir(agentOutputsFolder);
+
+    for (const sessionId of sessionDirs) {
+      const sessionFolder = join(agentOutputsFolder, sessionId);
+      const manifestPath = join(sessionFolder, 'manifest.json');
+
+      try {
+        // Read manifest
+        const manifestContent = await readFile(manifestPath, 'utf-8');
+        const manifest = JSON.parse(manifestContent) as SessionManifest;
+
+        // Check if this is an abandoned session for this user
+        const isAbandonedSession =
+          manifest.execution.user === userName &&
+          manifest.execution.status === 'running' &&
+          manifest.outputs.length === 0;
+
+        if (!isAbandonedSession) continue;
+
+        // Check age (must be older than 1 hour to avoid deleting active sessions)
+        const sessionStartTime = new Date(manifest.execution.started_at).getTime();
+        if (sessionStartTime > oneHourAgo) {
+          const sessionAge = Date.now() - sessionStartTime;
+          console.log(`[cleanupAbandonedSessions] Skipping recent session: ${sessionId} (${Math.round(sessionAge / 1000 / 60)}min old)`);
+          continue;
+        }
+
+        // Check that only manifest.json exists (no other files)
+        const files = await readdir(sessionFolder);
+        const hasOnlyManifest = files.length === 1 && files[0] === 'manifest.json';
+
+        if (hasOnlyManifest) {
+          // Safe to delete - this is truly an abandoned session
+          await rm(sessionFolder, { recursive: true, force: true });
+          cleanedCount++;
+          console.log(`[cleanupAbandonedSessions] Removed abandoned session: ${sessionId}`);
+        }
+      } catch (error: any) {
+        // Skip sessions we can't read or parse
+        if (error.code !== 'ENOENT') {
+          console.warn(`[cleanupAbandonedSessions] Error processing session ${sessionId}:`, error.message);
+        }
+      }
+    }
+  } catch (error: any) {
+    console.error('[cleanupAbandonedSessions] Error scanning sessions:', error.message);
+  }
+
+  return cleanedCount;
 }

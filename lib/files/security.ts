@@ -137,3 +137,52 @@ export function validateWritePath(relativePath: string): string {
 
   return absolutePath;
 }
+
+/**
+ * Validates a file path for attachment upload/processing.
+ * Story 6.7: Specifically for file reference attachments to prevent path traversal.
+ *
+ * This is a simpler validation specifically for the attachment use case where
+ * we only accept files within the output directory.
+ *
+ * @param filepath - The file path to validate (relative or absolute)
+ * @param baseDir - The base directory (typically OUTPUT_PATH)
+ * @returns Validation result with valid flag and optional error message
+ */
+export function validateFilePath(
+  filepath: string,
+  baseDir: string
+): { valid: boolean; error?: string } {
+  try {
+    // Normalize and resolve the base directory
+    const normalizedBase = resolve(baseDir);
+
+    // Resolve the filepath relative to the base directory
+    const normalizedPath = resolve(normalizedBase, filepath);
+
+    // Check if resolved path is within base directory
+    // This catches path traversal attempts like ../../../etc/passwd
+    if (!normalizedPath.startsWith(normalizedBase + sep) && normalizedPath !== normalizedBase) {
+      return {
+        valid: false,
+        error: 'Access denied: path outside allowed directory'
+      };
+    }
+
+    // Additional check: reject if the original path contains ../ patterns
+    // This provides defense in depth
+    if (filepath.includes('..')) {
+      return {
+        valid: false,
+        error: 'Access denied: path traversal detected'
+      };
+    }
+
+    return { valid: true };
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Invalid file path'
+    };
+  }
+}

@@ -14,11 +14,13 @@ export interface ApiResponse<T = any> {
 
 /**
  * Chat request payload for POST /api/chat
+ * Story 6.7: Added attachments field for file reference attachments
  */
 export interface ChatRequest {
   agentId: string;
   message: string;
   conversationId?: string;
+  attachments?: Array<{ filepath: string; filename: string }>;
 }
 
 /**

@@ -8,8 +8,9 @@
  * - Write path restrictions
  */
 
-import { validatePath, validateWritePath } from '../security';
+import { validatePath, validateWritePath, validateFilePath } from '../security';
 import { env } from '@/lib/utils/env';
+import { resolve } from 'path';
 
 describe('security module', () => {
   describe('validatePath', () => {
@@ -204,6 +205,68 @@ describe('security module', () => {
         expect.stringContaining('[Security]'),
         expect.any(Object)
       );
+    });
+  });
+
+  describe('validateFilePath (Story 6.7)', () => {
+    const outputPath = resolve(env.OUTPUT_PATH);
+
+    it('should accept valid relative paths within output directory', () => {
+      const validPaths = [
+        'file.md',
+        'subdir/file.md',
+        'deep/nested/path/file.txt'
+      ];
+
+      for (const path of validPaths) {
+        const result = validateFilePath(path, outputPath);
+        expect(result.valid).toBe(true);
+        expect(result.error).toBeUndefined();
+      }
+    });
+
+    it('should reject path traversal attempts', () => {
+      const maliciousPaths = [
+        '../../etc/passwd',
+        '../../../secret.txt',
+        'subdir/../../outside.txt',
+      ];
+
+      for (const path of maliciousPaths) {
+        const result = validateFilePath(path, outputPath);
+        expect(result.valid).toBe(false);
+        expect(result.error).toBeDefined();
+      }
+    });
+
+    it('should reject absolute paths outside output directory', () => {
+      const result = validateFilePath('/etc/passwd', outputPath);
+      expect(result.valid).toBe(false);
+      expect(result.error).toContain('Access denied');
+    });
+
+    it('should handle edge cases gracefully', () => {
+      // Empty path resolves to base directory (valid)
+      const emptyResult = validateFilePath('', outputPath);
+      expect(emptyResult.valid).toBe(true);
+
+      // Path with '.' resolves to base directory (valid)
+      const boundaryResult = validateFilePath('.', outputPath);
+      expect(boundaryResult.valid).toBe(true);
+    });
+
+    it('should detect Windows-style traversal on Windows', () => {
+      const windowsPath = '..\\..\\windows\\system32\\config\\sam';
+      const result = validateFilePath(windowsPath, outputPath);
+      // Should be rejected because it contains '..'
+      expect(result.valid).toBe(false);
+    });
+
+    it('should return error messages without leaking internal paths', () => {
+      const result = validateFilePath('../../etc/passwd', outputPath);
+      expect(result.valid).toBe(false);
+      expect(result.error).not.toContain(outputPath); // Don't leak internal paths
+      expect(result.error).toMatch(/Access denied|path traversal/i);
     });
   });
 });

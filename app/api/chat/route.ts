@@ -15,6 +15,11 @@ import {
   validateConversationId,
 } from '@/lib/utils/validation';
 import { createChatSession, incrementMessageCount } from '@/lib/sessions/chatSessions';
+import { validateFilePath } from '@/lib/files/security'; // Story 6.7
+import { readFileForAttachment } from '@/lib/files/reader'; // Story 6.7
+import { buildFileContextMessage } from '@/lib/chat/fileContext'; // Story 6.7
+import { env } from '@/lib/utils/env'; // Story 6.7
+import { resolve } from 'path'; // Story 6.7
 
 /**
  * POST /api/chat
@@ -63,6 +68,48 @@ export async function POST(request: NextRequest) {
       conversation.sessionId = sessionId;
     }
 
+    // Story 6.7: Process file attachments if present
+    let fileContextMessage: ChatCompletionMessageParam | null = null;
+    if (body.attachments && body.attachments.length > 0) {
+      const attachmentContents: Array<{ filepath: string; filename: string; content: string }> = [];
+
+      for (const { filepath, filename } of body.attachments) {
+        // Validate path security (AC #2, #9)
+        const validation = validateFilePath(filepath, env.OUTPUT_PATH);
+        if (!validation.valid) {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: 'Access denied: invalid file path',
+              code: 403
+            },
+            { status: 403 }
+          );
+        }
+
+        // Resolve to absolute path for reading
+        const absolutePath = resolve(env.OUTPUT_PATH, filepath);
+
+        // Read file with size limit (AC #3, #7, #8)
+        const result = await readFileForAttachment(absolutePath);
+        if (!result.success) {
+          return NextResponse.json<ApiResponse>(
+            {
+              success: false,
+              error: result.error,
+              code: result.code
+            },
+            { status: result.code }
+          );
+        }
+
+        attachmentContents.push({ filepath, filename, content: result.content });
+      }
+
+      // Build file context message (AC #4, #5, #6)
+      fileContextMessage = buildFileContextMessage(attachmentContents);
+    }
+
     // Add user message to conversation
     const userMessage = addMessage(conversation.id, {
       role: 'user',
@@ -77,7 +124,7 @@ export async function POST(request: NextRequest) {
     // Build messages array for OpenAI (convert to ChatCompletionMessageParam format)
     // Filter out 'error' and 'system' messages (system is added by executeChatCompletion)
     // Preserve function calls and tool responses to avoid re-loading files
-    const messages: ChatCompletionMessageParam[] = conversation.messages
+    let messages: ChatCompletionMessageParam[] = conversation.messages
       .filter((msg) => msg.role !== 'error' && msg.role !== 'system')
       .map((msg) => {
         if (msg.role === 'user') {
@@ -104,6 +151,12 @@ export async function POST(request: NextRequest) {
           };
         }
       });
+
+    // Story 6.7: Inject file context message before the current user message (AC #4)
+    if (fileContextMessage) {
+      // Insert file context message right before the last user message
+      messages.splice(messages.length - 1, 0, fileContextMessage);
+    }
 
     // Story 4.9: Execute using Epic 4 agentic loop with bundlePath support
     const result = await executeAgent(
