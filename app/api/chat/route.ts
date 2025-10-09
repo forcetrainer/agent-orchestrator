@@ -22,6 +22,7 @@ import { resolve } from 'path'; // Story 6.7
 import { getOpenAIClient } from '@/lib/openai/client';
 import { buildSystemPrompt } from '@/lib/agents/systemPromptBuilder';
 import { processCriticalActions } from '@/lib/agents/criticalActions';
+import { mapToolCallToStatus } from '@/lib/openai/status-mapper'; // Story 6.9
 
 /**
  * POST /api/chat
@@ -78,11 +79,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Story 6.7: Process file attachments if present
+    // Story 6.9: Track user attachments for context-aware status messages
     let fileContextMessage: ChatCompletionMessageParam | null = null;
+    const userAttachmentPaths: string[] = [];
+
     if (body.attachments && body.attachments.length > 0) {
       const attachmentContents: Array<{ filepath: string; filename: string; content: string }> = [];
 
       for (const { filepath, filename } of body.attachments) {
+        userAttachmentPaths.push(filepath);
         // Validate path security (AC #2, #9)
         const validation = validateFilePath(filepath, env.OUTPUT_PATH);
         if (!validation.valid) {
@@ -296,12 +301,10 @@ export async function POST(request: NextRequest) {
 
               if (assistantMessage.tool_calls.length > 0) {
                 // AC-6.8.6: Emit status events for tool execution
+                // Story 6.9: Context-aware status messages
                 for (const toolCall of assistantMessage.tool_calls) {
-                  const functionName = toolCall.function.name;
-                  const functionArgs = JSON.parse(toolCall.function.arguments);
-
-                  // Emit status event
-                  const statusMessage = mapToolCallToStatus(functionName, functionArgs);
+                  // Emit context-aware status event (Story 6.9)
+                  const statusMessage = mapToolCallToStatus(toolCall, userAttachmentPaths);
                   controller.enqueue(
                     encoder.encode(`data: ${JSON.stringify({ type: 'status', message: statusMessage })}\n\n`)
                   );
@@ -309,6 +312,11 @@ export async function POST(request: NextRequest) {
                   // Execute tool (existing logic from agenticLoop.ts)
                   pathContext.toolCallCount++;
                   const result = await executeToolCall(toolCall, pathContext);
+
+                  // Clear status after tool execution (Story 6.9: AC #8)
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'status', message: '' })}\n\n`)
+                  );
 
                   // AC-6.8.5: Inject tool result into context before resuming
                   const toolMessage: ChatCompletionMessageParam = {
@@ -443,23 +451,5 @@ async function executeToolCall(toolCall: any, context: any): Promise<any> {
   }
 }
 
-/**
- * Map tool call to user-friendly status message
- * Story 6.9 dependency - provides status messages for Story 6.8
- */
-function mapToolCallToStatus(functionName: string, args: any): string {
-  const extractFilename = (path: string) => path.split('/').pop() || 'file';
-
-  switch (functionName) {
-    case 'read_file':
-      return `Reading ${extractFilename(args.file_path)}...`;
-    case 'save_output':
-      return `Writing ${extractFilename(args.file_path)}...`;
-    case 'execute_workflow':
-      return `Executing ${extractFilename(args.workflow_path)}...`;
-    case 'list_files':
-      return 'Browsing files...';
-    default:
-      return 'Processing...';
-  }
-}
+// Story 6.9: mapToolCallToStatus moved to lib/openai/status-mapper.ts
+// for context-aware status messaging (distinguishes user-attached files from internal files)

@@ -12,6 +12,7 @@ import type { FileReference } from '@/types';
  * Message input component with textarea and send button for chat interface.
  * Supports multiline input with Shift+Enter, Enter to send.
  * Story 6.7: Now supports file attachments via drag-drop from file viewer
+ * Story 6.9: Claude-style send button with streaming support
  *
  * Story 3.5 Task 1: Create InputField component with message submission
  * AC-5.1: Clicking send button submits message
@@ -20,18 +21,28 @@ import type { FileReference } from '@/types';
  * AC-5.6: Empty messages are not sent
  * AC-5.7: Long messages accepted (multiline support)
  *
+ * Story 6.9 Task 6, 7, 8:
+ * AC-12: User can type during streaming, send button disabled during streaming
+ * AC-13: Claude-style upward arrow button when idle
+ * AC-14: Stop icon when streaming, clickable to interrupt
+ * AC-15: Stream interruption preserves partial content
+ *
  * @param onSend - Callback function called when user submits a message with attachments
  * @param disabled - If true, disables input and send button (during API calls)
+ * @param isStreaming - True when response is streaming (shows stop button)
+ * @param onCancelStream - Callback to cancel active streaming
  */
 interface InputFieldProps {
   onSend: (message: string, attachments?: FileReference[]) => void;
   disabled?: boolean;
+  isStreaming?: boolean;
+  onCancelStream?: () => void;
 }
 
 const MAX_MESSAGE_LENGTH = 10000; // Character limit per Dev Notes Story 3.5
 
 export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
-  function InputField({ onSend, disabled = false }, ref) {
+  function InputField({ onSend, disabled = false, isStreaming = false, onCancelStream }, ref) {
     const [value, setValue] = useState('');
     const [showLengthWarning, setShowLengthWarning] = useState(false);
     const [attachments, setAttachments] = useState<FileReference[]>([]);
@@ -145,37 +156,69 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
               isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-300'
             }`}
           >
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-end">
               {/* Subtask 1.1: Textarea component */}
               {/* Subtask 1.7: Accept multiline input with proper textarea styling */}
               {/* AC-5.7: Long messages are accepted (multi-line support) */}
+              {/* Story 6.9 AC-12: Textarea stays enabled during streaming, only send button disabled */}
               <textarea
                 ref={ref}
                 className={`flex-1 resize-none border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent ${
                   isOverLimit ? 'text-red-600' : ''
-                }`}
+                } ${isStreaming ? 'border-blue-300' : ''}`}
                 placeholder="Type your message... (Shift+Enter for new line)"
                 rows={3}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                disabled={disabled}
+                disabled={disabled && !isStreaming} // AC-12: Allow typing during streaming
                 aria-label="Message input"
                 aria-busy={disabled}
                 aria-invalid={isOverLimit}
                 aria-describedby={isOverLimit || isNearLimit ? 'char-count' : undefined}
               />
 
-              {/* Subtask 1.1: Send button */}
-              {/* Subtask 1.8: Disable input and button when disabled prop is true */}
-              {/* AC-5.5: Input is disabled while waiting for agent response */}
+              {/* Story 6.9 Task 6: Claude-style circular send button with arrow/stop icon */}
+              {/* AC-13: Upward arrow when idle */}
+              {/* AC-14: Stop icon when streaming */}
+              {/* AC-15: Stop button interrupts stream */}
               <button
-                onClick={handleButtonClick}
-                disabled={disabled || !value.trim() || isOverLimit}
-                className="rounded-lg bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors self-end"
-                aria-label="Send message"
+                onClick={isStreaming ? onCancelStream : handleButtonClick}
+                disabled={(disabled || !value.trim() || isOverLimit) && !isStreaming}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                  isStreaming
+                    ? 'bg-gray-700 hover:bg-gray-800 text-white' // Stop button (dark)
+                    : disabled || !value.trim() || isOverLimit
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed' // Disabled
+                    : 'bg-blue-600 hover:bg-blue-700 text-white' // Send button (enabled)
+                }`}
+                aria-label={isStreaming ? 'Stop generating' : 'Send message'}
               >
-                Send
+                {isStreaming ? (
+                  // Stop icon (filled square)
+                  <svg
+                    className="w-4 h-4"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                ) : (
+                  // Upward arrow icon
+                  <svg
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M12 19V5M5 12l7-7 7 7" />
+                  </svg>
+                )}
               </button>
             </div>
           </div>

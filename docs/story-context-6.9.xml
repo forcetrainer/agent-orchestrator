@@ -1,0 +1,302 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.9</storyId>
+    <title>Dynamic Status Messages (Tool-Aware)</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-09</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.9.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see what the agent is actually doing</iWant>
+    <soThat>I understand the progress instead of just seeing "Agent is thinking..."</soThat>
+    <tasks>
+      <task id="1">Implement context-aware status mapper utility (AC: #1-6)</task>
+      <task id="2">Update SSE streaming to emit status events (AC: #7, #8)</task>
+      <task id="3">Update useStreamingChat hook to handle status events (AC: #7, #8)</task>
+      <task id="4">Enhance StatusIndicator component (AC: #9, #10)</task>
+      <task id="5">Manual end-to-end validation (10-minute checklist)</task>
+      <task id="6">Redesign send button (Claude-style) (AC: #13, #14, #15)</task>
+      <task id="7">Update input box behavior during streaming (AC: #12)</task>
+      <task id="8">Implement stream interruption logic (AC: #15)</task>
+      <task id="9">Documentation and validation</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">read_file Tool - User-Attached Files: Status displays "Reading {filename}..." when user drags file from file viewer</criterion>
+    <criterion id="2">read_file Tool - Internal Agent Files: Status displays "Loading resources..." for workflows, instructions, templates, core files</criterion>
+    <criterion id="3">write_file Tool: Status displays "Writing {filename}..." for all writes</criterion>
+    <criterion id="4">list_files Tool: Status displays "Browsing files..."</criterion>
+    <criterion id="5">execute_workflow Tool: Status displays "Executing workflow..." (no workflow filename)</criterion>
+    <criterion id="6">Generic Fallback: Status displays "Processing..." for unknown tools</criterion>
+    <criterion id="7">Streaming Integration: Status updates emit as SSE events during execution loop</criterion>
+    <criterion id="8">Status Lifecycle: Status appears when tool detected, persists during execution, clears when complete</criterion>
+    <criterion id="9">Animated Indicator: Pulsing dot animation next to status text</criterion>
+    <criterion id="10">Accessibility: aria-live="polite", role="status", respects prefers-reduced-motion</criterion>
+    <criterion id="12">Input Box Behavior During Streaming: User can type while response generating, send button disabled</criterion>
+    <criterion id="13">Send Button - Idle State: Clean upward arrow icon (↑) when not streaming</criterion>
+    <criterion id="14">Send Button - Streaming State: Stop icon (⏹), clickable to interrupt</criterion>
+    <criterion id="15">Stream Interruption: Stop button cancels stream, preserves partial content, user can send new message</criterion>
+    <criterion id="16">Tool Execution Errors: Status updates to error state, doesn't persist indefinitely</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/docs/tech-spec-epic-6.md</path>
+        <title>Epic 6 Technical Specification</title>
+        <section>Section 6: Dynamic Status Messages (lines 1109-1197)</section>
+        <snippet>
+**Status Mapping:**
+- read_file → "Reading {filename}..."
+- write_file → "Writing {filename}..."
+- list_files → "Browsing files..."
+- execute_workflow → "Executing {workflowName}..."
+- default → "Processing..."
+
+**Frontend Display:**
+StatusIndicator component with pulsing dot animation, aria-live="polite"
+
+**Testing Checklist:**
+- "Reading X..." when agent calls read_file
+- "Writing Y..." when agent calls write_file
+- Status updates in real-time during streaming
+- Pulsing dot animation
+- Screen reader announces status changes
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/streaming-sse-format.md</path>
+        <title>Server-Sent Events (SSE) Format Documentation</title>
+        <section>Event Types (lines 34-148)</section>
+        <snippet>
+**2. Status Event**
+Format: {"type": "status", "message": "string"}
+
+Examples:
+- "Agent is thinking"
+- "Reading workflow.md..."
+- "Writing output.txt..."
+- "Executing brainstorming workflow..."
+
+Frontend Handling:
+- Display in status indicator below input
+- Replace previous status message
+- Cleared when streaming completes
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Section 15: Testing Strategy (lines 1280-1477)</section>
+        <snippet>
+**Testing Philosophy:** Minimal, high-value testing focused on critical failure scenarios.
+
+**DO NOT TEST:**
+- Simple CRUD operations
+- React component rendering (checking if elements exist)
+- CSS classes or styling
+- Anything requiring >10 lines of setup
+
+**DO TEST:**
+- Edge cases (boundary conditions, null/undefined)
+- Error handling (what happens when things fail)
+- Business logic (calculations, transformations, decisions)
+- Security vulnerabilities
+- Critical failure scenarios
+
+**Guiding Rule:** Write 2-3 tests for most critical failure scenarios, not comprehensive coverage.
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>/app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST</symbol>
+        <lines>48-381</lines>
+        <reason>Backend streaming implementation with SSE. Contains mapToolCallToStatus function (lines 450-465) that needs enhancement for context-aware messaging (Story 6.9). Currently implements basic status mapping, needs user-attachment detection.</reason>
+      </artifact>
+      <artifact>
+        <path>/app/api/chat/route.ts</path>
+        <kind>function</kind>
+        <symbol>mapToolCallToStatus</symbol>
+        <lines>450-465</lines>
+        <reason>Existing status mapper that needs enhancement in Task 1. Currently provides filename-based status but doesn't distinguish between user-attached files vs internal files. Needs context-awareness logic added.</reason>
+      </artifact>
+      <artifact>
+        <path>/components/chat/useStreamingChat.ts</path>
+        <kind>hook</kind>
+        <symbol>useStreamingChat</symbol>
+        <lines>99-336</lines>
+        <reason>Frontend streaming hook that processes SSE events. Already handles status events (lines 276-278). Task 3 verifies this works with new context-aware messages. Contains AbortController for stream interruption (Task 8).</reason>
+      </artifact>
+      <artifact>
+        <path>/components/chat/useStreamingChat.ts</path>
+        <kind>function</kind>
+        <symbol>cancelStream</symbol>
+        <lines>147-156</lines>
+        <reason>Stream cancellation logic for Task 8 (AC #15). Already implements AbortController pattern. Stop button will call this to interrupt streaming.</reason>
+      </artifact>
+      <artifact>
+        <path>/components/chat/MessageInput.tsx</path>
+        <kind>component</kind>
+        <symbol>MessageInput</symbol>
+        <lines>24-151</lines>
+        <reason>Input component that needs redesign for Claude-style send button (Task 6), typing during streaming support (Task 7), and integration with cancelStream (Task 8). Currently disabled, needs activation.</reason>
+      </artifact>
+      <artifact>
+        <path>/lib/openai/client.ts</path>
+        <kind>module</kind>
+        <symbol>getOpenAIClient</symbol>
+        <lines>N/A</lines>
+        <reason>OpenAI client configuration. Reference for understanding streaming setup and tool definitions used in route.ts.</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0">OpenAI SDK for streaming chat completions with SSE</package>
+        <package name="react" version="^18">React 18 with useTransition for non-urgent streaming updates</package>
+        <package name="react-dom" version="^18">React DOM for rendering</package>
+        <package name="framer-motion" version="^10.16.4">Animation library for send button state transitions</package>
+        <package name="react-markdown" version="^10.1.0">Markdown rendering for agent messages</package>
+        <package name="next" version="14.2.0">Next.js framework with App Router and API routes</package>
+        <package name="tailwindcss" version="^3.4.0">Utility-first CSS for styling StatusIndicator and send button</package>
+        <package name="lucide-react" version="latest">Icon library for upward arrow and stop icons (if not using emoji)</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>MUST use existing streaming infrastructure from Story 6.8 - do not replace agentic loop</constraint>
+    <constraint>MUST follow testing guidance from solution-architecture.md Section 15 - minimal, high-value tests only</constraint>
+    <constraint>MUST use manual testing for UI components (Tasks 6, 7, 8) - automated tests only for critical business logic</constraint>
+    <constraint>MUST preserve existing SSE event format from streaming-sse-format.md - only add userAttachments parameter</constraint>
+    <constraint>MUST implement context-aware status messages - distinguish user-attached files from internal files</constraint>
+    <constraint>MUST NOT show technical filenames for internal operations (workflows, instructions, templates)</constraint>
+    <constraint>MUST always show filenames for write operations - all writes are user-facing</constraint>
+    <constraint>MUST support streaming interruption via AbortController - preserve partial content on abort</constraint>
+    <constraint>MUST allow typing in input box during streaming - only disable send button</constraint>
+    <constraint>MUST use Claude-style UI patterns for send button - upward arrow (idle) to stop icon (streaming)</constraint>
+    <constraint>MUST ensure accessibility - aria-live, role="status", prefers-reduced-motion support</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>mapToolCallToStatus</name>
+      <kind>function</kind>
+      <signature>function mapToolCallToStatus(toolCall: ToolCall, userAttachments?: string[]): string</signature>
+      <path>/lib/openai/status-mapper.ts (NEW FILE - Task 1)</path>
+      <description>Maps OpenAI tool calls to user-friendly status messages. NEW parameter: userAttachments array to distinguish user-attached files from internal files.</description>
+    </interface>
+    <interface>
+      <name>useStreamingChat</name>
+      <kind>hook</kind>
+      <signature>useStreamingChat(): { isStreaming, streamingContent, status, sendMessage, cancelStream }</signature>
+      <path>/components/chat/useStreamingChat.ts</path>
+      <description>Existing hook that processes SSE events. Status event handling already implemented (lines 276-278). Task 3 verifies compatibility with new context-aware messages.</description>
+    </interface>
+    <interface>
+      <name>StatusIndicator</name>
+      <kind>component</kind>
+      <signature>&lt;StatusIndicator message={string} isActive={boolean} /&gt;</signature>
+      <path>/components/chat/StatusIndicator.tsx (ASSUMED EXISTS from Story 6.8)</path>
+      <description>Component that displays status messages during streaming. Task 4 enhances with pulsing animation and accessibility attributes.</description>
+    </interface>
+    <interface>
+      <name>SendButton</name>
+      <kind>component</kind>
+      <signature>&lt;SendButton isStreaming={boolean} isDisabled={boolean} onSend={function} onStop={function} /&gt;</signature>
+      <path>/components/chat/SendButton.tsx (NEW FILE - Task 6)</path>
+      <description>Claude-style send button component. Displays upward arrow when idle, stop icon when streaming. Smooth transition animation between states.</description>
+    </interface>
+    <interface>
+      <name>SSE Status Event</name>
+      <kind>type</kind>
+      <signature>{ type: "status", message: string }</signature>
+      <path>SSE Stream from /api/chat</path>
+      <description>Server-Sent Event for status updates. Emitted when tool call detected, cleared when tool execution completes.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Following solution-architecture.md Section 15 testing guidelines:
+      - Minimal, high-value testing (2-3 tests per critical module)
+      - Focus on edge cases, error handling, and business logic
+      - No tests for simple CRUD, rendering, styling, or implementation details
+      - Manual testing for UI/UX verification
+      - Automated tests only for critical failure scenarios
+
+      Framework: Jest + React Testing Library (existing setup in package.json)
+      Test Location: \_\_tests\_\_ directories colocated with source files
+    </standards>
+
+    <locations>
+      - lib/openai/\_\_tests\_\_/status-mapper.test.ts (Task 1 - optional minimal tests)
+      - app/api/chat/\_\_tests\_\_/route.test.ts (existing - verify SSE format)
+      - components/chat/\_\_tests\_\_/useStreamingChat.test.ts (existing - verify status handling)
+    </locations>
+
+    <ideas>
+      <test criterion="AC-1,2,3,4,5,6">
+        **Task 1 (OPTIONAL minimal tests - 2-3 critical scenarios):**
+        - Test: extractFilename handles malformed paths without crashing (edge case)
+        - Test: isInternalFile correctly identifies internal vs user files (business logic)
+        - Manual test: Verify status messages display correctly in UI
+      </test>
+      <test criterion="AC-7,8">
+        **Task 2 (Manual test only):**
+        - Manual test: Verify status events arrive in correct order (status → tool result → content)
+        - Manual test: Verify user-attached files show filename, internal files show "Loading resources..."
+      </test>
+      <test criterion="AC-7,8">
+        **Task 3 (Manual test only):**
+        - Manual test: Verify status state updates correctly with new context-aware messages
+      </test>
+      <test criterion="AC-9,10">
+        **Task 4 (Manual test only):**
+        - Manual test: Verify animation respects prefers-reduced-motion
+        - Manual test: Screen reader announces status changes (VoiceOver/NVDA)
+      </test>
+      <test criterion="AC-13,14,15">
+        **Task 6 (Manual test only):**
+        - Manual test: Verify button disabled when input empty
+        - Manual test: Verify button shows arrow when idle, stop icon when streaming
+        - Manual test: Verify clicking stop button interrupts stream
+      </test>
+      <test criterion="AC-12">
+        **Task 7 (Manual test only):**
+        - Manual test: Verify user can type while agent is responding
+        - Manual test: Verify send button disabled during streaming
+        - Manual test: Verify typed content not lost when stream completes
+      </test>
+      <test criterion="AC-15">
+        **Task 8 (OPTIONAL 1-2 critical tests):**
+        - Test: AbortController signal propagates correctly on abort (error handling)
+        - Manual test: Verify clicking stop button cancels stream
+        - Manual test: Verify partial content preserved in chat
+        - Manual test: Verify status indicator clears on abort
+        - Manual test: Verify user can send new message after abort
+      </test>
+      <test criterion="ALL">
+        **Task 5 (Manual end-to-end - 10 minutes):**
+        - Drag file from viewer → verify "Reading {filename}..." displays
+        - Agent loads workflow → verify "Loading resources..." displays (not "workflow.yaml")
+        - Agent writes output → verify "Writing {filename}..." displays
+        - Run full agent workflow → verify all status messages appear correctly
+        - Click send button → verify transforms to stop button during streaming
+        - Click stop button → verify stream cancels, partial content preserved
+        - Type during streaming → verify input works, send button stays disabled
+        - Check browser console for errors
+        - Optional: Screen reader spot check
+      </test>
+    </ideas>
+  </tests>
+</story-context>

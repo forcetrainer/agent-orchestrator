@@ -248,7 +248,14 @@ export function ChatPanel() {
             {/* Task 3.2: Pass handleSendMessage as onSend callback */}
             {/* Task 3.3: Pass isLoading as disabled prop */}
             {/* Story 6.8: Also disable during streaming */}
-            <InputField onSend={handleSendMessage} disabled={isLoading || isStreaming} ref={inputRef} />
+            {/* Story 6.9: Pass isStreaming and cancelStream for send button UI */}
+            <InputField
+              onSend={handleSendMessage}
+              disabled={isLoading}
+              isStreaming={isStreaming}
+              onCancelStream={cancelStream}
+              ref={inputRef}
+            />
           </div>
         </div>
       </div>
@@ -284,7 +291,14 @@ export function ChatPanel() {
       {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
       {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
       {/* Story 6.8 AC-6.8.26: Disable input during streaming */}
-      <InputField onSend={handleSendMessage} disabled={isLoading || isStreaming} ref={inputRef} />
+      {/* Story 6.9: Pass isStreaming and cancelStream for send button UI */}
+      <InputField
+        onSend={handleSendMessage}
+        disabled={isLoading}
+        isStreaming={isStreaming}
+        onCancelStream={cancelStream}
+        ref={inputRef}
+      />
     </div>
   );
 }
