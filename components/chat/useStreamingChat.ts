@@ -113,6 +113,12 @@ export function useStreamingChat(): UseStreamingChatResult {
   const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingTokensRef = useRef<string>('');
 
+  // Story 6.9: Minimum status display duration (1500ms / 1.5 seconds)
+  // Ensures users perceive status messages even if tool execution is very fast
+  const statusTimestampRef = useRef<number | null>(null);
+  const statusClearTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const MIN_STATUS_DISPLAY_MS = 1500;
+
   // Clear streaming content after streaming completes
   // Use a small delay to allow ChatPanel to capture finalContent first
   useEffect(() => {
@@ -152,6 +158,13 @@ export function useStreamingChat(): UseStreamingChatResult {
       setIsStreaming(false);
       setStreamingContent('');
       setStatus(undefined);
+
+      // Clear any pending status timers
+      if (statusClearTimerRef.current) {
+        clearTimeout(statusClearTimerRef.current);
+        statusClearTimerRef.current = null;
+      }
+      statusTimestampRef.current = null;
     }
   }, [flushPendingTokens]);
 
@@ -171,7 +184,26 @@ export function useStreamingChat(): UseStreamingChatResult {
       // Initialize streaming state
       setIsStreaming(true);
       setStreamingContent('');
-      setStatus('Agent is thinking');
+
+      // Story 6.9: Show file reading status if attachments present
+      if (attachments && attachments.length > 0) {
+        // Show "Reading {filename}..." for user-attached files
+        const readingMessage = attachments.length === 1
+          ? `Reading ${attachments[0].filename}...`
+          : `Reading ${attachments.length} files...`;
+        setStatus(readingMessage);
+        statusTimestampRef.current = Date.now();
+
+        // After 400ms, transition to "Agent is thinking" if no other status has appeared
+        statusClearTimerRef.current = setTimeout(() => {
+          setStatus('Agent is thinking');
+          statusTimestampRef.current = Date.now();
+          statusClearTimerRef.current = null;
+        }, MIN_STATUS_DISPLAY_MS);
+      } else {
+        setStatus('Agent is thinking');
+        statusTimestampRef.current = Date.now();
+      }
 
       // Create AbortController for cancellation
       const abortController = new AbortController();
@@ -256,6 +288,35 @@ export function useStreamingChat(): UseStreamingChatResult {
                 accumulatedContent += event.content;
                 pendingTokensRef.current += event.content;
 
+                // Story 6.9: On first token, clear status (respecting minimum display time)
+                if (accumulatedContent === event.content) {
+                  // First token received - clear status to show streaming content
+                  const elapsed = statusTimestampRef.current
+                    ? Date.now() - statusTimestampRef.current
+                    : MIN_STATUS_DISPLAY_MS;
+
+                  const remainingTime = Math.max(0, MIN_STATUS_DISPLAY_MS - elapsed);
+
+                  // Cancel any pending automatic transition (e.g., "Reading..." → "Agent is thinking")
+                  if (statusClearTimerRef.current) {
+                    clearTimeout(statusClearTimerRef.current);
+                    statusClearTimerRef.current = null;
+                  }
+
+                  if (remainingTime > 0) {
+                    // Delay clearing status to ensure minimum visibility
+                    statusClearTimerRef.current = setTimeout(() => {
+                      setStatus(undefined); // Clear status when content starts streaming
+                      statusTimestampRef.current = null;
+                      statusClearTimerRef.current = null;
+                    }, remainingTime);
+                  } else {
+                    // Already shown long enough - clear immediately
+                    setStatus(undefined);
+                    statusTimestampRef.current = null;
+                  }
+                }
+
                 // Schedule batch flush if not already scheduled
                 if (!batchTimerRef.current) {
                   batchTimerRef.current = setTimeout(() => {
@@ -273,8 +334,61 @@ export function useStreamingChat(): UseStreamingChatResult {
               }
 
               // AC-6.8.6: Process status events
+              // Story 6.9: Minimum display duration to ensure users perceive status
               else if (event.type === 'status') {
-                setStatus(event.message);
+                if (event.message) {
+                  // New status from backend (e.g., tool execution like "Executing workflow...")
+                  const elapsed = statusTimestampRef.current
+                    ? Date.now() - statusTimestampRef.current
+                    : MIN_STATUS_DISPLAY_MS;
+
+                  const remainingTime = Math.max(0, MIN_STATUS_DISPLAY_MS - elapsed);
+
+                  // Cancel any pending automatic transition
+                  if (statusClearTimerRef.current) {
+                    clearTimeout(statusClearTimerRef.current);
+                    statusClearTimerRef.current = null;
+                  }
+
+                  if (remainingTime > 0) {
+                    // Delay showing new status to ensure previous status gets minimum visibility
+                    statusClearTimerRef.current = setTimeout(() => {
+                      setStatus(event.message);
+                      statusTimestampRef.current = Date.now();
+                      statusClearTimerRef.current = null;
+                    }, remainingTime);
+                  } else {
+                    // Previous status shown long enough - update immediately
+                    setStatus(event.message);
+                    statusTimestampRef.current = Date.now();
+                  }
+                } else {
+                  // Backend clearing status (after tool execution completes)
+                  const elapsed = statusTimestampRef.current
+                    ? Date.now() - statusTimestampRef.current
+                    : MIN_STATUS_DISPLAY_MS;
+
+                  const remainingTime = Math.max(0, MIN_STATUS_DISPLAY_MS - elapsed);
+
+                  // Cancel any pending timer
+                  if (statusClearTimerRef.current) {
+                    clearTimeout(statusClearTimerRef.current);
+                    statusClearTimerRef.current = null;
+                  }
+
+                  if (remainingTime > 0) {
+                    // Delay clearing to ensure minimum visibility
+                    statusClearTimerRef.current = setTimeout(() => {
+                      setStatus(undefined);
+                      statusTimestampRef.current = null;
+                      statusClearTimerRef.current = null;
+                    }, remainingTime);
+                  } else {
+                    // Already shown long enough - clear immediately
+                    setStatus(undefined);
+                    statusTimestampRef.current = null;
+                  }
+                }
               }
 
               // Process conversationId events

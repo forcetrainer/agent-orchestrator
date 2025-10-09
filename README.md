@@ -1,24 +1,30 @@
 # Agent Orchestrator
 
-A Next.js-based platform that enables BMAD agent builders to validate OpenAI API compatibility and deploy agents to end users through an intuitive chat interface.
+A Next.js-based platform that enables BMAD agent builders to leverage the OpenAI API and deploy complex, multi-turn agents to end users through an intuitive chat interface.
 
 ## Overview
 
-**Agent Orchestrator** bridges the gap between agent development in Claude Code and production deployment for non-technical users. It provides a platform designed specifically for BMAD agents, enabling file-based agents with lazy-loading instruction patterns to work seamlessly with OpenAI's function calling API.
+**Agent Orchestrator** bridges the gap between agent development and use in an IDE and production deployment for non-technical users. It provides a platform designed specifically for BMAD agents, enabling file-based agents with lazy-loading instruction patterns to work seamlessly with OpenAI's function calling API.
 
 ### The Problem It Solves
 
-Agent builders can create sophisticated BMAD agents in Claude Code, but these agents are trapped in the IDE with no way to:
+Agent builders can create sophisticated BMAD agents in an IDE, but these agents are trapped in the IDE with no way to:
 - Test OpenAI API compatibility before deployment
 - Make agents accessible to non-technical end users
 - Validate that file-based agent patterns work with OpenAI function calling
 - Share working agents for stakeholder feedback and real-world use
 
+**Real-World Use Case: Requirements Gathering**
+
+This prototype includes example agents designed for technical requirements gathering — one of IT's most challenging processes. Eliciting technical details from non-technical stakeholders typically produces requirements that are incomplete, ambiguous, or missing critical context. These gaps cascade into poorly-defined stories, which ultimately result in production defects.
+
+Multi-turn BMAD agents address this by combining structured workflows, domain knowledge, and contextual follow-up questions. By interacting with both end users and technical subject matter experts, these agents accelerate the requirements process while improving output quality—producing clearer requirements, better-defined stories, and more reliable deployments.
+
 ### The Solution
 
 Agent Orchestrator provides three core capabilities:
 
-1. **OpenAI Compatibility Testing** - Validates that BMAD agents built in Claude Code function correctly with OpenAI's API and function calling patterns
+1. **OpenAI Compatibility** - Allows BMAD agents built in an IDE to function correctly with OpenAI's API and function calling patterns
 2. **Simple Deployment** - Agent builders upload instruction files and agents become immediately functional
 3. **End-User Interface** - Non-technical users interact with agents through a familiar ChatGPT-style chat interface
 
@@ -35,7 +41,7 @@ Agent Orchestrator provides three core capabilities:
 - **Framework**: Next.js 14 (App Router)
 - **Runtime**: Node.js 18+
 - **Language**: TypeScript
-- **AI Provider**: OpenAI API - Testeing primarily with gpt-5-mini
+- **AI Provider**: OpenAI API - Testing primarily with gpt-5-mini
 - **UI Library**: React 18
 - **Styling**: Tailwind CSS
 - **Testing**: Jest + React Testing Library
@@ -226,14 +232,58 @@ npm start
 
 **Secondary:** End Users (mix of technical and non-technical staff) who need expert-level assistance through familiar chat interfaces
 
-## Roadmap
+## Development Progress
 
-- ✅ **Epic 1**: Foundation and project setup
-- ✅ **Epic 2**: Basic OpenAI integration (deprecated)
-- ✅ **Epic 3**: Enhanced architecture and testing
-- ✅ **Epic 4**: Agentic execution loop and bundle system (current)
-- 🔄 **Epic 5**: Production features and deployment optimization
-- 📋 **Future**: Multi-agent orchestration, marketplace, enterprise integrations
+**6 of 8 Epics Complete** - Production-ready prototype demonstrating full agent orchestration capabilities
+
+- ✅ **Epic 1**: Foundation and project setup - Backend infrastructure, API routes, environment configuration
+- ⚠️ **Epic 2**: Basic OpenAI integration (deprecated - replaced by Epic 4's superior architecture)
+- ✅ **Epic 3**: Chat interface and agent selection - ChatGPT-style UI with markdown rendering
+- ✅ **Epic 4**: Agentic execution loop and bundle system - Claude Code-like pause-load-continue pattern
+- ✅ **Epic 5**: File management and viewer - Session-based outputs with metadata-driven navigation
+- ✅ **Epic 6**: Enhanced UX & interactive features - Streaming responses, collapsible panels, smart session naming
+- 🎯 **Epic 7**: Docker deployment (NEXT) - Container packaging for easy distribution
+- 📋 **Epic 8**: Polish, testing, and documentation - Final production hardening
+
+### What's Working Right Now
+
+**Core Agent Execution:**
+- Multi-turn conversations with sophisticated BMAD agents
+- Lazy-loading of instruction files on-demand (10+ workflows per agent)
+- Path variable resolution for portable bundle structure
+- Critical actions processor for agent initialization
+
+**User Experience:**
+- Real-time streaming responses (token-by-token like ChatGPT)
+- Dynamic status messages showing actual tool activity
+- Collapsible file viewer for focused chat experience
+- Session-based outputs with friendly display names
+- Drag-and-drop file attachment from viewer to chat
+
+**Production-Ready Features:**
+- Session metadata system for cross-agent discovery
+- Context-aware file naming validation
+- Secure file operations with path traversal protection
+- Performance-optimized with 60fps rendering
+
+### Next Steps
+
+**Epic 7 (Docker Deployment):**
+- Single-command deployment via docker-compose
+- Volume mounts for bundles, core files, and outputs
+- Production-ready containerization
+
+**Epic 8 (Final Polish):**
+- Cross-browser testing and optimization
+- Comprehensive agent builder documentation
+- End-user guides and tutorials
+
+### Future Enhancements
+
+- Multi-agent orchestration and collaboration
+- Agent marketplace for sharing bundles
+- Enterprise integrations (SSO, audit logging)
+- Advanced analytics and usage tracking
 
 
 

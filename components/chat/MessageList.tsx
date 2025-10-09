@@ -93,7 +93,8 @@ export function MessageList({
         {/* AC-6.3: Loading indicator appears in chat history where agent response will be */}
         {/* Story 4.7 AC-4.7.6: Show loading indicator during agent initialization */}
         {/* Story 6.8: Show loading indicator before streaming starts (waiting for first token) */}
-        {(isLoading && !isStreaming) || (isStreaming && !streamingContent) ? (
+        {/* Story 6.9 AC-6.9.8: Show tool-aware status messages during streaming (e.g., "Reading file.md...") */}
+        {((isLoading && !isStreaming) || (isStreaming && !streamingContent)) && loadingMessage ? (
           <LoadingIndicator message={loadingMessage} />
         ) : null}
       </div>

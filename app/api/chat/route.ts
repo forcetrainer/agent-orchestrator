@@ -82,12 +82,14 @@ export async function POST(request: NextRequest) {
     // Story 6.9: Track user attachments for context-aware status messages
     let fileContextMessage: ChatCompletionMessageParam | null = null;
     const userAttachmentPaths: string[] = [];
+    const attachmentFilenames: string[] = []; // Story 6.9: Track filenames for status message
 
     if (body.attachments && body.attachments.length > 0) {
       const attachmentContents: Array<{ filepath: string; filename: string; content: string }> = [];
 
       for (const { filepath, filename } of body.attachments) {
         userAttachmentPaths.push(filepath);
+        attachmentFilenames.push(filename); // Story 6.9: Track filename
         // Validate path security (AC #2, #9)
         const validation = validateFilePath(filepath, env.OUTPUT_PATH);
         if (!validation.valid) {
