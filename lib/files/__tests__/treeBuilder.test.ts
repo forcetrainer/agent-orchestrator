@@ -555,9 +555,15 @@ describe('buildDirectoryTree', () => {
   });
 
   describe('Internal file filtering (Story 5.2.1 AC-2)', () => {
-    it('should mark manifest.json files as isInternal', async () => {
+    it('should hide directories containing only manifest.json', async () => {
       // Arrange
-      const dirStat = {
+      const rootDirStat = {
+        isDirectory: () => true,
+        isFile: () => false,
+        mtime: new Date('2025-10-06T00:00:00.000Z'),
+      };
+
+      const sessionDirStat = {
         isDirectory: () => true,
         isFile: () => false,
         mtime: new Date('2025-10-06T00:00:00.000Z'),
@@ -571,18 +577,20 @@ describe('buildDirectoryTree', () => {
       };
 
       (stat as jest.Mock)
-        .mockResolvedValueOnce(dirStat) // Root
+        .mockResolvedValueOnce(rootDirStat) // Root
+        .mockResolvedValueOnce(sessionDirStat) // session-dir
         .mockResolvedValueOnce(fileStat); // manifest.json
 
-      (readdir as jest.Mock).mockResolvedValueOnce(['manifest.json']);
+      (readdir as jest.Mock)
+        .mockResolvedValueOnce(['session-dir']) // Root contains session-dir
+        .mockResolvedValueOnce(['manifest.json']); // session-dir contains only manifest.json
 
       // Act
       const result = await buildDirectoryTree('/mock/base/path');
 
       // Assert
-      expect(result.children).toHaveLength(1);
-      expect(result.children![0].name).toBe('manifest.json');
-      expect(result.children![0].isInternal).toBe(true);
+      // Directory with only manifest.json should be filtered out
+      expect(result.children).toHaveLength(0);
     });
 
     it('should not mark regular files as isInternal', async () => {

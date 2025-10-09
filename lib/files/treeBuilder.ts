@@ -119,8 +119,18 @@ export async function buildDirectoryTree(
       }
     }
 
+    // Filter out internal files (manifest.json) and internal directories
+    const visibleChildren = children.filter((child) => !child.isInternal);
+
+    // If directory only contains internal files (e.g., only manifest.json), mark it as internal too
+    if (children.length > 0 && visibleChildren.length === 0) {
+      node.isInternal = true;
+      node.children = []; // Set empty children array for consistency
+      return node;
+    }
+
     // AC-5: Empty folders show as empty (children array exists but is empty)
-    node.children = children;
+    node.children = visibleChildren;
   } catch (error: any) {
     // If directory is unreadable, return it as a directory with no children
     console.warn(`[treeBuilder] Cannot read directory ${relativePath}: ${error.message}`);
