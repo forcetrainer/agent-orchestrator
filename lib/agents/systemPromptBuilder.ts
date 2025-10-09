@@ -13,7 +13,7 @@
  * 5. Make tool usage instructions impossible to misinterpret
  *
  * SYSTEM PROMPT VERSIONING:
- * - Current Version: v3.0 (Context-Aware Guidance)
+ * - Current Version: v3.2 (Conciseness and Formatting) - Reverted from v3.3
  * - Template Location: lib/agents/prompts/system-prompt.md
  * - Changelog: lib/agents/prompts/CHANGELOG.md
  * - Version History: lib/agents/prompts/versions/
@@ -118,7 +118,7 @@ function loadPromptTemplate(): string {
  * 3. Workflow Execution Pattern
  * 4. Available Commands (from <cmds> section)
  *
- * Version: v3.0 (Context-Aware Guidance)
+ * Version: v3.2 (Conciseness and Formatting) - Reverted from v3.3
  * See: lib/agents/prompts/CHANGELOG.md for version history
  *
  * @param agent - Agent object containing fullContent XML

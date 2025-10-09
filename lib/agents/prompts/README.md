@@ -16,13 +16,17 @@ lib/agents/prompts/
 
 ## Current Version
 
-**v3.0 - Context-Aware Guidance** (2025-10-08)
+**v3.2 - Conciseness and Formatting** (2025-10-08) - Reverted from v3.3
 
 Key features:
-- Proactively provides contextual guidance for all `<action>` tags in workflows
-- Encourages referencing loaded context files (intake docs, requirements, etc.)
-- Distinguishes between guidance mode (offering suggestions) and input mode (asking questions)
-- Makes agent behavior more similar to Claude Code
+- Distills analysis to essence: 3-5 bullet points maximum (not information dumps)
+- Clean, scannable formatting with arrows (→) for cause/effect
+- NO pre-written drafts or deliverables unless explicitly requested
+- Natural framing: skip robotic intros like "I'll guide you through..."
+- Focuses on UNDERSTANDING the context, not DOCUMENTING everything read
+- Matches Claude Code's concise, focused communication style
+
+**Note**: v3.3 was attempted to fix repetition issues but made behavior worse. Reverted to v3.2.
 
 ## Making Changes
 
@@ -110,7 +114,10 @@ To see the full system prompt being sent:
 
 | Version | Date | Key Feature | Status |
 |---------|------|-------------|--------|
-| v3.0 | 2025-10-08 | Context-aware guidance | Active |
+| v3.3 | 2025-10-08 | Context awareness, no repetition | Failed - Reverted |
+| v3.2 | 2025-10-08 | Conciseness and formatting | Active |
+| v3.1 | 2025-10-08 | Action tag execution pattern | Superseded |
+| v3.0 | 2025-10-08 | Context-aware guidance | Superseded |
 | v2.0 | 2025-10-XX | Action vs Ask distinction | Superseded |
 | v1.0 | Initial | Baseline implementation | Superseded |
 

@@ -87,7 +87,29 @@ export function buildSystemPrompt(agent: Agent): string {
 
 ## Version History
 
-### v3.0 - Context-Aware Guidance (2025-10-08) - CURRENT
+### v3.1 - Action Tag Execution Pattern (2025-10-08) - CURRENT
+
+**Problem**: Even with v3.0's context-aware improvements, the app didn't execute actions like Claude Code does.
+
+**Root Cause**: `<action>Create refined summary</action>` was interpreted as "tell the user to create" rather than "I should create."
+
+**Analysis**: After examining all workflow files, identified THREE distinct `<action>` patterns:
+1. **Agent Execution**: "Create", "Compile", "Identify" → Agent performs action
+2. **Guidance**: "Suggest questions about X:" → Agent provides examples
+3. **Meta**: "Explain", "Shift to" → Agent says this for context
+
+**Solution**: Added **INTERPRETING <action> TAGS - CRITICAL EXECUTION RULES** section with:
+- Pattern recognition for three action types
+- Concrete examples with ✅ CORRECT vs ❌ WRONG responses
+- Explicit instruction: ANALYZE → PRESENT FINDINGS → THEN ASK (not DELEGATE → ASK)
+
+**Expected**: Agent performs analysis/summarization before asking for input, matching Claude Code's collaborative approach
+
+**Testing**: Use scripts/test-system-prompt.ts to verify v3.1 features present
+
+---
+
+### v3.0 - Context-Aware Guidance (2025-10-08) - SUPERSEDED
 
 **Problem**: App not providing example questions like Claude Code does, even when `<action>` tag doesn't explicitly say "Suggest questions"
 

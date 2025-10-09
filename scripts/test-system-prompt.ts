@@ -58,10 +58,16 @@ try {
   });
 
   console.log('\n=== Version Check ===');
-  if (prompt.includes('Review any attached or loaded context')) {
-    console.log('✅ v3.0 Context-Aware features detected');
+  if (prompt.includes('CONTEXT AWARENESS - Don\'t Repeat Yourself')) {
+    console.log('✅ v3.3 Context Awareness and No Repetition features detected');
+  } else if (prompt.includes('CONCISENESS AND FORMATTING RULES')) {
+    console.log('⚠️  Warning: v3.2 detected but not v3.3 - may need update');
+  } else if (prompt.includes('INTERPRETING <action> TAGS')) {
+    console.log('⚠️  Warning: v3.1 detected - needs update to v3.3');
+  } else if (prompt.includes('Review any attached or loaded context')) {
+    console.log('⚠️  Warning: v3.0 detected - needs update to v3.3');
   } else {
-    console.log('⚠️  Warning: v3.0 features not detected');
+    console.log('⚠️  Warning: Older version detected');
   }
 
   const allPassed = checks.every(c => c.found);
