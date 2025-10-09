@@ -12,6 +12,89 @@ Each entry includes:
 
 ---
 
+## v2.1 - Consolidation and Clarification (2025-10-09) - PROPOSED
+
+### Problem/Observation
+Deep review of v2.0 system prompt revealed several structural issues:
+
+**1. Redundancy and Duplication:**
+- Tool usage instructions repeated 3 times (lines 23-29, 101-104, 123)
+- Workflow execution rules split across 4 separate sections
+- "Wait for results" guidance repeated multiple times
+
+**2. Overuse of "CRITICAL" Labels:**
+- 6 sections marked "CRITICAL" diluted the impact
+- When everything is critical, nothing is critical
+
+**3. Conflicting/Ambiguous Rules:**
+- Unclear distinction between providing 2-3 suggestions vs asking 1 question
+- What if `<action>` asks for input? No clear decision rule provided
+- "CONVERSATIONAL STYLE" section tried to cover too many concerns at once
+
+**4. Missing Documentation:**
+- Template variables like `{{COMMANDS_SECTION}}` had no explanatory comments
+- Environment variables listed but not explained when/how to use them
+
+**5. Cognitive Load:**
+- Mixed concerns across sections made scanning and comprehension difficult
+- No clear decision trees for pattern recognition
+
+**Root Cause**: v2.0 evolved through incremental additions without periodic refactoring. The structure became cluttered and ambiguous over time.
+
+### Change Made
+**This is a REFACTOR, not a feature addition.** Core functionality unchanged.
+
+**Consolidation:**
+- Combined all tool usage and workflow execution into ONE section (was 4 sections)
+- Removed redundant tool usage reminder at end of prompt
+- Grouped related concepts (e.g., all user communication rules together)
+
+**Clarification:**
+- Reduced "CRITICAL" labels from 6 to 1 (only truly critical section marked)
+- Added explicit decision tree for action vs ask distinction:
+  ```
+  <ask> tag OR action verb = "Ask" → ONE question, wait
+  <action> verb = "Suggest/Provide/Offer" → 2-3 suggestions, continue
+  ```
+- Split "CONVERSATIONAL STYLE" into focused sections: Question Cadence, Step Display, General Style
+
+**Documentation:**
+- Added comments explaining what `{{COMMANDS_SECTION}}` and other template vars contain
+- Added explanations for environment variables (when/how to use)
+- Added visual pattern indicators in Action Tag section (ANALYZE → PRESENT → ASK)
+
+**Reorganization:**
+- 7 focused sections (down from 10+ mixed sections)
+- Each section has a single, clear purpose
+- Logical flow: Identity → Critical Execution → Interpretation → Communication → Formatting → Operations
+
+**Line count increased** (125 → 197) but cognitive load DECREASED because:
+- Added decision trees and examples for clarity
+- Added explanatory comments for maintenance
+- Removed redundancy (higher signal-to-noise ratio)
+- Better organization reduces scanning time
+
+### Expected Outcome
+- **Same behavior** as v2.0 (no functional changes, just structural cleanup)
+- **Reduced ambiguity** - clearer decision rules for agents
+- **Easier maintenance** - better documentation, focused sections
+- **Better foundation** for future improvements (clean structure to build on)
+
+### Testing Plan
+1. **Minimal test**: Run Casey workflow Step 2 with v2.1, verify behavior matches v2.0
+2. **Comprehensive test**: Run full workflow comparison v2.0 vs v2.1, document any differences
+3. **If identical behavior**: v2.1 is successful consolidation, promote to active
+4. **If behavior differs**: Identify root cause, fix, retest
+
+### Actual Result
+_[To be filled in after testing]_
+
+### Files Created
+- `/lib/agents/prompts/versions/v2.1-consolidated.md` - New proposed prompt
+- `/lib/agents/prompts/v2.0-vs-v2.1-comparison.md` - Detailed comparison document
+
+---
+
 ## REVERT to v2.0 (2025-10-08)
 
 ### Problem/Observation

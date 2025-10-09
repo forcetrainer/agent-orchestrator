@@ -1670,6 +1670,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 - Accessible (screen reader support)
 - Cannot drag folders (validation)
 
+
 ---
 
 #### Story 6.7: File Attachment Backend Processing
