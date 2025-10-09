@@ -141,6 +141,7 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 **FR-4: Response Handling and Display**
 - Loading indicators during agent processing (shows when agent is "thinking")
+- Token-by-token streaming display of text responses (visual enhancement only - does not bypass agentic execution loop)
 - Stop/cancel button to halt agent mid-execution
 - Error messages displayed clearly when agent encounters issues
 - Support for multi-paragraph and formatted agent responses

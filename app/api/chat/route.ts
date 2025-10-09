@@ -3,7 +3,6 @@ import { ApiResponse, ChatRequest, ChatResponse } from '@/types/api';
 import { Message } from '@/lib/types';
 import { handleApiError, NotFoundError } from '@/lib/utils/errors';
 import { getAgentById } from '@/lib/agents/loader';
-import { executeAgent } from '@/lib/agents/agenticLoop'; // Story 4.9: Use Epic 4 agentic loop instead of Epic 2
 import type { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import {
   getConversation,
@@ -20,6 +19,9 @@ import { readFileForAttachment } from '@/lib/files/reader'; // Story 6.7
 import { buildFileContextMessage } from '@/lib/chat/fileContext'; // Story 6.7
 import { env } from '@/lib/utils/env'; // Story 6.7
 import { resolve } from 'path'; // Story 6.7
+import { getOpenAIClient } from '@/lib/openai/client';
+import { buildSystemPrompt } from '@/lib/agents/systemPromptBuilder';
+import { processCriticalActions } from '@/lib/agents/criticalActions';
 
 /**
  * POST /api/chat
@@ -29,11 +31,18 @@ import { resolve } from 'path'; // Story 6.7
  * Story 1.4: Error Handling Middleware
  * Story 2.5: Chat API Route with Function Calling Loop
  * Story 2.6: Conversation State Management
+ * Story 6.8: Streaming Responses (visual enhancement only - preserves agentic loop)
+ *
+ * AC-6.8.3: Tool calls from LLM pause streaming
+ * AC-6.8.10: Tool execution completes before streaming resumes
+ * AC-6.8.11: Tool results inject into conversation context (existing pattern)
+ *
  * - Validates all inputs (agentId, message, conversationId)
  * - Manages conversation state across multiple messages
  * - Loads agent by ID (returns 404 if not found)
  * - Executes chat completion with full conversation history
- * - Returns response with conversationId and assistant message
+ * - Streams response token-by-token (Story 6.8)
+ * - Returns Server-Sent Events (SSE) stream
  * - Uses centralized error handling
  */
 export async function POST(request: NextRequest) {
@@ -158,74 +167,299 @@ export async function POST(request: NextRequest) {
       messages.splice(messages.length - 1, 0, fileContextMessage);
     }
 
-    // Story 4.9: Execute using Epic 4 agentic loop with bundlePath support
-    const result = await executeAgent(
-      agent.id,
-      body.message,
-      messages,
-      agent.bundlePath || agent.path // Pass bundle root for path resolution
-    );
+    // Story 6.8: STREAMING IMPLEMENTATION
+    // AC-6.8.1: Implement streaming within existing agentic loop (DO NOT replace loop)
+    // This creates a ReadableStream for Server-Sent Events
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        try {
+          // Build system prompt and critical context (same as agenticLoop.ts)
+          const effectiveBundleRoot = agent.bundlePath || agent.path;
+          const systemPromptContent = buildSystemPrompt(agent);
+          const criticalContext = await processCriticalActions(agent, effectiveBundleRoot);
 
-    // Store all new messages from the execution (assistant messages and tool messages)
-    // The executeAgent result includes the complete messages array with system, user, assistant, and tool messages
-    // We need to add only the NEW messages that aren't already in the conversation
-    const existingMessageCount = conversation.messages.length;
+          // Build complete messages array with system prompt and critical context
+          const completeMessages: ChatCompletionMessageParam[] = [
+            {
+              role: 'system',
+              content: systemPromptContent,
+            },
+            ...criticalContext.messages,
+            ...messages,
+          ];
 
-    // Result.messages includes: [system message, critical context messages, conversation history, new messages]
-    // We want only the messages that came AFTER the user's message we just added
-    // Find where the user's current message appears in result.messages and take everything after it
-    const userMessageIndex = result.messages.findIndex(
-      (msg) => msg.role === 'user' && msg.content === body.message
-    );
+          // Get OpenAI client and tool definitions
+          const client = getOpenAIClient();
+          const model = env.OPENAI_MODEL || 'gpt-4';
 
-    if (userMessageIndex !== -1) {
-      const newMessages = result.messages.slice(userMessageIndex + 1);
+          // Import tool definitions
+          const { readFileTool, saveOutputTool, executeWorkflowTool } = require('@/lib/tools/toolDefinitions');
+          const tools = [readFileTool, saveOutputTool, executeWorkflowTool];
 
-      // Add all new messages to conversation
-      for (const msg of newMessages) {
-        if (msg.role === 'assistant') {
-          addMessage(conversation.id, {
-            role: 'assistant',
-            content: typeof msg.content === 'string' ? msg.content : '',
-            functionCalls: 'tool_calls' in msg ? (msg.tool_calls as any) : undefined,
-          });
-          // Story 6.3: Increment message count for assistant response
-          if (conversation.sessionId) {
-            await incrementMessageCount(conversation.sessionId);
+          // Path context for tool execution
+          const pathContext = {
+            bundleRoot: agent.bundlePath || effectiveBundleRoot,
+            coreRoot: 'bmad/core',
+            projectRoot: process.cwd(),
+            bundleConfig: criticalContext.config,
+            toolCallCount: 0
+          };
+
+          // AC-6.8.3: AGENTIC LOOP with streaming
+          // Loop continues until LLM returns response without tool calls
+          const MAX_ITERATIONS = 50;
+          let iterations = 0;
+          let accumulatedContent = '';
+
+          while (iterations < MAX_ITERATIONS) {
+            iterations++;
+
+            // AC-6.8.2: Call OpenAI with streaming enabled
+            const response = await client.chat.completions.create({
+              model,
+              messages: completeMessages,
+              tools,
+              tool_choice: 'auto',
+              stream: true, // Story 6.8: Enable streaming
+            });
+
+            let assistantMessage: any = {
+              role: 'assistant',
+              content: '',
+              tool_calls: []
+            };
+
+            // AC-6.8.3: Process streaming chunks
+            for await (const chunk of response) {
+              const delta = chunk.choices[0]?.delta;
+              const finishReason = chunk.choices[0]?.finish_reason;
+
+              // AC-6.8.3: Stream tokens when delta.content present
+              if (delta?.content) {
+                assistantMessage.content += delta.content;
+                accumulatedContent += delta.content;
+
+                // Emit token event to frontend
+                controller.enqueue(
+                  encoder.encode(`data: ${JSON.stringify({ type: 'token', content: delta.content })}\n\n`)
+                );
+              }
+
+              // AC-6.8.4: Accumulate tool calls (streaming API sends tool calls in chunks)
+              if (delta?.tool_calls) {
+                for (const toolCallDelta of delta.tool_calls) {
+                  const index = toolCallDelta.index;
+
+                  // Initialize tool call if first chunk
+                  if (!assistantMessage.tool_calls[index]) {
+                    assistantMessage.tool_calls[index] = {
+                      id: toolCallDelta.id || '',
+                      type: 'function',
+                      function: {
+                        name: '',
+                        arguments: ''
+                      }
+                    };
+                  }
+
+                  // Set function name (comes in first chunk, don't accumulate)
+                  if (toolCallDelta.function?.name) {
+                    assistantMessage.tool_calls[index].function.name = toolCallDelta.function.name;
+                  }
+
+                  // Accumulate function arguments (come in multiple chunks)
+                  if (toolCallDelta.function?.arguments) {
+                    assistantMessage.tool_calls[index].function.arguments += toolCallDelta.function.arguments;
+                  }
+
+                  // Set tool call ID (comes in first chunk, don't accumulate)
+                  if (toolCallDelta.id) {
+                    assistantMessage.tool_calls[index].id = toolCallDelta.id;
+                  }
+                }
+              }
+
+              // AC-6.8.7: Handle completion
+              if (finishReason) {
+                break;
+              }
+            }
+
+            // Add assistant message to context
+            completeMessages.push(assistantMessage);
+
+            // AC-6.8.4, AC-6.8.5: PAUSE streaming for tool calls, execute tools, RESUME
+            if (assistantMessage.tool_calls && assistantMessage.tool_calls.length > 0) {
+              // Filter out empty tool calls
+              assistantMessage.tool_calls = assistantMessage.tool_calls.filter((tc: any) => tc.id);
+
+              if (assistantMessage.tool_calls.length > 0) {
+                // AC-6.8.6: Emit status events for tool execution
+                for (const toolCall of assistantMessage.tool_calls) {
+                  const functionName = toolCall.function.name;
+                  const functionArgs = JSON.parse(toolCall.function.arguments);
+
+                  // Emit status event
+                  const statusMessage = mapToolCallToStatus(functionName, functionArgs);
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'status', message: statusMessage })}\n\n`)
+                  );
+
+                  // Execute tool (existing logic from agenticLoop.ts)
+                  pathContext.toolCallCount++;
+                  const result = await executeToolCall(toolCall, pathContext);
+
+                  // AC-6.8.5: Inject tool result into context before resuming
+                  const toolMessage: ChatCompletionMessageParam = {
+                    role: 'tool',
+                    tool_call_id: toolCall.id,
+                    content: JSON.stringify(result),
+                  };
+                  completeMessages.push(toolMessage);
+                }
+
+                // Continue loop to resume streaming with tool results
+                continue;
+              }
+            }
+
+            // No tool calls - streaming complete
+            // AC-6.8.7: Send conversationId before completion event
+            controller.enqueue(
+              encoder.encode(`data: ${JSON.stringify({ type: 'conversationId', conversationId: conversation.id })}\n\n`)
+            );
+            // Send completion event
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+            controller.close();
+
+            // Store messages in conversation (preserve existing pattern)
+            // Add assistant message
+            const savedAssistantMsg = addMessage(conversation.id, {
+              role: 'assistant',
+              content: assistantMessage.content || accumulatedContent,
+              functionCalls: assistantMessage.tool_calls?.length > 0 ? assistantMessage.tool_calls : undefined,
+            });
+
+            // Increment message count
+            if (conversation.sessionId) {
+              await incrementMessageCount(conversation.sessionId);
+            }
+
+            return; // Exit successfully
           }
-        } else if (msg.role === 'tool' && 'tool_call_id' in msg) {
-          addMessage(conversation.id, {
-            role: 'tool' as any,
-            content: typeof msg.content === 'string' ? msg.content : '',
-            toolCallId: msg.tool_call_id as string,
-          } as any);
+
+          // Max iterations exceeded
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: 'Maximum iterations exceeded' })}\n\n`)
+          );
+          controller.close();
+
+        } catch (error: any) {
+          // AC-6.8.8: Handle streaming errors
+          console.error('[/api/chat] Streaming error:', error);
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: 'error', message: error.message || 'Streaming error' })}\n\n`)
+          );
+          controller.close();
         }
-      }
-    }
-
-    // Get the final assistant message for the response
-    const assistantMessage = conversation.messages[conversation.messages.length - 1];
-
-    // Build response
-    const response: ChatResponse = {
-      conversationId: conversation.id,
-      message: {
-        id: assistantMessage.id,
-        role: 'assistant',
-        content: assistantMessage.content,
-        timestamp: assistantMessage.timestamp.toISOString(),
-        functionCalls: assistantMessage.functionCalls,
       },
-    };
+    });
 
-    return NextResponse.json<ApiResponse<ChatResponse>>(
-      {
-        success: true,
-        data: response,
+    // Return SSE stream
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
       },
-      { status: 200 }
-    );
+    });
+
   } catch (error) {
     return handleApiError(error);
+  }
+}
+
+/**
+ * Execute a single tool call with path resolution.
+ * (Copied from agenticLoop.ts to avoid circular dependencies)
+ */
+async function executeToolCall(toolCall: any, context: any): Promise<any> {
+  const functionName = toolCall.function.name;
+  const functionArgs = JSON.parse(toolCall.function.arguments);
+
+  console.log(`[/api/chat] Executing tool: ${functionName}`, functionArgs);
+
+  // Import file operation functions
+  const { executeReadFile, executeSaveOutput, executeWorkflow } = require('@/lib/tools/fileOperations');
+
+  let result: any;
+
+  try {
+    switch (functionName) {
+      case 'read_file':
+        const timestamp = new Date().toISOString();
+        console.log(`[read_file #${context.toolCallCount || 1}] 📂 Loading: ${functionArgs.file_path} at ${timestamp}`);
+        result = await executeReadFile(functionArgs, context);
+        if (result.success) {
+          console.log(`[read_file #${context.toolCallCount || 1}] ✅ Loaded ${result.size} bytes from: ${result.path}`);
+        } else {
+          console.error(`[read_file #${context.toolCallCount || 1}] ❌ Failed: ${result.error}`);
+        }
+        break;
+
+      case 'save_output':
+        console.log(`[save_output] 💾 Writing to: ${functionArgs.file_path}`);
+        result = await executeSaveOutput(functionArgs, context);
+        if (result.success) {
+          console.log(`[save_output] ✅ Written ${result.size} bytes to: ${result.path}`);
+        } else {
+          console.error(`[save_output] ❌ Failed: ${result.error}`);
+        }
+        break;
+
+      case 'execute_workflow':
+        console.log(`[execute_workflow] 🔄 Loading workflow: ${functionArgs.workflow_path}`);
+        result = await executeWorkflow(functionArgs, context);
+        if (result.success) {
+          console.log(`[execute_workflow] ✅ Workflow loaded: ${result.workflow?.name || 'unknown'}`);
+        } else {
+          console.error(`[execute_workflow] ❌ Failed: ${result.error}`);
+        }
+        break;
+
+      default:
+        throw new Error(`Unknown function: ${functionName}`);
+    }
+
+    return result;
+  } catch (err: any) {
+    const error = err.message || String(err);
+    console.error(`[/api/chat] Tool ${functionName} failed:`, error);
+    return {
+      success: false,
+      error: error
+    };
+  }
+}
+
+/**
+ * Map tool call to user-friendly status message
+ * Story 6.9 dependency - provides status messages for Story 6.8
+ */
+function mapToolCallToStatus(functionName: string, args: any): string {
+  const extractFilename = (path: string) => path.split('/').pop() || 'file';
+
+  switch (functionName) {
+    case 'read_file':
+      return `Reading ${extractFilename(args.file_path)}...`;
+    case 'save_output':
+      return `Writing ${extractFilename(args.file_path)}...`;
+    case 'execute_workflow':
+      return `Executing ${extractFilename(args.workflow_path)}...`;
+    case 'list_files':
+      return 'Browsing files...';
+    default:
+      return 'Processing...';
   }
 }

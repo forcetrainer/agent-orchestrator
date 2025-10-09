@@ -11,23 +11,30 @@ import { LoadingIndicator } from './LoadingIndicator';
  * Scrollable message history container with auto-scroll behavior
  * Story 3.2 - Task 3, Task 4
  * Story 3.6 - Task 3: Render loading indicator
+ * Story 6.8 - Task 4: Display streaming content
  *
  * AC-1.2: Message history area shows above input field
  * AC-2.4: Messages display in chronological order (oldest to newest)
  * AC-2.5: Message history scrolls when conversation grows long
  * AC-2.6: Auto-scroll to latest message when new message arrives
  * AC-6.3: Loading indicator appears in chat history where agent response will be
+ * AC-6.8.1: Streaming content displays token-by-token
+ * AC-6.8.28: Chat auto-scrolls to show streaming content
  *
  * Performance: Auto-scroll completes within 300ms per NFR-1
  */
 export function MessageList({
   messages,
   isLoading,
-  loadingMessage
+  loadingMessage,
+  streamingContent,
+  isStreaming
 }: {
   messages: Message[];
   isLoading?: boolean;
   loadingMessage?: string;
+  streamingContent?: string;
+  isStreaming?: boolean;
 }) {
   // Task 4.1: Ref for auto-scroll control
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -37,6 +44,7 @@ export function MessageList({
 
   // Task 4.2, 4.3, 4.4: Auto-scroll when messages change
   // Story 3.6: Also auto-scroll when loading indicator appears
+  // Story 6.8 AC-6.8.28: Auto-scroll during streaming
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTo({
@@ -44,7 +52,7 @@ export function MessageList({
         behavior: 'smooth', // Smooth scroll for better UX
       });
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, streamingContent]);
 
   return (
     <div
@@ -69,10 +77,25 @@ export function MessageList({
               <MessageBubble key={index} message={message} />
             ))
         )}
+        {/* Story 6.8 AC-6.8.1: Display streaming content as temporary message */}
+        {isStreaming && streamingContent && (
+          <MessageBubble
+            message={{
+              id: 'streaming',
+              role: 'assistant',
+              content: streamingContent,
+              timestamp: new Date(),
+            }}
+            streaming={true}
+          />
+        )}
         {/* Story 3.6 Task 3.3: Render LoadingIndicator when isLoading=true */}
         {/* AC-6.3: Loading indicator appears in chat history where agent response will be */}
         {/* Story 4.7 AC-4.7.6: Show loading indicator during agent initialization */}
-        {isLoading && <LoadingIndicator message={loadingMessage} />}
+        {/* Story 6.8: Show loading indicator before streaming starts (waiting for first token) */}
+        {(isLoading && !isStreaming) || (isStreaming && !streamingContent) ? (
+          <LoadingIndicator message={loadingMessage} />
+        ) : null}
       </div>
     </div>
   );

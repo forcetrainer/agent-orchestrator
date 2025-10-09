@@ -791,7 +791,11 @@ When using react-markdown or similar libraries, apply these styles through:
 2. Input field clears and refocuses
 3. Agent "thinking" indicator appears (within 100ms)
 4. Send button disables, Stop button appears
-5. Agent response streams in (or appears when complete)
+5. Agent response streams in token-by-token as LLM generates
+   - "Agent is thinking..." shows during initial inference
+   - Status updates show during tool execution ("Reading workflow.md...", "Writing file...")
+   - Text tokens stream to display as they arrive
+   - Tool calls pause streaming, execute, then resume with results
 6. Stop button disappears, Send button re-enables
 7. Chat auto-scrolls to show new message
 

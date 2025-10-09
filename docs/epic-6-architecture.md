@@ -701,6 +701,24 @@ async function handleChatMessage(req: Request) {
 
 ## Feature 5: Streaming Responses
 
+### ⚠️ CRITICAL IMPLEMENTATION NOTE
+
+**Streaming is a DISPLAY-ONLY enhancement.** It shows tokens as they arrive from the LLM but MUST NOT bypass or replace the existing agentic execution loop.
+
+**What Changes:** Visual display of response text appears token-by-token
+
+**What Stays the Same:** Agentic loop, tool execution, workflow handling, status indicators, ALL existing chat logic
+
+**Implementation Rule:** All tool calls MUST execute synchronously within the streaming flow:
+1. LLM generates tool call → **PAUSE** streaming
+2. Execute tool (existing logic)
+3. Inject tool result into conversation context
+4. **RESUME** streaming with tool results available
+
+Violating this constraint will break workflow execution, tool handling, and agent functionality.
+
+---
+
 ### Problem Statement
 
 **Current:** User sends message → waits → full response appears

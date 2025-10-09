@@ -14,6 +14,7 @@ import { ErrorMessage } from './ErrorMessage';
  * Story 3.3 - Task 2: Markdown rendering for assistant messages
  * Story 3.8 - Task 1: Error message rendering
  * Story 3.10 - Task 3: System message display for agent greetings
+ * Story 6.8 - Task 3: Streaming display with cursor indicator
  *
  * AC-2.1: User messages appear right-aligned with distinct styling
  * AC-2.2: Agent messages appear left-aligned with different styling
@@ -22,6 +23,8 @@ import { ErrorMessage } from './ErrorMessage';
  * AC-8.2: Error messages are clearly styled (red/warning color)
  * AC-10.4: Agent greeting/welcome message displays automatically
  * AC-10.5: Agent command list displays if defined in agent instructions
+ * AC-6.8.1: Streaming cursor shows when active (blinking ▋)
+ * AC-6.8.3: Markdown updates dynamically as content streams
  *
  * Styling follows design system from Story 3.1:
  * - User: Right-aligned, blue background (#3B82F6), white text (plain text, no markdown)
@@ -35,7 +38,13 @@ import { ErrorMessage } from './ErrorMessage';
  * Security: react-markdown with remark-gfm, no dangerouslySetInnerHTML, external links use rel="noopener noreferrer"
  * Performance: React.memo prevents unnecessary re-renders (NFR-1: < 100ms target)
  */
-export const MessageBubble = memo(function MessageBubble({ message }: { message: Message }) {
+export const MessageBubble = memo(function MessageBubble({
+  message,
+  streaming = false
+}: {
+  message: Message;
+  streaming?: boolean;
+}) {
   // Story 3.8 Task 1.5: Delegate error messages to ErrorMessage component
   if (message.role === 'error') {
     return <ErrorMessage message={message} />;
@@ -127,6 +136,10 @@ export const MessageBubble = memo(function MessageBubble({ message }: { message:
   return (
     <div className={`${baseStyles} ${roleStyles[message.role]}`}>
       {renderContent()}
+      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator */}
+      {streaming && message.role === 'assistant' && (
+        <span className="inline-block ml-1 w-2 h-4 bg-gray-900 animate-pulse">▋</span>
+      )}
     </div>
   );
 });

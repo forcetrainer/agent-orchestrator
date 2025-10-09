@@ -1,0 +1,194 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>6</epicId>
+    <storyId>6.8</storyId>
+    <title>Visual Response Streaming Display</title>
+    <status>Ready for Implementation</status>
+    <generatedAt>2025-10-08</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-6.8.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>to see agent responses appear token-by-token as they're generated</iWant>
+    <soThat>the system feels more responsive and I can start reading responses immediately</soThat>
+    <tasks>
+      - Task 1: Update /api/chat route for SSE streaming (within existing agentic loop)
+      - Task 2: Create useStreamingChat hook for frontend state management
+      - Task 3: Update MessageBubble for streaming display with cursor
+      - Task 4: Update ChatInterface/ChatPanel integration
+      - Task 5: Comprehensive testing (unit, integration, regression)
+      - Task 6: Performance optimization (60fps target)
+      - Task 7: Documentation and validation
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+### Visual Streaming Behavior
+1. Agent text responses appear progressively token-by-token as LLM generates them
+2. Tokens render within 100ms of receipt from OpenAI API
+3. Markdown formatting updates dynamically as content streams
+4. Cursor/indicator shows streaming is active (e.g., blinking cursor ▋)
+5. "Agent is thinking..." displays during initial LLM inference (before first token)
+6. Status remains visible until first token arrives
+7. Status indicators pause streaming to show tool execution (e.g., "Reading workflow.md...")
+8. Text streaming resumes after tool execution completes
+
+### Preserved Functionality (CRITICAL - ALL MUST PASS)
+9. Tool calls from LLM pause streaming
+10. Tool execution completes before streaming resumes
+11. Tool results inject into conversation context (existing pattern)
+12. LLM continues with tool results available
+13. Loop iterates until final response (no tool calls)
+14. Maximum iteration safety limit still enforced
+15. Workflow files load via read_file tool calls (pause streaming)
+16. Lazy-loading instruction pattern works correctly
+17. Path variable resolution ({bundle-root}, {core-root}, etc.) functions
+18. Critical-actions execute during agent initialization
+19. Multi-step workflows complete successfully
+20. read_file: Loads content, injects into context, streaming pauses/resumes
+21. write_file: Creates files, preserves directory structure, streaming pauses/resumes
+22. list_files: Returns directory contents, streaming pauses/resumes
+23. All tool calls block streaming until execution complete
+24. "Agent is thinking..." shows before first token
+25. Tool-specific status messages display during tool execution ("Reading X...", "Writing Y...")
+26. Stop/cancel button functions correctly (can abort streaming)
+27. Error messages display clearly on failures
+28. Chat auto-scrolls to show streaming content
+29. Message history maintains correct order
+30. File attachments inject into context correctly
+31. Multi-turn conversations work with streaming
+32. Session state persists correctly
+
+### Error Handling
+33. Connection drops mid-stream → Show reconnection message, auto-retry
+34. OpenAI API error during streaming → Display user-friendly error, stop gracefully
+35. Tool execution error during streaming → Show error, halt streaming, display error message
+36. Timeout errors handled gracefully (60s max streaming connection)
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/PRD.md" section="FR-4: Response Handling and Display">
+        Token-by-token streaming display of text responses (visual enhancement only - does not bypass agentic execution loop)
+      </doc>
+      <doc path="docs/PRD.md" section="FR-5: OpenAI API with Function Calling">
+        Agentic loop: LLM receives message → generates tool call → backend pauses execution → executes tool → injects result into conversation context → LLM continues with tool result. Loop continues until LLM returns final response without tool calls. Tool execution blocks continuation until results are available.
+      </doc>
+      <doc path="docs/epic-6-architecture.md" section="Feature 5: Streaming Responses (lines 702-917)">
+        ⚠️ CRITICAL: Streaming is DISPLAY-ONLY enhancement. Must NOT bypass existing agentic execution loop. Tool calls MUST execute synchronously: LLM generates tool call → PAUSE streaming → Execute tool → Inject result → RESUME streaming. Detailed implementation patterns for SSE endpoint, OpenAI streaming integration, frontend hook, and React component rendering.
+      </doc>
+      <doc path="docs/epic-6-architecture.md" section="SSE Event Format">
+        Token events: {"type":"token","content":"Hello"}
+        Status events: {"type":"status","message":"Reading workflow.md..."}
+        Tool call events: {"type":"tool_call","name":"read_file","args":{...}}
+        Error events: {"type":"error","message":"Connection failed"}
+        Completion: [DONE]
+      </doc>
+    </docs>
+
+    <code>
+      <artifact path="app/api/chat/route.ts" kind="api-route" lines="1-232">
+        Current POST /api/chat implementation - uses executeAgent() from agenticLoop.ts, handles file attachments, returns JSON response. NEEDS MODIFICATION: Add streaming support while preserving all existing logic (agentic loop, tool execution, file attachments, session management).
+      </artifact>
+      <artifact path="lib/agents/agenticLoop.ts" kind="core-logic" lines="1-367">
+        Agentic execution loop with pause-load-continue pattern. MAX_ITERATIONS=50, builds system prompt, processes critical actions, maintains conversation context, executes tools synchronously. CRITICAL CONSTRAINT: Streaming must work WITHIN this loop, not replace it.
+      </artifact>
+      <artifact path="lib/openai/chat.ts" kind="deprecated" lines="1-253">
+        DEPRECATED Epic 2 implementation. Shows simple function calling loop structure. DO NOT USE - reference only for understanding evolution. Use agenticLoop.ts instead.
+      </artifact>
+      <artifact path="components/chat/MessageBubble.tsx" kind="component" lines="1-133">
+        Renders individual messages with role-based styling and markdown. Uses ReactMarkdown with remarkGfm. Memoized for performance. NEEDS MODIFICATION: Add streaming state support with cursor indicator.
+      </artifact>
+      <artifact path="components/chat/ChatPanel.tsx" kind="component" lines="1-370">
+        Main chat container managing agent selection, messages array, loading states, conversation ID. handleSendMessage() posts to /api/chat, updates messages optimistically. NEEDS MODIFICATION: Integrate streaming hook, handle SSE instead of JSON.
+      </artifact>
+      <artifact path="lib/openai/client.ts" kind="utility">
+        OpenAI client initialization with API key from env. Used by agenticLoop.ts for chat completions.
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="openai" version="^4.104.0" usage="OpenAI SDK with streaming support - set stream: true for SSE" />
+        <package name="react" version="^18" usage="Frontend framework - useState for streaming state, useCallback for handlers" />
+        <package name="react-markdown" version="^10.1.0" usage="Markdown rendering - efficiently updates partial content via React reconciliation" />
+        <package name="next" version="14.2.0" usage="App Router with ReadableStream support for SSE responses" />
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+1. **DO NOT replace /api/chat route** - Enhance it with streaming support
+2. **DO NOT bypass agentic loop** - Stream tokens WITHIN existing loop structure
+3. **DO NOT remove tool execution** - Pause streaming during tool calls
+4. **DO NOT change conversation context handling** - Preserve existing message injection pattern
+5. **DO preserve ALL existing chat logic** - Only add visual streaming layer
+6. **MUST maintain executeAgent() as source of truth** - All logic flows through agenticLoop.ts
+7. **MUST pause streaming when tool_calls present** - Tool execution is synchronous
+8. **MUST inject tool results into context before resuming** - Same pattern as non-streaming
+9. **MUST preserve session management** - First message creates session, subsequent increment count
+10. **MUST preserve file attachment handling** - File context injected before user message
+11. **MUST use Server-Sent Events** - Next.js ReadableStream with text/event-stream content-type
+12. **MUST batch tokens for performance** - Accumulate for 16ms (1 frame) before React update
+13. **MUST memoize MessageBubble** - Prevent re-render of old messages during streaming
+14. **MUST implement stop/cancel** - AbortController to terminate streaming mid-flight
+15. **MUST handle streaming errors** - Connection loss, API errors, timeouts with graceful degradation
+  </constraints>
+
+  <interfaces>
+    <interface name="executeAgent" kind="function" signature="async function executeAgent(agentId: string, userMessage: string, conversationHistory: ChatCompletionMessageParam[], bundleRoot?: string): Promise&lt;ExecutionResult&gt;" path="lib/agents/agenticLoop.ts">
+      Core agentic execution loop. Returns ExecutionResult with {success, response, iterations, messages[]}. Streaming must consume this function's output incrementally.
+    </interface>
+    <interface name="POST /api/chat" kind="api-endpoint" signature="Request: {agentId, message, conversationId?, attachments?} Response: Currently JSON, will change to SSE stream" path="app/api/chat/route.ts">
+      Main chat endpoint. Current: Returns JSON with conversationId and message. New: Return ReadableStream with SSE format. Must preserve all validation, agent loading, session management, file attachment logic.
+    </interface>
+    <interface name="OpenAI Streaming API" kind="external-api" signature="stream: true flag returns AsyncIterator&lt;ChatCompletionChunk&gt;">
+      OpenAI SDK streaming mode. Yields chunks with delta.content (text tokens) or delta.tool_calls (function calls). Use for await (const chunk of stream) pattern.
+    </interface>
+    <interface name="ReadableStream" kind="web-api" signature="new ReadableStream({ async start(controller) {...} })">
+      Next.js App Router supports returning ReadableStream for SSE. controller.enqueue() sends data, controller.close() ends stream.
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Project uses Jest for testing. Component tests use @testing-library/react and @testing-library/jest-dom. Integration tests mock OpenAI API responses. Test files colocate with source in __tests__ directories. Coverage includes unit tests (isolated functions), integration tests (API → OpenAI), and E2E scenarios (user journey).
+    </standards>
+
+    <locations>
+      - lib/**/__tests__/*.test.ts (unit tests for utilities, agents, files)
+      - app/api/**/__tests__/*.test.ts (API route tests)
+      - components/**/__tests__/*.test.tsx (component tests)
+      - lib/**/__tests__/*.integration.test.ts (integration tests)
+    </locations>
+
+    <ideas>
+      **AC #1-4 (Token Display):**
+      - Unit: Test SSE parsing - verify tokens accumulate correctly
+      - Unit: Test token batching - 16ms accumulation before state update
+      - Integration: Mock OpenAI streaming response, verify tokens arrive incrementally
+      - E2E: Send message, verify tokens appear progressively in UI
+
+      **AC #9-32 (Preserved Functionality - CRITICAL REGRESSION TESTS):**
+      - Integration: Test streaming + tool calls - verify execution pauses/resumes
+      - Integration: Test streaming + workflows - verify lazy-loading works
+      - Integration: Test streaming + file attachments - verify context injection
+      - Regression: Run existing test suite - ALL MUST PASS
+      - Regression: Test 2-3 complex workflows from bundles/bmm/agents
+      - Regression: Test multi-turn conversations with streaming
+      - Regression: Test file operations (read_file, write_file, list_files)
+
+      **AC #33-36 (Error Handling):**
+      - Unit: Test connection drop handling - verify reconnect logic
+      - Unit: Test OpenAI API error - verify graceful stop
+      - Integration: Test tool execution error during streaming - verify error display
+
+      **Performance (Task 6):**
+      - Performance: 60fps smooth scrolling during streaming
+      - Performance: Memory usage stable during long streaming responses
+      - Performance: No layout thrashing from rapid token updates
+    </ideas>
+  </tests>
+</story-context>

@@ -8,6 +8,7 @@ import { AgentSelector } from './AgentSelector';
 import { Message } from '@/lib/types';
 import { mapErrorToUserMessage } from '@/lib/errorMapping';
 import { AgentSummary } from '@/types/api';
+import { useStreamingChat } from './useStreamingChat';
 
 /**
  * ChatPanel Component
@@ -19,6 +20,7 @@ import { AgentSummary } from '@/types/api';
  * AC-2.1, AC-2.2, AC-2.3, AC-2.4: Message display and state management
  * AC-4.5, AC-4.6: Agent selection integration
  * AC-5.4, AC-5.5, AC-5.8: Message send functionality (Story 3.5)
+ * Story 6.8: Streaming response display (AC-6.8.1, AC-6.8.6, AC-6.8.26)
  *
  * UX Enhancement: Centers input when no messages (like ChatGPT/Claude.ai),
  * expands to full layout when conversation starts
@@ -33,7 +35,16 @@ export function ChatPanel() {
   // AC-5.4: User message immediately appears in chat history
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Story 3.5 Task 2.2: Add isLoading state
+  // Story 6.8: Use streaming chat hook
+  const {
+    isStreaming,
+    streamingContent,
+    status: streamingStatus,
+    sendMessage: sendStreamingMessage,
+    cancelStream,
+  } = useStreamingChat();
+
+  // Story 3.5 Task 2.2: Add isLoading state (for initialization, separate from streaming)
   // AC-5.5: Input is disabled while waiting for agent response
   const [isLoading, setIsLoading] = useState<boolean>(false);
 
@@ -62,7 +73,7 @@ export function ChatPanel() {
 
     // Task 2.2: Show loading state during initialization (AC-10.7)
     setIsLoading(true);
-    setLoadingMessage("Agent is loading...");
+    setLoadingMessage("Agent is loading");
 
     console.log('[ChatPanel] Agent selected, initializing:', agent.id, 'isLoading:', true, 'messages:', messages.length);
 
@@ -156,8 +167,10 @@ export function ChatPanel() {
   // Story 3.5 Task 2.3-2.9: Create handleSendMessage function
   // Story 3.8 Task 2: Implement error handling in ChatPanel API calls
   // Story 6.7: Now accepts attachments parameter for file reference attachments
+  // Story 6.8: Use streaming for responses
   // AC-5.4: User message immediately appears
   // AC-5.8: Agent response appears when received
+  // AC-6.8.1: Response streams token-by-token
   // AC-8.1: API errors display as error messages in chat
   // AC-8.6: User can still send new messages after error
   // AC-8.7: Errors don't crash the interface
@@ -176,147 +189,43 @@ export function ChatPanel() {
       return;
     }
 
-    // Story 3.8 Task 5: Detailed logging context
-    const requestContext = {
-      agentId: selectedAgentId,
-      messageLength: messageContent.length,
-      conversationId,
-      messageCount: messages.length,
-      timestamp: new Date().toISOString(),
+    // Task 2.4: Add user message to messages array immediately (optimistic update)
+    // AC-5.4: User message immediately appears in chat history
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      role: 'user',
+      content: messageContent,
+      timestamp: new Date(),
     };
+    setMessages((prev) => [...prev, userMessage]);
 
-    try {
-      // Task 2.4: Add user message to messages array immediately (optimistic update)
-      // AC-5.4: User message immediately appears in chat history
-      const userMessage: Message = {
-        id: `user-${Date.now()}`,
-        role: 'user',
-        content: messageContent,
+    // Story 6.8: Call streaming hook
+    const result = await sendStreamingMessage(messageContent, selectedAgentId, conversationId, attachments);
+
+    if (result.success) {
+      // AC-6.8.29: Add assistant message to history after streaming completes
+      // Use finalContent from result (accumulated during streaming)
+      const assistantMessage: Message = {
+        id: `assistant-${Date.now()}`,
+        role: 'assistant',
+        content: result.finalContent || '',
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, userMessage]);
-
-      // Task 2.5: Set isLoading=true before API call
-      // AC-5.5: Input is disabled while waiting for agent response
-      setIsLoading(true);
-
-      // Task 2.6: POST to /api/chat with {agentId, message, conversationId} payload
-      // Story 3.8 Task 2.1: Wrap fetch call in try/catch
-      // Story 6.7: Include attachments in request if present
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          agentId: selectedAgentId,
-          message: messageContent,
-          conversationId,
-          attachments, // Story 6.7: Pass attachments array
-        }),
-      });
-
-      // Story 3.8 Task 2: Handle HTTP errors
-      // Task 4.3: Handle API errors (400, 404, 500 responses)
-      if (!response.ok) {
-        // Task 5.2: Log API response details for debugging
-        console.error('[ChatPanel] API error response:', {
-          status: response.status,
-          statusText: response.statusText,
-          headers: response.headers?.entries ? Object.fromEntries(response.headers.entries()) : {},
-          context: requestContext,
-        });
-
-        // Task 4.4: Parse error messages from API response
-        const errorData = await response.json().catch(() => ({}));
-
-        // Story 3.8 Task 3, 4: Map technical errors to user-friendly messages
-        // Create error object with both the error message and HTTP status
-        const errorToMap = errorData.error
-          ? { error: errorData.error, status: response.status }
-          : { status: response.status };
-        const userFriendlyMessage = mapErrorToUserMessage(errorToMap);
-
-        // Task 5.3: Log user-friendly error message that was displayed
-        console.error('[ChatPanel] Displaying error to user:', {
-          userMessage: userFriendlyMessage,
-          technicalError: errorData.error || `HTTP ${response.status}`,
-          context: requestContext,
-        });
-
-        // Task 2.2, 2.3: Create error message object and add to messages array
-        // AC-8.1: API errors display as error messages in chat
-        const errorMessage: Message = {
-          id: `error-${Date.now()}`,
-          role: 'error',
-          content: userFriendlyMessage,
-          timestamp: new Date(),
-        };
-        setMessages((prev) => [...prev, errorMessage]);
-
-        // Task 2.4: Reset isLoading to false on error to unblock UI
-        // AC-8.6: User can still send new messages after error
-        setIsLoading(false);
-        return;
-      }
-
-      // Task 2.7: Parse response and add assistant message to messages array
-      const data = await response.json();
+      setMessages((prev) => [...prev, assistantMessage]);
 
       // Store conversationId for subsequent messages
-      if (data.data?.conversationId) {
-        setConversationId(data.data.conversationId);
+      if (result.conversationId) {
+        setConversationId(result.conversationId);
       }
-
-      // AC-5.8: Agent response appears when received from backend
-      if (data.success && data.data?.message) {
-        const assistantMessage: Message = {
-          id: data.data.message.id,
-          role: 'assistant',
-          content: data.data.message.content,
-          timestamp: new Date(data.data.message.timestamp),
-          functionCalls: data.data.message.functionCalls,
-        };
-        setMessages((prev) => [...prev, assistantMessage]);
-      }
-    } catch (error) {
-      // Story 3.8 Task 2.1: Handle network errors (fetch rejection, offline)
-      // Task 5.1: Log full error object with stack trace
-      console.error('[ChatPanel] Error sending message:', {
-        error,
-        stack: error instanceof Error ? error.stack : undefined,
-        context: requestContext,
-      });
-
-      // Story 3.8 Task 3: Map technical errors to user-friendly messages
-      // AC-8.3: Errors explain what went wrong in plain language
-      // AC-8.4: Network errors show "Connection failed - please try again"
-      const userFriendlyMessage = mapErrorToUserMessage(error);
-
-      // Task 5.3: Log user-friendly error message that was displayed
-      console.error('[ChatPanel] Displaying error to user:', {
-        userMessage: userFriendlyMessage,
-        technicalError: error instanceof Error ? error.message : String(error),
-        context: requestContext,
-      });
-
-      // Task 2.2, 2.3: Create error message object with role='error' and add to messages array
+    } else {
       // AC-8.1: API errors display as error messages in chat
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
-        content: userFriendlyMessage,
+        content: result.error || 'An error occurred while sending the message.',
         timestamp: new Date(),
       };
-
-      // Task 2.3: Add error message to messages array (appears in chat history)
-      // Task 2.5: Preserve messages array and state even when error occurs
-      // AC-8.7: Errors don't crash the interface
       setMessages((prev) => [...prev, errorMessage]);
-    } finally {
-      // Task 2.8: Set isLoading=false after response (success or error)
-      // Task 2.4: Reset isLoading to false on error to unblock UI
-      // Task 2.6: Allow user to continue sending messages after error (don't disable input)
-      // AC-8.6: User can still send new messages after error
-      setIsLoading(false);
     }
   };
 
@@ -324,7 +233,8 @@ export function ChatPanel() {
   // Story 3.5 Task 3.1-3.5: Integrate InputField component
   // Story 4.7: Show full layout during initialization to display loading indicator (AC-4.7.6)
   // Story 6.1: File viewer now handled by MainLayout wrapper
-  if (messages.length === 0 && !isLoading) {
+  // Story 6.8: Disable input during streaming
+  if (messages.length === 0 && !isLoading && !isStreaming) {
     return (
       <div className="flex flex-col h-screen bg-gray-50">
         <AgentSelector
@@ -337,7 +247,8 @@ export function ChatPanel() {
             {/* Task 3.1: Render InputField component */}
             {/* Task 3.2: Pass handleSendMessage as onSend callback */}
             {/* Task 3.3: Pass isLoading as disabled prop */}
-            <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
+            {/* Story 6.8: Also disable during streaming */}
+            <InputField onSend={handleSendMessage} disabled={isLoading || isStreaming} ref={inputRef} />
           </div>
         </div>
       </div>
@@ -348,6 +259,7 @@ export function ChatPanel() {
   // AC-5.1: Clicking send button submits message
   // AC-5.5: Input is disabled while waiting for agent response
   // Story 6.1: File viewer now handled by MainLayout wrapper
+  // Story 6.8: Pass streaming state to MessageList
   return (
     <div className="flex flex-col h-screen">
       <AgentSelector
@@ -358,13 +270,21 @@ export function ChatPanel() {
       {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
       {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
       {/* Story 4.7: Pass loadingMessage to show context-specific loading text */}
-      <MessageList messages={messages} isLoading={isLoading} loadingMessage={loadingMessage} />
+      {/* Story 6.8: Pass streaming state for progressive display */}
+      <MessageList
+        messages={messages}
+        isLoading={isLoading}
+        loadingMessage={streamingStatus || loadingMessage}
+        streamingContent={streamingContent}
+        isStreaming={isStreaming}
+      />
 
       {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
       {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}
       {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
       {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
-      <InputField onSend={handleSendMessage} disabled={isLoading} ref={inputRef} />
+      {/* Story 6.8 AC-6.8.26: Disable input during streaming */}
+      <InputField onSend={handleSendMessage} disabled={isLoading || isStreaming} ref={inputRef} />
     </div>
   );
 }
