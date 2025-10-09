@@ -16,17 +16,17 @@ lib/agents/prompts/
 
 ## Current Version
 
-**v3.2 - Conciseness and Formatting** (2025-10-08) - Reverted from v3.3
+**v2.0 - Action vs Ask Distinction** (Reverted 2025-10-08)
 
 Key features:
-- Distills analysis to essence: 3-5 bullet points maximum (not information dumps)
-- Clean, scannable formatting with arrows (→) for cause/effect
-- NO pre-written drafts or deliverables unless explicitly requested
-- Natural framing: skip robotic intros like "I'll guide you through..."
-- Focuses on UNDERSTANDING the context, not DOCUMENTING everything read
-- Matches Claude Code's concise, focused communication style
+- Clear distinction between providing guidance vs asking direct questions
+- Action tag triggers for workflow execution
+- Conditional logic handling with <check> tags
+- Step-by-step workflow execution pattern
+- File naming requirements
+- Simpler, more predictable behavior
 
-**Note**: v3.3 was attempted to fix repetition issues but made behavior worse. Reverted to v3.2.
+**Note**: All v3.x versions (v3.0-v3.3) failed to improve behavior and were reverted. Starting fresh from v2.0 baseline.
 
 ## Making Changes
 
@@ -114,11 +114,11 @@ To see the full system prompt being sent:
 
 | Version | Date | Key Feature | Status |
 |---------|------|-------------|--------|
+| v2.0 | 2025-10-08 | Action vs Ask distinction | **Active (Reverted)** |
 | v3.3 | 2025-10-08 | Context awareness, no repetition | Failed - Reverted |
-| v3.2 | 2025-10-08 | Conciseness and formatting | Active |
-| v3.1 | 2025-10-08 | Action tag execution pattern | Superseded |
-| v3.0 | 2025-10-08 | Context-aware guidance | Superseded |
-| v2.0 | 2025-10-XX | Action vs Ask distinction | Superseded |
+| v3.2 | 2025-10-08 | Conciseness and formatting | Failed - Reverted |
+| v3.1 | 2025-10-08 | Action tag execution pattern | Failed - Reverted |
+| v3.0 | 2025-10-08 | Context-aware guidance | Failed - Reverted |
 | v1.0 | Initial | Baseline implementation | Superseded |
 
 ## Troubleshooting

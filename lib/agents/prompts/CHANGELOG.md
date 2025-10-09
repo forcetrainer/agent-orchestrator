@@ -12,6 +12,34 @@ Each entry includes:
 
 ---
 
+## REVERT to v2.0 (2025-10-08)
+
+### Problem/Observation
+All v3.x versions (v3.0, v3.1, v3.2, v3.3) failed to improve agent behavior:
+- v3.0: Agent became more context-aware but still delegated instead of executing
+- v3.1: Fixed delegation but made output too verbose
+- v3.2: Improved conciseness but agents still not behaving correctly
+- v3.3: Attempted to fix repetition but made behavior worse
+
+User feedback: "The system prompt is definitely not working properly."
+
+**Root Cause Hypothesis**: The incremental additions in v3.x may have created conflicting instructions or cognitive overhead. v2.0 was simpler and may have been more effective despite lacking some features.
+
+### Change Made
+- Reverted `system-prompt.md` back to v2.0-action-vs-ask.md
+- Updated status to indicate reversion
+- Documented all v3.x versions as failed experiments
+
+### Expected Outcome
+- More predictable agent behavior with simpler, clearer instructions
+- Easier to debug issues with less complex prompt
+- Fresh baseline for future improvements
+
+### Actual Result
+_[To be filled in after testing]_
+
+---
+
 ## v3.3 - Context Awareness and No Repetition (2025-10-08)
 
 ### Problem/Observation
