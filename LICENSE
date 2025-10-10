@@ -1,0 +1,68 @@
+Flint Non-Commercial License
+
+Copyright (c) 2025 Bryan Inagaki
+
+Permission is hereby granted, free of charge, to any person or organization
+obtaining a copy of this software and associated documentation files (the
+"Software"), to use, copy, modify, merge, and distribute the Software for
+NON-COMMERCIAL PURPOSES ONLY, subject to the following conditions:
+
+1. ATTRIBUTION: The above copyright notice and this permission notice shall
+   be included in all copies or substantial portions of the Software.
+
+2. NON-COMMERCIAL USE: The Software may be used freely for personal projects,
+   educational purposes, research, and internal business operations. However,
+   the Software may NOT be:
+
+   a) Incorporated into any product or service that is sold, licensed, or
+      offered for a fee;
+
+   b) Used as part of a commercial service or platform that generates revenue;
+
+   c) Monetized directly or indirectly through advertisements, subscriptions,
+      licensing fees, or any other revenue model;
+
+   d) Distributed as part of a commercial software package or bundle.
+
+3. INTERNAL CORPORATE USE: Corporations and other entities may use the
+   Software internally for their own operations, provided such use does not
+   constitute offering the Software or derivative works as a commercial
+   product or service to third parties.
+
+4. MODIFICATIONS: Modified versions of the Software must:
+
+   a) Clearly indicate that changes were made;
+
+   b) Include this license in their entirety;
+
+   c) Not be used for commercial purposes as defined in section 2.
+
+5. DISTRIBUTION: Redistribution of the Software or modified versions must:
+
+   a) Be provided free of charge;
+
+   b) Include this complete license;
+
+   c) Maintain the same non-commercial restrictions.
+
+6. COMMERCIAL LICENSING: Organizations or individuals wishing to use this
+   Software for commercial purposes must obtain a separate commercial license
+   from the copyright holder. For commercial licensing inquiries, please
+   contact the copyright holder.
+
+7. NO WARRANTY: THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+   KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+   MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN
+   NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+   DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+   OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE
+   USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+8. TERMINATION: This license and the rights granted hereunder will terminate
+   automatically upon any breach by you of the terms of this license.
+   Individuals or organizations who have received the Software from you under
+   this license will not have their licenses terminated provided they remain
+   in full compliance.
+
+For questions about this license or to inquire about commercial licensing,
+please open an issue at: https://github.com/forcetrainer/agent-orchestrator/issues

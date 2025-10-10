@@ -1,10 +1,12 @@
-# Agent Orchestrator
+# Flint ⚡
 
 A Next.js-based platform that enables BMAD agent builders to leverage the OpenAI API and deploy complex, multi-turn agents to end users through an intuitive chat interface.
 
+**Flint** - *The foundation that generates the spark to ignite your agents.*
+
 ## Overview
 
-**Agent Orchestrator** bridges the gap between agent development and use in an IDE and production deployment for non-technical users. It provides a platform designed specifically for BMAD agents, enabling file-based agents with lazy-loading instruction patterns to work seamlessly with OpenAI's function calling API.
+**Flint** bridges the gap between agent development and use in an IDE and production deployment for non-technical users. It provides a platform designed specifically for BMAD agents, enabling file-based agents with lazy-loading instruction patterns to work seamlessly with OpenAI's function calling API.
 
 ### The Problem It Solves
 
@@ -22,11 +24,11 @@ Multi-turn BMAD agents address this by combining structured workflows, domain kn
 
 ### The Solution
 
-Agent Orchestrator provides three core capabilities:
+Flint provides three core capabilities:
 
 1. **OpenAI Compatibility** - Allows BMAD agents built in an IDE to function correctly with OpenAI's API and function calling patterns
 2. **Simple Deployment** - Agent builders upload instruction files and agents become immediately functional
-3. **End-User Interface** - Non-technical users interact with agents through a familiar ChatGPT-style chat interface
+3. **End-User Interface** - Non-technical users interact with agents through a familiar chat interface with Flint's signature cyan spark branding
 
 ## Key Features
 
@@ -35,6 +37,7 @@ Agent Orchestrator provides three core capabilities:
 - **Path Variable Resolution** - Portable bundle structure with dynamic path resolution (`{bundle-root}`, `{core-root}`, `{project-root}`)
 - **Critical Actions Processor** - Agent initialization with minimal required files
 - **Bundle System** - Self-contained agent packages with workflows, templates, and configurations
+- **Flint Design System** - Distinctive visual identity with deep blue primary (#1E40AF), vibrant cyan accents (#06B6D4), and signature 4-6px left borders
 
 ## Tech Stack
 
@@ -131,7 +134,7 @@ agent-orchestrator/
 
 ## Architecture
 
-Agent Orchestrator implements a **Claude Code-like agent execution pattern** using OpenAI's function calling API. The architecture enables lazy loading of files and workflows through an agentic execution loop.
+Flint implements a **Claude Code-like agent execution pattern** using OpenAI's function calling API. The architecture enables lazy loading of files and workflows through an agentic execution loop.
 
 ### Core Components
 
@@ -286,6 +289,32 @@ npm start
 - Advanced analytics and usage tracking
 
 
+
+## Built With BMAD
+
+This project is built to support agents created with the [BMAD-METHOD™](https://github.com/bmad-code-org/BMAD-METHOD), a universal AI agent framework for "Agentic Agile Driven Development."
+
+**BMAD™ and BMAD-METHOD™ are trademarks of BMad Code, LLC.**
+
+Flint provides a deployment platform for BMAD agents, enabling them to work seamlessly with OpenAI's API and making them accessible to end users through an intuitive chat interface. While Flint is specifically designed for BMAD agents, the underlying architecture can support other agent frameworks with similar file-based instruction patterns.
+
+Learn more about BMAD:
+- [BMAD Method GitHub](https://github.com/bmad-code-org/BMAD-METHOD)
+- [BMAD Documentation](https://github.com/bmad-code-org/BMAD-METHOD#readme)
+
+If you find this project useful, please consider ⭐ starring both repositories to help others discover them!
+
+## License
+
+This project is licensed under the **Flint Non-Commercial License** - see the [LICENSE](LICENSE) file for details.
+
+**TL;DR:**
+- ✅ Free for personal projects, education, research, and internal corporate use
+- ✅ Modify, adapt, and redistribute (with attribution)
+- ❌ Cannot be used in commercial products or services that charge fees
+- 💼 Commercial licensing available upon request
+
+For commercial licensing inquiries, please open an issue on GitHub.
 
 ## Support
 
