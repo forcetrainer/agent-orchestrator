@@ -57,15 +57,15 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto px-4 py-6 bg-gray-50"
+      className="flex-1 overflow-y-auto px-6 py-6 bg-slate-50"
       role="log"
       aria-label="Message history"
       aria-live="polite"
     >
-      <div className="max-w-3xl mx-auto flex flex-col gap-3">
+      <div className="max-w-3xl mx-auto flex flex-col gap-4">
         {/* Task 3.5: Empty state - only show when not loading */}
         {messages.length === 0 && !isLoading ? (
-          <div className="text-gray-400 text-center py-8">
+          <div className="text-slate-400 text-center py-8">
             <p className="text-sm">No messages yet. Start a conversation below.</p>
           </div>
         ) : (

@@ -3,10 +3,13 @@
     <epicId>8</epicId>
     <storyId>8.1</storyId>
     <title>UI/UX Polish Pass</title>
-    <status>Draft</status>
+    <status>In Progress</status>
     <generatedAt>2025-10-10</generatedAt>
+    <updatedAt>2025-10-10</updatedAt>
     <generator>BMAD Story Context Workflow</generator>
     <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-8.1.md</sourceStoryPath>
+    <brandName>Flint</brandName>
+    <brandTagline>Agent Orchestration</brandTagline>
   </metadata>
 
   <story>
@@ -14,12 +17,22 @@
     <iWant>a polished, professional-looking interface</iWant>
     <soThat>the platform feels trustworthy and pleasant to use</soThat>
     <tasks>
-      - Task 1: Create distinctive design system (AC: #1, #2, #3)
+      - Task 1: Create distinctive design system (AC: #1, #2, #3) [COMPLETED]
+        - Created Flint brand identity with deep blue-800 primary, cyan-500 accent, slate grays
+        - 3 signature elements: thick left borders (4-6px), cyan accents, 8px/12px border radius
+        - Design system document: /docs/design-system.md (single source of truth)
+        - Branding components: FlintLogo, FlintLoader, FlintLoadingScreen
+        - App integration: AppInitializer with splash screen, /branding-demo showcase page
       - Task 2: Standardize spacing and alignment (AC: #1)
+        - Reference: /docs/design-system.md Section "Spacing & Layout"
       - Task 3: Unify color scheme (AC: #2)
+        - Reference: /docs/design-system.md Section "Color Palette"
       - Task 4: Polish typography (AC: #3)
+        - Reference: /docs/design-system.md Section "Typography System"
       - Task 5: Refine button states (AC: #4)
+        - Reference: /docs/design-system.md Sections "Interactive States" and "Component Patterns"
       - Task 6: Validate transitions and animations (AC: #5)
+        - Reference: /docs/design-system.md Section "Interactive States > Transitions"
       - Task 7: Clarify loading states (AC: #6)
       - Task 8: Test responsive layout (AC: #7)
       - Task 9: Regression testing (AC: #8)
@@ -35,12 +48,13 @@
     - No pixel-pushing or hardcoded margins
     - Component padding matches design system
 
-    AC-2: Cohesive Color Scheme
-    - All colors sourced from Tailwind CSS palette (no hardcoded hex values)
-    - Consistent color usage: blue for primary actions, gray for neutral elements, red for errors
-    - Text colors follow contrast guidelines
-    - Background colors consistent across similar component types
-    - Hover states use predictable lightness shifts
+    AC-2: Cohesive Color Scheme (Flint Brand)
+    - All colors sourced from Flint design system (/docs/design-system.md)
+    - Primary: blue-800 (deep ocean blue #1E40AF), Accent: cyan-500 (vibrant cyan #06B6D4)
+    - Neutrals: slate grays (warmer than pure grays), Semantics: green/red/amber per design system
+    - Text colors follow WCAG AAA contrast (16.1:1 primary, 8.59:1 body)
+    - Hover states use cyan accents (cyan-600), focus rings use cyan-500
+    - No hardcoded hex values - all Tailwind utilities per design system
 
     AC-3: Typography Clarity
     - Font sizes consistent across component types
@@ -86,19 +100,32 @@
 
   <artifacts>
     <docs>
+      <doc path="docs/design-system.md" title="Flint Design System (PRIMARY REFERENCE)" section="Complete Specification" snippet="Single source of truth for Flint brand: 3 signature elements (thick left borders, cyan accents, 8px/12px radius), color palette (blue-800 primary, cyan-500 accent, slate grays), typography (Inter/Fira Code), spacing, interactive states, component patterns, accessibility (WCAG AAA)"/>
       <doc path="docs/tech-spec-epic-8.md" title="Epic 8 Technical Specification" section="AC-8.1: UI/UX Polish Pass (lines 359-368)" snippet="Defines acceptance criteria for consistent spacing, cohesive color scheme, typography clarity, button states, transitions, loading states, responsive layout, and no visual regressions"/>
-      <doc path="docs/ux-specification.md" title="UX Specification" section="Visual Design System (lines 476-606)" snippet="Defines color palette (Primary Blue #3B82F6, grays, semantic colors), typography (Inter font, sizes, weights), spacing system (4px base), border radius, shadows, and icons"/>
-      <doc path="docs/ux-specification.md" title="UX Specification" section="Markdown Rendering Specification (lines 609-778)" snippet="More distinctive styling with border-left accents on headings (5px solid blue on H1, 4px on H2), unique color scheme (#3498db primary, #2c3e50 text, #e74c3c code highlight), styled blockquotes, dark mode support (#4fc3f7 cyan-blue)"/>
+      <doc path="docs/ux-specification.md" title="UX Specification (BASELINE REFERENCE)" section="Visual Design System (lines 476-606)" snippet="Original generic design: Primary Blue #3B82F6, grays. NOW SUPERSEDED by Flint design system (/docs/design-system.md)"/>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Markdown Rendering Specification (lines 609-778)" snippet="Inspiration for border-left accents on headings - influenced Flint design system signature elements"/>
       <doc path="docs/ux-specification.md" title="UX Specification" section="Component Specifications (lines 156-474)" snippet="Detailed specifications for Agent Selector, Chat Message Display, Message Input Area, File Viewer, Top Navigation Bar, Error &amp; Status Messages"/>
       <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Section 15: Testing Philosophy" snippet="Manual testing approach for UI/UX polish - automated tests expensive to write and maintain for visual appearance"/>
       <doc path="docs/tech-spec-epic-6.md" title="Epic 6 Technical Specification" snippet="Epic 6 UI enhancements: file viewer toggle animation, Claude-style send button, dynamic status messages, session metadata display"/>
       <doc path="docs/epic-6-architecture.md" title="Epic 6 Architecture" snippet="File viewer toggle design, top/bottom split layout, send button design patterns"/>
     </docs>
     <code>
-      <file path="app/globals.css" kind="stylesheet" lines="1-41" reason="Contains global CSS including Tailwind directives, animation utilities for loading indicators (Story 3.6), and root CSS variables for dark mode"/>
-      <file path="tailwind.config.ts" kind="config" lines="1-55" reason="Tailwind configuration defining current design system: primary blue (#3B82F6), max-width for chat (1200px), bounce-dot animation for loading indicators"/>
-      <file path="app/layout.tsx" kind="component" reason="Root layout component that applies global styles and theme"/>
+      <file path="docs/design-system.md" kind="documentation" reason="PRIMARY REFERENCE: Single source of truth for Flint brand - color palette, typography, spacing, interactive states, component patterns, accessibility"/>
+      <file path="app/globals.css" kind="stylesheet" reason="Global CSS with Flint brand CSS variables (primary, accent, text, background), custom animations (fade-in, float), updated from generic to Flint brand"/>
+      <file path="tailwind.config.ts" kind="config" reason="Tailwind configuration extended with Flint brand: primary/accent color tokens, border-6 width, custom keyframes for branding animations"/>
+      <file path="app/layout.tsx" kind="component" reason="Root layout wrapped with AppInitializer for Flint splash screen on load"/>
       <file path="app/page.tsx" kind="component" reason="Main page component for chat interface"/>
+      <file path="components/AppInitializer.tsx" kind="component" reason="App wrapper displaying Flint splash screen for 2 seconds on initial load"/>
+      <file path="components/branding/FlintLogo.tsx" kind="component" reason="Flint logo with cyan spark icon, 3 sizes (sm/md/lg), optional tagline, compact variant"/>
+      <file path="components/branding/FlintLoader.tsx" kind="component" reason="Loading animations: 3 variants (pulse, spark, spin), loading dots, loading bar"/>
+      <file path="components/branding/FlintLoadingScreen.tsx" kind="component" reason="Full-screen loading experiences: standard, splash, compact variants"/>
+      <file path="components/branding/index.ts" kind="module" reason="Barrel export for all Flint branding components"/>
+      <file path="app/branding-demo/page.tsx" kind="page" reason="Visual showcase for Flint branding components and color palette at /branding-demo"/>
+      <file path="components/FileContentDisplay.tsx" kind="component" reason="Updated with Flint brand colors - replaced 24 hardcoded hex colors with Tailwind classes, applied signature left borders"/>
+      <file path="components/chat/MessageBubble.tsx" kind="component" reason="Updated with Flint brand - blue-800 primary, 4px signature left borders on assistant/system messages"/>
+      <file path="components/chat/InputField.tsx" kind="component" reason="Updated with Flint brand - slate-300 borders, cyan-500 focus rings, primary/accent button colors"/>
+      <file path="components/chat/AgentSelector.tsx" kind="component" reason="Updated with Flint brand - slate borders, cyan hover/focus states"/>
+      <file path="components/chat/LoadingIndicator.tsx" kind="component" reason="Minor styling updates for Flint brand consistency"/>
     </code>
     <dependencies>
       <node>
@@ -114,19 +141,58 @@
   </artifacts>
 
   <constraints>
+    <constraint>CRITICAL: Design System as Single Source of Truth - ALL styling decisions must reference /docs/design-system.md. No duplicated values. No deviation from Flint brand specifications.</constraint>
+    <constraint>Flint Brand Identity - Brand name "Flint" (represents spark that ignites agents). Deep blue-800 primary (#1E40AF), cyan-500 accent (#06B6D4), slate grays (not pure grays). 3 signature elements: thick left borders (4-6px), cyan accents, 8px/12px border radius.</constraint>
     <constraint>Desktop-first approach: Focus on desktop resolutions (1366x768 and above). Mobile optimization out of scope for MVP.</constraint>
     <constraint>Browser compatibility: Modern evergreen browsers only (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+). Cross-browser testing in Story 8.3.</constraint>
-    <constraint>Feature freeze: No new features in Epic 8 (polish only). Changes limited to visual refinement, no behavioral changes.</constraint>
-    <constraint>Tailwind-first styling: Use Tailwind utility classes in component JSX (primary method). Minimal global styles in app/globals.css. No component-specific CSS modules.</constraint>
+    <constraint>Feature freeze: No new features in Epic 8 (polish only). Changes limited to visual refinement, no behavioral changes. Branding components (FlintLogo, FlintLoader, FlintLoadingScreen) are polish enhancements, not new features.</constraint>
+    <constraint>Tailwind-first styling: Use Tailwind utility classes per Flint design system. Minimal global styles in app/globals.css (CSS variables, custom animations). No component-specific CSS modules.</constraint>
     <constraint>Manual testing only: Per solution-architecture.md Section 15, NO automated tests for UI/UX polish. Manual visual inspection and screenshot comparison.</constraint>
-    <constraint>Accessibility: Maintain WCAG AA contrast ratios, visible focus states (ring-2 ring-[primary] ring-offset-2), motion-reduce support for animations.</constraint>
-    <constraint>Design system creation: Task 1 requires proposing distinctive visual identity (not standard Tailwind blues/grays), choosing 2-3 signature elements, and getting stakeholder approval before implementation.</constraint>
+    <constraint>Accessibility: WCAG AAA contrast ratios (design system specifies 16.1:1 primary, 8.59:1 body). Cyan-500 focus rings (3:1 contrast). Motion-reduce support for all animations.</constraint>
+    <constraint>Task 1 COMPLETED: Flint design system created, stakeholder approved. Tasks 2-10 must reference design system document, not duplicate values.</constraint>
   </constraints>
 
   <interfaces>
-    <interface name="Tailwind Config" kind="configuration" signature="Config interface from tailwindcss" path="tailwind.config.ts" description="Extend with custom colors, spacing, animations for design system"/>
+    <interface name="Tailwind Config" kind="configuration" signature="Config interface from tailwindcss" path="tailwind.config.ts" description="Extended with Flint brand colors (primary/accent), border-6 width, custom keyframes for animations"/>
     <interface name="Framer Motion" kind="library" signature="import { motion } from 'framer-motion'" description="Use for file viewer toggle animation (300ms spring physics) and other smooth transitions"/>
+    <interface name="Flint Branding" kind="component-library" path="components/branding/" description="FlintLogo, FlintLoader, FlintLoadingScreen components - reusable branding elements for consistent visual identity"/>
   </interfaces>
+
+  <brandingComponents>
+    <component name="FlintLogo" path="components/branding/FlintLogo.tsx">
+      - Cyan spark/lightning bolt icon with wordmark
+      - 3 size variants: sm (compact), md (default), lg (hero)
+      - Optional tagline "Agent Orchestration"
+      - Compact icon-only variant for tight spaces
+      - SVG-based, scales perfectly at any resolution
+    </component>
+    <component name="FlintLoader" path="components/branding/FlintLoader.tsx">
+      - 3 animation variants: pulse (subtle), spark (energetic), spin (rotating)
+      - FlintLoadingDots for inline typing indicators
+      - FlintLoadingBar for indeterminate progress
+      - All animations use Flint brand colors (cyan-500 primary)
+      - Motion-reduce support built-in
+    </component>
+    <component name="FlintLoadingScreen" path="components/branding/FlintLoadingScreen.tsx">
+      - Full-screen loading with animated gradient background
+      - FlintSplashScreen for dramatic app initialization (dark theme with glow)
+      - FlintLoadingScreenCompact for modals/inline contexts
+      - Optional progress tracking (determinate/indeterminate)
+      - Floating particle effects (performance-optimized)
+    </component>
+    <component name="AppInitializer" path="components/AppInitializer.tsx">
+      - Wraps app to show splash screen on initial load (2 seconds)
+      - Smooth fade-out transition
+      - Only shows once per page load
+      - Integrated with app/layout.tsx
+    </component>
+    <component name="BrandingDemo" path="app/branding-demo/page.tsx">
+      - Visual showcase at /branding-demo
+      - Displays all logo variants, loading animations, color palette
+      - Usage examples: header bar, chat loading, full-screen states
+      - Interactive demos with buttons to trigger loading screens
+    </component>
+  </brandingComponents>
 
   <tests>
     <standards>
@@ -139,15 +205,17 @@
       No automated test locations for this story. Manual testing performed in browser across multiple resolutions.
     </locations>
     <ideas>
-      <test ac="AC-1" idea="MANUAL: Take screenshots of all components at baseline. After spacing changes, compare screenshots to verify consistent Tailwind spacing scale usage (p-2, p-4, p-6, gap-2, gap-4, gap-6). Check vertical rhythm and alignment in browser DevTools."/>
-      <test ac="AC-2" idea="MANUAL: Search codebase for hardcoded hex colors (grep '#[0-9A-F]{6}'), verify all use Tailwind palette. Use browser DevTools color picker to verify text contrast meets WCAG AA (4.5:1 minimum). Check hover states use predictable lightness shifts."/>
-      <test ac="AC-3" idea="MANUAL: View chat messages in browser at different zoom levels. Verify font sizes consistent across component types, line heights appropriate for readability, monospace font applied to code blocks. Test with long messages."/>
-      <test ac="AC-4" idea="MANUAL: Interact with all buttons in browser - hover, click (active), tab navigation (focus), disabled state. Verify hover states clearly visible, active states provide tactile feedback, focus ring visible (2px outline), disabled states muted."/>
-      <test ac="AC-5" idea="MANUAL: Test file viewer toggle animation - should be 300ms spring physics (smooth, not linear). Verify pulsing dot animation on status indicator looks good (not too fast/slow). Check button transitions are subtle (100-200ms). Test with prefers-reduced-motion enabled."/>
-      <test ac="AC-6" idea="MANUAL: Trigger agent execution, verify status indicator shows tool-specific messages ('Reading X...', 'Writing Y...', 'Loading resources...'). Verify streaming cursor visible during response generation. Check send button shows stop icon (not arrow) during streaming."/>
-      <test ac="AC-7" idea="MANUAL: Resize browser window to 1920x1080, 1366x768, 1440x900. Take screenshots at each resolution. Verify file viewer collapse works smoothly, chat panel adapts width (70% / 100%), no horizontal scrolling appears."/>
-      <test ac="AC-8" idea="MANUAL: Compare baseline screenshots (from Task 1) with post-polish screenshots. Verify all Epic 6 features visually intact: file viewer toggle animation, send button state changes (arrow ↔ stop icon), dynamic status messages, session metadata (friendly names), drag-drop indicators."/>
-      <test ac="Design System" idea="MANUAL: Review proposed design system document with stakeholder before implementation. Verify 2-3 signature elements chosen create distinction while staying clean/professional. Check rationale explains how choices differentiate from generic AI sites."/>
+      <test ac="Task 1 - Design System" idea="COMPLETED: Flint design system created (/docs/design-system.md) and stakeholder approved. 3 signature elements: thick left borders (4-6px cyan/blue), cyan-500 accents, 8px/12px border radius. Deep blue-800 primary, slate grays for warmth."/>
+      <test ac="Task 1 - Branding" idea="COMPLETED: Flint brand identity created. FlintLogo (cyan spark icon), FlintLoader (3 animation variants), FlintLoadingScreen (full-screen experiences), AppInitializer (splash screen on load). Demo page at /branding-demo."/>
+      <test ac="AC-1" idea="MANUAL: Reference /docs/design-system.md Section 'Spacing & Layout'. After spacing changes, verify all components use spacing scale per design system (gap-2/4/6, p-4/6/8). Check Component Spacing Standards section compliance."/>
+      <test ac="AC-2" idea="MANUAL: Reference /docs/design-system.md Section 'Color Palette'. Verify all colors match Flint brand: blue-800 primary, cyan-500 accent, slate grays, semantic colors. Use DevTools to verify WCAG AAA contrast (design system specifies 16.1:1 primary, 8.59:1 body)."/>
+      <test ac="AC-3" idea="MANUAL: Reference /docs/design-system.md Section 'Typography System'. Verify Type Scale compliance (H1-H6, body, labels), Font Weight System (400/500/600/700), Font Families (Inter UI, Fira Code monospace). Test readability at different zoom levels."/>
+      <test ac="AC-4" idea="MANUAL: Reference /docs/design-system.md Section 'Interactive States'. Test all buttons: verify Button States (default/hover/active/disabled/focus) match design system. Check cyan-500 focus rings (2px offset per Focus Indicators section). Verify 200ms transitions."/>
+      <test ac="AC-5" idea="MANUAL: Reference /docs/design-system.md Section 'Interactive States > Transitions'. Test file viewer toggle (300ms medium), button transitions (200ms standard), loading animations (100ms quick). Verify Motion-Reduce Support section compliance."/>
+      <test ac="AC-6" idea="MANUAL: Trigger agent execution, verify status messages work. Check FlintLoader animations in use. Verify streaming cursor visible. Send button shows stop icon during streaming. Loading states don't block UI."/>
+      <test ac="AC-7" idea="MANUAL: Test responsive layout at 1920x1080, 1366x768, 1440x900. Verify file viewer collapse smooth, chat panel adapts (70%/100%). Check Layout Constraints section in design system for max-width compliance."/>
+      <test ac="AC-8" idea="MANUAL: Compare baseline with current state. Verify Epic 6 features intact AND Flint branding properly integrated. Check splash screen shows on load, branding components use design system colors, signature left borders applied consistently."/>
+      <test ac="Branding Demo" idea="MANUAL: Visit /branding-demo page. Verify all logo sizes render correctly, all 3 animation variants work (pulse/spark/spin), loading screens trigger properly, color palette displays Flint brand colors accurately."/>
     </ideas>
   </tests>
 </story-context>

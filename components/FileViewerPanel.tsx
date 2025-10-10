@@ -371,17 +371,17 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
   }
 
   return (
-    <div className="flex flex-col h-full border-l border-gray-200 bg-white">
+    <div className="flex flex-col h-full border-l border-slate-200 bg-white">
       {/* AC-2: Panel header with "Agent Output Files" label */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-        <h2 className="text-sm font-semibold text-gray-700">Agent Output Files</h2>
+      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <h2 className="text-sm font-semibold text-slate-700">Agent Output Files</h2>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
           {/* Story 5.2 AC-6: Manual refresh button */}
           <button
             onClick={loadDirectoryTree}
             disabled={state.isLoading}
-            className="p-1.5 text-gray-600 hover:text-gray-900 hover:bg-gray-200 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             title="Refresh directory tree"
           >
             <svg
@@ -402,7 +402,7 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
           {/* Story 6.1/6.2: Close file viewer button */}
           <button
             onClick={toggle}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors duration-200 whitespace-nowrap"
             aria-label="Close file viewer"
             title="Close Files (Ctrl/Cmd + B)"
           >
@@ -430,7 +430,7 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
         <div className="flex-1 flex items-center justify-center p-8">
           <div className="text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-400"
+              className="mx-auto h-12 w-12 text-slate-400"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -443,8 +443,8 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
                 d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            <p className="mt-2 text-sm text-gray-500">No files yet</p>
-            <p className="mt-1 text-xs text-gray-400">
+            <p className="mt-4 text-sm text-slate-600">No files yet</p>
+            <p className="mt-2 text-xs text-slate-500">
               Files created by the agent will appear here
             </p>
           </div>
@@ -453,14 +453,14 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
 
       {/* Story 5.2: Directory tree and error handling */}
       {state.error && (
-        <div className="p-4 text-sm text-red-600 bg-red-50 border-b border-red-200">
+        <div className="p-6 text-sm text-red-600 bg-red-50 border-b border-red-200">
           {state.error}
         </div>
       )}
 
       {state.isLoading && (
         <div className="flex-1 flex items-center justify-center p-8">
-          <div className="text-sm text-gray-500">Loading files...</div>
+          <div className="text-sm text-slate-600">Loading files...</div>
         </div>
       )}
 
@@ -468,7 +468,7 @@ export function FileViewerPanel({ isVisible = true }: FileViewerPanelProps) {
       {!isEmpty && !state.isLoading && (
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Story 6.2 AC-2: Directory tree navigation (top section - 40% height) */}
-          <div className="h-[40%] overflow-y-auto border-b border-gray-200">
+          <div className="h-[40%] overflow-y-auto border-b border-slate-200">
             <DirectoryTree
               root={state.treeData}
               onFileSelect={handleFileSelect}

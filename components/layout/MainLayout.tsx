@@ -30,19 +30,30 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex-1 min-w-0">{children}</div>
 
       {/* File viewer panel - animated collapse/expand */}
-      <AnimatePresence mode="wait">
+      <AnimatePresence>
         {isOpen && (
           <motion.aside
             key="file-viewer"
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: '40%', opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{
-              type: 'spring',
-              damping: 20,
-              stiffness: 300,
+            initial={{ width: 0 }}
+            animate={{
+              width: '40%',
+              minWidth: '400px',
+              transition: {
+                type: 'spring',
+                damping: 25,
+                stiffness: 300,
+                mass: 0.8,
+              }
             }}
-            className="overflow-hidden min-w-[400px]"
+            exit={{
+              width: 0,
+              minWidth: 0,
+              transition: {
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1],
+              }
+            }}
+            className="overflow-hidden"
           >
             <div className="w-full h-full">
               <FileViewerPanel />

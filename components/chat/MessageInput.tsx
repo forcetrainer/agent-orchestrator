@@ -79,20 +79,20 @@ export function MessageInput({ centered = false }: { centered?: boolean }) {
 
         <div
           ref={drop as any}
-          className={`bg-white rounded-2xl shadow-lg border px-4 py-4 transition-colors ${
-            isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-200'
+          className={`bg-white rounded-2xl shadow-lg border px-4 py-4 transition-colors duration-200 ${
+            isOver ? 'border-cyan-500 border-2 bg-cyan-50' : 'border-slate-200'
           }`}
         >
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <textarea
-              className="flex-1 resize-none rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="flex-1 resize-none rounded-lg border border-slate-300 px-4 py-3 text-slate-900 placeholder-slate-400 focus:border-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-opacity-30 transition-all duration-200"
               placeholder="Send a message..."
               rows={1}
               aria-label="Message input"
               disabled
             />
             <button
-              className="rounded-lg bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-blue-800 px-6 py-3 text-white font-semibold hover:bg-blue-700 hover:shadow-md active:bg-blue-900 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               aria-label="Send message"
               disabled
             >
@@ -106,11 +106,11 @@ export function MessageInput({ centered = false }: { centered?: boolean }) {
 
   // Standard variant (after conversation starts)
   return (
-    <div className="border-t border-gray-200 bg-white px-4 py-4">
+    <div className="border-t border-slate-200 bg-white px-6 py-4">
       <div className="max-w-3xl mx-auto">
         {/* AC-3: Attachment pills above text input box */}
         {attachments.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-2">
+          <div className="flex flex-wrap gap-2 mb-3">
             {attachments.map((file) => (
               <FileAttachment
                 key={file.filepath}
@@ -124,20 +124,20 @@ export function MessageInput({ centered = false }: { centered?: boolean }) {
 
         <div
           ref={drop as any}
-          className={`border rounded-lg p-3 transition-colors ${
-            isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-300'
+          className={`border rounded-lg p-4 transition-colors duration-200 ${
+            isOver ? 'border-cyan-500 border-2 bg-cyan-50' : 'border-slate-300'
           }`}
         >
-          <div className="flex gap-2">
+          <div className="flex gap-4">
             <textarea
-              className="flex-1 resize-none border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400"
+              className="flex-1 resize-none border-0 focus:ring-0 focus:outline-none text-slate-900 placeholder-slate-400"
               placeholder="Type your message..."
               rows={1}
               aria-label="Message input"
               disabled
             />
             <button
-              className="rounded-lg bg-blue-500 px-6 py-3 text-white font-medium hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-lg bg-blue-800 px-6 py-3 text-white font-semibold hover:bg-blue-700 hover:shadow-md active:bg-blue-900 active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
               aria-label="Send message"
               disabled
             >

@@ -42,7 +42,7 @@ export interface DirectoryTreeProps {
  */
 const FolderIcon = ({ isOpen }: { isOpen: boolean }) => (
   <svg
-    className="h-4 w-4 text-blue-500 flex-shrink-0"
+    className="h-4 w-4 text-blue-800 flex-shrink-0"
     fill="currentColor"
     viewBox="0 0 20 20"
     aria-hidden="true"
@@ -64,7 +64,7 @@ const FolderIcon = ({ isOpen }: { isOpen: boolean }) => (
  */
 const FileIcon = () => (
   <svg
-    className="h-4 w-4 text-gray-400 flex-shrink-0"
+    className="h-4 w-4 text-slate-400 flex-shrink-0"
     fill="currentColor"
     viewBox="0 0 20 20"
     aria-hidden="true"
@@ -163,12 +163,12 @@ const TreeNode = memo(
         <div
           ref={dragRef as any}
           className={`
-            flex items-center gap-2 px-2 py-1 cursor-pointer
-            hover:bg-gray-100 rounded transition-colors
-            ${isSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}
+            flex items-center gap-2 px-3 py-2 cursor-pointer
+            hover:bg-slate-100 rounded-lg transition-colors duration-200
+            ${isSelected ? 'bg-cyan-50 text-cyan-700' : 'text-slate-700'}
           `}
           style={{
-            paddingLeft: `${depth * 16 + 8}px`, // AC-4: Proper indentation (16px per level)
+            paddingLeft: `${depth * 16 + 12}px`, // AC-4: Proper indentation (16px per level + 12px base)
             opacity: isDragging ? 0.5 : 1, // Story 6.6: Visual feedback when dragging
             cursor: node.type === 'file' ? 'move' : 'pointer', // AC-1: cursor changes to 'move' for files
           }}
@@ -194,7 +194,7 @@ const TreeNode = memo(
 
           {/* Show file size for files */}
           {!isDirectory && node.size !== undefined && (
-            <span className="text-xs text-gray-400 flex-shrink-0">
+            <span className="text-xs text-slate-400 flex-shrink-0">
               {formatFileSize(node.size)}
             </span>
           )}
@@ -220,8 +220,8 @@ const TreeNode = memo(
             ) : (
               // AC-5: Empty folders show as empty
               <div
-                className="text-xs text-gray-400 italic px-2 py-1"
-                style={{ paddingLeft: `${(depth + 1) * 16 + 8}px` }}
+                className="text-xs text-slate-500 italic px-3 py-2"
+                style={{ paddingLeft: `${(depth + 1) * 16 + 12}px` }}
               >
                 Empty folder
               </div>
@@ -241,14 +241,14 @@ TreeNode.displayName = 'TreeNode';
 export function DirectoryTree({ root, onFileSelect, selectedFile, newFiles }: DirectoryTreeProps) {
   if (!root) {
     return (
-      <div className="p-4 text-sm text-gray-500">
+      <div className="p-6 text-sm text-slate-600">
         No files available
       </div>
     );
   }
 
   return (
-    <div className="overflow-auto">
+    <div className="overflow-auto p-2">
       {/* Render root's children (don't show "root" itself) */}
       {root.children && root.children.length > 0 ? (
         root.children.map((child) => (
@@ -263,7 +263,7 @@ export function DirectoryTree({ root, onFileSelect, selectedFile, newFiles }: Di
         ))
       ) : (
         // AC-5: Empty root folder
-        <div className="p-4 text-sm text-gray-500 italic">
+        <div className="p-6 text-sm text-slate-600 italic">
           No files yet
         </div>
       )}

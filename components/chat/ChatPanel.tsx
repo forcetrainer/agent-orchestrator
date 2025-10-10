@@ -236,14 +236,14 @@ export function ChatPanel() {
   // Story 6.8: Disable input during streaming
   if (messages.length === 0 && !isLoading && !isStreaming) {
     return (
-      <div className="flex flex-col h-screen bg-gray-50">
+      <div className="flex flex-col h-screen bg-slate-50">
         <AgentSelector
           selectedAgentId={selectedAgentId}
           onAgentSelect={handleAgentSelect}
           onNewConversation={handleNewConversation}
         />
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-3xl px-4">
+          <div className="w-full max-w-3xl px-6">
             {/* Task 3.1: Render InputField component */}
             {/* Task 3.2: Pass handleSendMessage as onSend callback */}
             {/* Task 3.3: Pass isLoading as disabled prop */}

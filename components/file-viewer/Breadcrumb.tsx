@@ -108,7 +108,7 @@ export function Breadcrumb({
     : segments;
 
   return (
-    <nav aria-label="Breadcrumb" className="flex items-center text-sm text-gray-600">
+    <nav aria-label="Breadcrumb" className="flex items-center text-sm text-slate-600">
       {displaySegments.map((segment, index) => {
         const isLast = index === displaySegments.length - 1;
         const isEllipsis = segment.name === '...';
@@ -116,21 +116,21 @@ export function Breadcrumb({
         return (
           <div key={segment.path || `ellipsis-${index}`} className="flex items-center">
             {index > 0 && (
-              <span className="mx-2 text-gray-400" aria-hidden="true">
+              <span className="mx-2 text-slate-400" aria-hidden="true">
                 /
               </span>
             )}
 
             {isEllipsis ? (
-              <span className="text-gray-400">...</span>
+              <span className="text-slate-400">...</span>
             ) : isLast ? (
-              <span className="font-medium text-gray-900" aria-current="page">
+              <span className="font-medium text-slate-900" aria-current="page">
                 {segment.name}
               </span>
             ) : (
               <button
                 onClick={() => onNavigate?.(segment.path)}
-                className="hover:text-gray-900 hover:underline transition-colors"
+                className="text-cyan-600 hover:text-cyan-700 hover:underline transition-colors duration-200"
                 aria-label={`Navigate to ${segment.name}`}
               >
                 {segment.name}

@@ -28,7 +28,7 @@ import { Message } from '@/lib/types';
 export const ErrorMessage = memo(function ErrorMessage({ message }: { message: Message }) {
   return (
     <div
-      className="max-w-[75%] mr-auto px-4 py-3 rounded-lg border-2 border-red-400 bg-red-50 text-red-900 flex items-start gap-3"
+      className="max-w-[75%] mr-auto px-4 py-3 rounded-xl bg-red-50 text-red-900 border-l-4 border-red-600 flex items-start gap-4"
       role="alert"
       aria-live="assertive"
     >

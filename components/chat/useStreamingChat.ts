@@ -1,13 +1,15 @@
 /**
  * useStreamingChat Hook
  * Story 6.8: Streaming Responses - Frontend state management
+ * Story 8.1: Enhanced streaming UX with character-by-character display
  *
  * Manages Server-Sent Events (SSE) streaming connection, token accumulation,
- * batching, and status updates. Implements performance optimizations for
- * 60fps smooth scrolling during streaming.
+ * and character-by-character display. Implements Claude.ai-style smooth streaming
+ * with natural, readable text flow.
  *
  * Key Features:
- * - Token batching: Accumulates tokens for 16ms (1 frame at 60fps) before React update
+ * - Character-by-character display: Buffers API tokens, displays individual characters with delay
+ * - Artificial throttling: ~15ms between characters (adjustable 10-20ms) for smooth animation
  * - useTransition: Marks streaming updates as non-urgent to prioritize user interactions
  * - AbortController: Allows cancellation of streaming mid-flight
  * - Status events: Processes tool execution status from backend
@@ -20,8 +22,9 @@
  * AC-6.8.7: Conversation management preserved (ChatPanel manages messages)
  * AC-6.8.26: Stop/cancel button functions correctly
  *
- * Performance Optimizations (Task 6):
- * - Token batching reduces React re-renders by 60x (16ms window vs per-token)
+ * Performance & UX Optimizations:
+ * - Character-by-character display creates smooth, natural streaming effect (like Claude.ai)
+ * - Artificial delay (15ms default) provides polished cadence without feeling too fast or slow
  * - useTransition allows React to prioritize urgent updates (user input) over streaming
  * - Combined with React.memo on MessageBubble prevents re-render of old messages
  *
@@ -113,6 +116,15 @@ export function useStreamingChat(): UseStreamingChatResult {
   const batchTimerRef = useRef<NodeJS.Timeout | null>(null);
   const pendingTokensRef = useRef<string>('');
 
+  // Character-by-character streaming for smooth, readable display (Claude.ai-style)
+  // Buffers incoming tokens, then displays at a pleasant reading pace
+  // Buffer can grow large - that's OK! We display at human-readable speed, not API speed
+  const characterBufferRef = useRef<string>('');
+  const displayTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isDisplayingRef = useRef<boolean>(false);
+  const CHAR_DISPLAY_DELAY_MS = 20; // Milliseconds between chunks (slower, more readable)
+  const CHARS_PER_CHUNK = 2; // Display 2 characters at once = ~100 chars/sec
+
   // Story 6.9: Minimum status display duration (1500ms / 1.5 seconds)
   // Ensures users perceive status messages even if tool execution is very fast
   const statusTimestampRef = useRef<number | null>(null);
@@ -131,20 +143,89 @@ export function useStreamingChat(): UseStreamingChatResult {
   }, [isStreaming, streamingContent]);
 
   /**
-   * Flush pending tokens immediately to UI
+   * Display character chunks from buffer with artificial delay
+   * Creates smooth, Claude.ai-style streaming effect
+   * Displays multiple characters per update to keep up with fast API token rate
+   */
+  const displayNextCharacter = useCallback(() => {
+    if (characterBufferRef.current.length === 0) {
+      isDisplayingRef.current = false;
+      displayTimerRef.current = null;
+      return;
+    }
+
+    // Take chunk of characters from buffer (3 chars at once for better throughput)
+    const chunkSize = Math.min(CHARS_PER_CHUNK, characterBufferRef.current.length);
+    const nextChunk = characterBufferRef.current.slice(0, chunkSize);
+    characterBufferRef.current = characterBufferRef.current.slice(chunkSize);
+
+    // Display chunk immediately (no startTransition - we want synchronous updates)
+    setStreamingContent(prev => prev + nextChunk);
+
+    // Schedule next chunk
+    displayTimerRef.current = setTimeout(displayNextCharacter, CHAR_DISPLAY_DELAY_MS);
+  }, []);
+
+  /**
+   * Add new tokens to character buffer and start display loop if not running
+   * Tokens are broken into individual characters for smooth streaming
+   */
+  const bufferTokens = useCallback((newTokens: string) => {
+    // Add tokens to buffer
+    characterBufferRef.current += newTokens;
+
+    // Start character display loop if not already running
+    if (!isDisplayingRef.current && characterBufferRef.current.length > 0) {
+      isDisplayingRef.current = true;
+      displayTimerRef.current = setTimeout(displayNextCharacter, CHAR_DISPLAY_DELAY_MS);
+    }
+  }, [displayNextCharacter]);
+
+  /**
+   * Flush all buffered content immediately
    * Used when streaming completes or cancels
    */
-  const flushPendingTokens = useCallback(() => {
+  const flushAllContent = useCallback(() => {
+    // Clear all timers
     if (batchTimerRef.current) {
       clearTimeout(batchTimerRef.current);
       batchTimerRef.current = null;
     }
+    if (displayTimerRef.current) {
+      clearTimeout(displayTimerRef.current);
+      displayTimerRef.current = null;
+    }
+
+    // Stop display loop
+    isDisplayingRef.current = false;
+
+    // Flush character buffer immediately
+    let finalContent = '';
+
+    if (characterBufferRef.current) {
+      finalContent += characterBufferRef.current;
+      characterBufferRef.current = '';
+    }
+
+    // Flush pending raw tokens (if any were batched)
     if (pendingTokensRef.current) {
-      // Don't use startTransition for final flush - we want immediate rendering
-      setStreamingContent(prev => prev + pendingTokensRef.current);
+      finalContent += pendingTokensRef.current;
       pendingTokensRef.current = '';
     }
+
+    // Update display immediately (no transition)
+    if (finalContent) {
+      setStreamingContent(prev => prev + finalContent);
+    }
   }, []);
+
+  /**
+   * Flush pending tokens immediately to UI (legacy - now calls flushAllContent)
+   * Used when streaming completes or cancels
+   */
+  const flushPendingTokens = useCallback(() => {
+    flushAllContent();
+  }, [flushAllContent]);
 
   /**
    * Cancel active streaming connection
@@ -282,11 +363,10 @@ export function useStreamingChat(): UseStreamingChatResult {
             try {
               const event: StreamEvent = JSON.parse(dataStr);
 
-              // AC-6.8.1: Process token events with batching
-              // Batch tokens for 16ms (1 frame at 60fps) to reduce re-renders
+              // AC-6.8.1: Process token events with character-by-character display
+              // Buffers tokens then displays character-by-character for smooth streaming
               if (event.type === 'token') {
                 accumulatedContent += event.content;
-                pendingTokensRef.current += event.content;
 
                 // Story 6.9: On first token, clear status (respecting minimum display time)
                 if (accumulatedContent === event.content) {
@@ -317,20 +397,8 @@ export function useStreamingChat(): UseStreamingChatResult {
                   }
                 }
 
-                // Schedule batch flush if not already scheduled
-                if (!batchTimerRef.current) {
-                  batchTimerRef.current = setTimeout(() => {
-                    if (pendingTokensRef.current) {
-                      // Use startTransition for non-urgent token rendering
-                      // Allows React to prioritize user interactions over streaming updates
-                      startTransition(() => {
-                        setStreamingContent(prev => prev + pendingTokensRef.current);
-                        pendingTokensRef.current = '';
-                      });
-                    }
-                    batchTimerRef.current = null;
-                  }, 16); // 16ms = 1 frame at 60fps
-                }
+                // Buffer tokens for character-by-character display
+                bufferTokens(event.content);
               }
 
               // AC-6.8.6: Process status events

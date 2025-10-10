@@ -57,7 +57,8 @@ export const MessageBubble = memo(function MessageBubble({
     user: 'ml-auto bg-primary text-white',  // Deep blue-800 background
     assistant: 'mr-auto bg-slate-100 text-slate-900 border-l-4 border-accent',  // Signature 4px cyan left border
     // Story 3.10 Task 3.2: System messages styled for agent greetings (AC-10.4, AC-10.5)
-    system: 'mr-auto bg-primary-light text-slate-900 border-l-4 border-primary',  // Signature 4px blue-800 left border
+    // Story 8.1: Match assistant styling with cyan accent border for consistency
+    system: 'mr-auto bg-slate-100 text-slate-900 border-l-4 border-accent',  // Signature 4px cyan left border (matches assistant)
     // Tool messages should not be rendered (filtered in MessageList), but add style for safety
     tool: 'hidden',
   };
@@ -84,12 +85,12 @@ export const MessageBubble = memo(function MessageBubble({
             li: ({ children }) => <li className="ml-4">{children}</li>,
 
             // Code blocks (AC-3.3)
-            pre: ({ children }) => <pre className="bg-gray-100 rounded p-3 mb-2 overflow-x-auto">{children}</pre>,
+            pre: ({ children }) => <pre className="bg-slate-100 rounded-lg p-4 mb-4 overflow-x-auto">{children}</pre>,
             code: ({ className, children }) => {
               // Inline code vs code block
               const isInline = !className;
               if (isInline) {
-                return <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>;
+                return <code className="bg-slate-100 px-2 py-1 rounded text-sm font-mono">{children}</code>;
               }
               return <code className="font-mono text-sm">{children}</code>;
             },
@@ -136,9 +137,9 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`${baseStyles} ${roleStyles[message.role]}`}>
       {renderContent()}
-      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator - Story 8.1: slate-900 color */}
+      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator - Story 8.1: Subtle blinking cursor */}
       {streaming && message.role === 'assistant' && (
-        <span className="inline-block ml-1 w-2 h-4 bg-slate-900 animate-pulse">▋</span>
+        <span className="inline-block ml-0.5 w-0.5 h-4 bg-slate-400 animate-pulse" aria-hidden="true">|</span>
       )}
     </div>
   );
