@@ -242,7 +242,8 @@ export async function POST(request: NextRequest) {
             coreRoot: 'bmad/core',
             projectRoot: process.cwd(),
             bundleConfig: criticalContext.config,
-            toolCallCount: 0
+            toolCallCount: 0,
+            sessionFolder: undefined as string | undefined  // Will be set by execute_workflow
           };
 
           // AC-6.8.3: AGENTIC LOOP with streaming
@@ -379,6 +380,12 @@ export async function POST(request: NextRequest) {
                   console.log(`[Performance] Executing tool: ${toolCall.function.name}...`);
                   const result = await executeToolCall(toolCall, pathContext);
                   console.log(`[Performance] Tool ${toolCall.function.name} executed in ${Date.now() - toolStart}ms`);
+
+                  // Update pathContext with session_folder if execute_workflow returned one
+                  if (toolCall.function.name === 'execute_workflow' && result.success && result.session_folder) {
+                    pathContext.sessionFolder = result.session_folder;
+                    console.log(`[Performance] Session folder set: ${result.session_folder}`);
+                  }
 
                   // Clear status after tool execution (Story 6.9: AC #8)
                   controller.enqueue(

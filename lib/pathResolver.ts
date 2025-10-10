@@ -52,6 +52,8 @@ export interface PathContext {
   projectRoot: string;
   /** Parsed bundle config.yaml (optional) */
   bundleConfig?: Record<string, any>;
+  /** Active session folder path (set by execute_workflow, used by save_output) */
+  sessionFolder?: string;
 }
 
 /**

@@ -155,8 +155,16 @@ export async function executeSaveOutput(
       };
     }
 
+    // If sessionFolder is set and file_path is relative (doesn't start with { or /),
+    // prepend session folder to ensure files save in session directory
+    let filePathToResolve = params.file_path;
+    if (context.sessionFolder && !params.file_path.startsWith('{') && !params.file_path.startsWith('/')) {
+      filePathToResolve = resolve(context.sessionFolder, params.file_path);
+      console.log(`[save_output] Using session folder: ${filePathToResolve}`);
+    }
+
     // Resolve path variables (includes security validation)
-    resolvedPath = resolvePath(params.file_path, context);
+    resolvedPath = resolvePath(filePathToResolve, context);
 
     // Story 5.0: Validate write path is within /data/agent-outputs only
     try {

@@ -137,10 +137,6 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`${baseStyles} ${roleStyles[message.role]}`}>
       {renderContent()}
-      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator - Story 8.1: Subtle blinking cursor */}
-      {streaming && message.role === 'assistant' && (
-        <span className="inline-block ml-0.5 w-0.5 h-4 bg-slate-400 animate-pulse" aria-hidden="true">|</span>
-      )}
     </div>
   );
 });
