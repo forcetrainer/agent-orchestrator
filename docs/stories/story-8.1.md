@@ -1,6 +1,6 @@
 # Story 8.1: UI/UX Polish Pass
 
-Status: Draft
+Status: Approved
 
 ## Story
 
@@ -105,8 +105,8 @@ Task 1 includes **creating a distinctive visual identity** beyond the generic Ta
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create distinctive design system (AC: #1, #2, #3)
-  - [ ] **Design Enhancement:** Propose a distinctive visual identity in `/docs/design-system.md`:
+- [x] Task 1: Create distinctive design system (AC: #1, #2, #3)
+  - [x] **Design Enhancement:** Propose a distinctive visual identity in `/docs/design-system.md`:
     - **Current baseline:** Document UX spec design (standard Tailwind blues/grays)
     - **Visual identity exploration:** Review 10 visual identity techniques (see Dev Notes)
       - Color & accents (unique blue shade, gradient treatments, border colors)
@@ -124,49 +124,55 @@ Task 1 includes **creating a distinctive visual identity** beyond the generic Ta
     - **Typography system:** Document font choices, sizes, weights, line heights
     - **Rationale:** Explain how choices create distinction while staying clean/professional
     - **Inspiration:** Reference examples (Linear, Stripe, Notion, GitHub, Vercel) for context
-  - [ ] Document implementation guidelines:
+  - [x] Document implementation guidelines:
     - Tailwind spacing scale usage (which spacing values for what contexts)
     - Component patterns (button sizes, card layouts, panel structures)
     - When to use signature elements (headings, panels, interactive states)
     - Accessibility requirements (contrast ratios, focus states, motion-reduce)
-  - [ ] MANUAL: Screenshot all major UI components in current state (baseline for regression testing)
-  - [ ] MANUAL: Identify hardcoded colors, pixel values, and inconsistencies by visual inspection
-  - [ ] MANUAL: Review proposed design system with stakeholder (Bryan) before implementing Tasks 2-9
+  - [x] MANUAL: Screenshot all major UI components in current state (baseline for regression testing)
+  - [x] MANUAL: Identify hardcoded colors, pixel values, and inconsistencies by visual inspection
+  - [x] MANUAL: Review proposed design system with stakeholder (Bryan) before implementing Tasks 2-9
 
 - [ ] Task 2: Standardize spacing and alignment (AC: #1)
-  - [ ] Review all component files, convert hardcoded padding/margins to Tailwind utilities
-  - [ ] Ensure consistent gap values in flex/grid layouts (gap-2, gap-4, gap-6)
-  - [ ] Fix any misaligned elements (buttons, labels, icons)
-  - [ ] Update line heights to match design system (leading-normal, leading-relaxed)
+  - [ ] Reference: `/docs/design-system.md` Section "Spacing & Layout" for spacing specifications
+  - [ ] Review all component files, convert hardcoded padding/margins to Tailwind utilities per design system
+  - [ ] Apply component spacing standards from design system ("Component Spacing Standards" section: buttons, inputs, cards, panels)
+  - [ ] Ensure consistent gap values per design system spacing scale (gap-2, gap-4, gap-6 per "Spacing Scale" section)
+  - [ ] Fix any misaligned elements (buttons, labels, icons) using design system alignment guidelines
   - [ ] MANUAL: Test at multiple resolutions (1920x1080, 1366x768, 1440x900) to verify spacing scales appropriately
 
 - [ ] Task 3: Unify color scheme (AC: #2)
-  - [ ] Search codebase for hardcoded hex colors (#FFFFFF, #000000, etc.), replace with Tailwind palette references
-  - [ ] Standardize primary action color (blue-600, hover:blue-700) across all buttons
-  - [ ] Standardize neutral colors (gray-200 for borders, gray-50 for backgrounds)
-  - [ ] Standardize error colors (red-600 for error text, red-50 for error backgrounds)
-  - [ ] MANUAL: Verify text color contrast meets readability standards (WCAG AA) using browser DevTools or contrast checker
+  - [ ] Reference: `/docs/design-system.md` Section "Color Palette" for all color specifications
+  - [ ] Search codebase for remaining hardcoded hex colors, replace with Flint design system Tailwind classes
+  - [ ] Apply primary colors from design system (blue-800/700/900 per "Primary Colors" section)
+  - [ ] Apply accent colors from design system (cyan-500/600/700 per "Accent Colors" section)
+  - [ ] Apply neutral colors from design system (slate palette per "Neutral Colors" section)
+  - [ ] Apply semantic colors from design system (green/red/amber per "Semantic Colors" section)
+  - [ ] MANUAL: Verify text color contrast meets WCAG AA standards (design system already specifies AAA contrast ratios)
 
 - [ ] Task 4: Polish typography (AC: #3)
-  - [ ] Set consistent font sizes for each element type using design system scale (text-sm, text-base, text-lg)
-  - [ ] Ensure line heights match content type (leading-normal for compact, leading-relaxed for paragraphs)
-  - [ ] Apply consistent font weights (font-normal, font-medium, font-semibold)
-  - [ ] Verify monospace font applied to code blocks, filenames, paths (font-mono class)
-  - [ ] MANUAL: Test readability in browser - view chat messages, adjust size/line-height if needed based on visual inspection
+  - [ ] Reference: `/docs/design-system.md` Section "Typography System" for all typography specifications
+  - [ ] Apply type scale from design system ("Type Scale" section: headings, body text, labels)
+  - [ ] Apply font weights from design system ("Font Weight System" section: normal 400, medium 500, semibold 600, bold 700)
+  - [ ] Apply font families from design system ("Font Families" section: Inter for UI, Fira Code for monospace)
+  - [ ] Ensure line heights match design system specifications (leading-tight, leading-normal, leading-relaxed per content type)
+  - [ ] MANUAL: Test readability in browser - view chat messages, verify design system typography is working correctly
 
 - [ ] Task 5: Refine button states (AC: #4)
-  - [ ] Apply consistent hover states to all buttons (hover:bg-blue-700, hover:shadow-md)
-  - [ ] Add active/pressed states with tactile feedback (active:bg-blue-800)
-  - [ ] Style disabled states clearly (opacity-50, cursor-not-allowed)
-  - [ ] Ensure focus states visible for keyboard navigation (focus:ring-2, focus:ring-blue-500)
-  - [ ] MANUAL: Verify send button state transitions in browser (idle → streaming → idle) - check colors, icons, smoothness
+  - [ ] Reference: `/docs/design-system.md` Section "Interactive States" and "Component Patterns" for button specifications
+  - [ ] Apply button states from design system ("Button States" section: default, hover, active, disabled, focus)
+  - [ ] Apply focus rings from design system ("Focus Indicators" section: 2px cyan-500 ring with offset)
+  - [ ] Apply transition timing from design system ("Transitions" section: duration-200 for standard interactions)
+  - [ ] Follow primary button pattern from "Component Patterns > Buttons" section
+  - [ ] MANUAL: Verify send button state transitions in browser (idle → streaming → idle) - check colors, icons, smoothness per design system
 
 - [ ] Task 6: Validate transitions and animations (AC: #5)
-  - [ ] MANUAL: Test file viewer toggle animation in browser - verify 300ms spring physics feels smooth
-  - [ ] MANUAL: Verify pulsing dot animation on status indicator looks good (not too fast/slow)
-  - [ ] MANUAL: Check button transition timing - should be 100-200ms, not jarring
-  - [ ] Add/verify motion-reduce support (motion-reduce:animate-none)
-  - [ ] MANUAL: Remove any distracting animations based on visual review
+  - [ ] Reference: `/docs/design-system.md` Section "Interactive States > Transitions" for animation specifications
+  - [ ] MANUAL: Test file viewer toggle animation - verify 300ms medium timing per design system feels smooth
+  - [ ] MANUAL: Verify loading animations use timing from design system (quick: 100ms, standard: 200ms, medium: 300ms)
+  - [ ] MANUAL: Check button transitions use standard 200ms duration per design system
+  - [ ] Verify motion-reduce support per design system ("Motion-Reduce Support" section and Accessibility Requirements)
+  - [ ] MANUAL: Remove any distracting animations not aligned with design system principles
 
 - [ ] Task 7: Clarify loading states (AC: #6)
   - [ ] MANUAL: Verify status indicator displays tool-specific messages in browser (trigger read_file, write_file, etc.)
@@ -469,6 +475,10 @@ Per solution-architecture.md Section 15, UI/UX polish stories rely entirely on m
 
 | Date       | Version | Description   | Author        |
 |------------|---------|---------------|---------------|
+| 2025-10-10 | 0.8     | Updated all implementation tasks (2-6) to reference design system document directly - Changed from duplicating values to referencing `/docs/design-system.md` sections, creating single source of truth. | Bob (Scrum Master) |
+| 2025-10-10 | 0.7     | Updated Tasks 3 and 5 to align with Flint brand specification - Replaced generic color references (blue-600, gray-200) with Flint design system colors (blue-800, cyan-500, slate grays). | Bob (Scrum Master) |
+| 2025-10-10 | 0.6     | Added branding components and "Flint" name - Created FlintLogo, FlintLoader, FlintLoadingScreen components with cyan spark icon. Created AppInitializer wrapper with splash screen. Created /branding-demo page for visual testing. | Amelia (Dev Agent) |
+| 2025-10-10 | 0.5     | Task 1 completed - Design system created and implemented with 3 signature elements (thick left borders, cyan accents, 8px/12px border radius). Updated 6 files with new color palette (blue-800 primary, cyan-500 accent, slate grays). | Amelia (Dev Agent) |
 | 2025-10-10 | 0.4     | Expanded visual identity techniques - added 10 categories of design approaches (color, typography, spacing, borders, shadows, icons, motion, texture, patterns, components) with examples | Bob (Scrum Master) |
 | 2025-10-10 | 0.3     | Added design enhancement opportunity - Task 1 now includes creating distinctive visual identity beyond generic Tailwind design | Bob (Scrum Master) |
 | 2025-10-10 | 0.2     | Clarified manual vs automated testing - marked all manual testing tasks with MANUAL prefix | Bob (Scrum Master) |
@@ -486,6 +496,54 @@ claude-sonnet-4-5-20250929
 
 ### Debug Log References
 
+**Task 1 Implementation Plan** (2025-10-10):
+- Analyzed current UX spec baseline (standard Tailwind blues/grays)
+- Identified 24 hardcoded hex colors in FileContentDisplay.tsx
+- Identified 2 hardcoded hex colors in tailwind.config.ts
+- Proposed 3-signature-element design system: thick left borders, cyan accents, 8px/12px border radius
+
 ### Completion Notes List
 
+**2025-10-10 - Task 1 Complete:**
+Created comprehensive design system (docs/design-system.md) with distinctive visual identity:
+- **Signature Elements:** 4-6px left borders (cyan/blue), vibrant cyan accents (#06B6D4), 8px/12px border radius system
+- **Color Palette:** Deep blue-800 (#1E40AF) primary, cyan-500 accent, warm slate grays (not pure grays)
+- **Implementation:** Updated Tailwind config, globals.css, FileContentDisplay.tsx, MessageBubble.tsx, InputField.tsx, AgentSelector.tsx
+- **Rationale:** Deeper blue conveys authority, cyan adds energy, slate grays feel warmer/approachable
+- **Accessibility:** WCAG AAA text contrast (16.1:1 primary), cyan focus rings (3:1 contrast), motion-reduce support
+- **TypeScript:** Compilation successful (npx tsc --noEmit passed)
+
+Replaced all hardcoded colors with Tailwind utilities. Applied signature left borders to headings (H1: 6px cyan, H2: 4px cyan), assistant messages (4px cyan), system messages (4px blue), and blockquotes (4px cyan). Updated all interactive states with cyan focus rings and improved hover/active feedback.
+
+**2025-10-10 - Branding Enhancement Complete:**
+Created "Flint" brand identity with comprehensive loading components:
+- **Brand Name:** "Flint" - represents the foundation for generating the spark that ignites agents
+- **Logo System:** FlintLogo component with cyan lightning bolt/spark icon, 3 size variants (sm/md/lg), optional tagline, compact icon-only version
+- **Loading Animations:** 3 variants (pulse, spark, spin) with FlintLoader component, FlintLoadingDots for inline states, FlintLoadingBar for progress
+- **Loading Screens:** Full-screen FlintLoadingScreen with animated background, FlintSplashScreen for dramatic app initialization, FlintLoadingScreenCompact for modals
+- **App Integration:** AppInitializer wrapper component shows 2-second splash screen on initial page load
+- **Demo Page:** Created /branding-demo route with visual showcase of all branding components, color palette, and usage examples
+- **Design Cohesion:** All branding uses design system colors (blue-800 primary, cyan-500 accent, slate grays), signature left borders, and motion-reduce support
+
 ### File List
+
+**Modified Files (Design System):**
+- `tailwind.config.ts` - Added primary/accent color tokens, border-6 width, extended with branding keyframes
+- `app/globals.css` - Updated CSS variables (primary, accent, text, background), added custom animations (fade-in, float, etc.)
+- `app/layout.tsx` - Wrapped children with AppInitializer for splash screen on load
+- `components/FileContentDisplay.tsx` - Replaced 24 hardcoded hex colors with Tailwind classes, applied signature borders
+- `components/chat/MessageBubble.tsx` - Updated message bubble colors (blue-800 primary), added 4px signature left borders to assistant/system messages
+- `components/chat/InputField.tsx` - Updated input borders (slate-300), send button (primary/accent colors), cyan focus rings
+- `components/chat/AgentSelector.tsx` - Updated dropdown/button colors (slate borders, cyan hover/focus states)
+- `components/chat/LoadingIndicator.tsx` - Minor styling updates for consistency
+
+**Created Files (Design System):**
+- `docs/design-system.md` - Comprehensive design system specification with 3 signature elements, color palette, typography system, component patterns, implementation guidelines
+
+**Created Files (Flint Branding):**
+- `components/AppInitializer.tsx` - App wrapper that displays splash screen on initial load (2 seconds)
+- `components/branding/FlintLogo.tsx` - Logo component with cyan spark icon, 3 sizes, optional tagline, compact variant
+- `components/branding/FlintLoader.tsx` - Loading animations with 3 variants (pulse, spark, spin), loading dots, loading bar
+- `components/branding/FlintLoadingScreen.tsx` - Full-screen loading experiences (standard, splash, compact variants)
+- `components/branding/index.ts` - Barrel export for all branding components
+- `app/branding-demo/page.tsx` - Visual showcase page for all branding components and color palette

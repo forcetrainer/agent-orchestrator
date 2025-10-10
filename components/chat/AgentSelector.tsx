@@ -16,6 +16,7 @@
 import { useEffect, useState } from 'react';
 import { AgentSummary } from '@/types/api';
 import { useFileViewer } from '@/components/file-viewer/FileViewerContext';
+import { FlintLogo } from '@/components/branding/FlintLogo';
 
 interface AgentSelectorProps {
   /** Currently selected agent ID */
@@ -76,20 +77,25 @@ export function AgentSelector({
     }
   };
 
-  // Loading state
+  // Loading state - Story 8.1: Slate colors
   if (loading) {
     return (
-      <div className="border-b border-gray-200 bg-white px-4 py-3">
-        <div className="max-w-3xl mx-auto flex items-center gap-3">
+      <div className="border-b border-slate-200 bg-white px-4 py-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
+          {/* Flint Branding */}
+          <FlintLogo size="sm" className="flex-shrink-0" />
+
+          <div className="w-px h-8 bg-slate-200" />
+
           <label
             htmlFor="agent-selector"
-            className="text-sm font-medium text-gray-700"
+            className="text-sm font-medium text-slate-700"
           >
             Select Agent:
           </label>
           <select
             id="agent-selector"
-            className="flex-1 rounded-lg border border-gray-300 bg-gray-50 px-4 py-2 text-gray-400 focus:outline-none cursor-wait"
+            className="flex-1 rounded-lg border-2 border-slate-300 bg-slate-50 px-4 py-2 text-slate-400 focus:outline-none cursor-wait"
             disabled
           >
             <option>Loading agents...</option>
@@ -97,7 +103,7 @@ export function AgentSelector({
           {onNewConversation && (
             <button
               onClick={onNewConversation}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-accent hover:text-accent-hover hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-all duration-200 whitespace-nowrap"
               aria-label="Start a new conversation"
               title="Start a new conversation"
             >
@@ -123,7 +129,7 @@ export function AgentSelector({
           {!isOpen && (
             <button
               onClick={toggle}
-              className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+              className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-accent hover:text-accent-hover hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-all duration-200 whitespace-nowrap"
               aria-label="Open file viewer"
               title="Open file viewer (Ctrl/Cmd + B)"
             >
@@ -150,12 +156,17 @@ export function AgentSelector({
     );
   }
 
-  // Error state
+  // Error state - Story 8.1: Red semantic colors
   if (error) {
     return (
-      <div className="border-b border-gray-200 bg-white px-4 py-3">
-        <div className="max-w-3xl mx-auto">
-          <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+      <div className="border-b border-slate-200 bg-white px-4 py-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
+          {/* Flint Branding */}
+          <FlintLogo size="sm" className="flex-shrink-0" />
+
+          <div className="w-px h-8 bg-slate-200" />
+
+          <div className="rounded-lg border-2 border-red-200 bg-red-50 px-4 py-3 text-red-700 flex-1">
             <p className="text-sm font-medium">Failed to load agents</p>
             <p className="text-xs mt-1">{error}</p>
           </div>
@@ -164,12 +175,17 @@ export function AgentSelector({
     );
   }
 
-  // Empty state (AC-4.7)
+  // Empty state (AC-4.7) - Story 8.1: Slate colors
   if (agents.length === 0) {
     return (
-      <div className="border-b border-gray-200 bg-white px-4 py-3">
-        <div className="max-w-3xl mx-auto">
-          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 text-gray-600">
+      <div className="border-b border-slate-200 bg-white px-4 py-3">
+        <div className="max-w-3xl mx-auto flex items-center gap-4">
+          {/* Flint Branding */}
+          <FlintLogo size="sm" className="flex-shrink-0" />
+
+          <div className="w-px h-8 bg-slate-200" />
+
+          <div className="rounded-lg border-2 border-slate-200 bg-slate-50 px-4 py-3 text-slate-600 flex-1">
             <p className="text-sm font-medium">No agents available</p>
             <p className="text-xs mt-1">
               Add agent files to the agents folder and restart the server.
@@ -180,13 +196,18 @@ export function AgentSelector({
     );
   }
 
-  // Normal state with agents
+  // Normal state with agents - Story 8.1: Slate colors, cyan focus states
   return (
-    <div className="border-b border-gray-200 bg-white px-4 py-3">
-      <div className="max-w-3xl mx-auto flex items-center gap-3">
+    <div className="border-b border-slate-200 bg-white px-4 py-3">
+      <div className="max-w-3xl mx-auto flex items-center gap-4">
+        {/* Flint Branding */}
+        <FlintLogo size="sm" className="flex-shrink-0" />
+
+        <div className="w-px h-8 bg-slate-200" />
+
         <label
           htmlFor="agent-selector"
-          className="text-sm font-medium text-gray-700 whitespace-nowrap"
+          className="text-sm font-medium text-slate-700 whitespace-nowrap"
         >
           Select Agent:
         </label>
@@ -194,7 +215,7 @@ export function AgentSelector({
           id="agent-selector"
           value={selectedAgentId || ''}
           onChange={handleChange}
-          className="flex-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="flex-1 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-slate-900 focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent focus:ring-opacity-30 transition-colors duration-200"
         >
           <option value="">Choose an agent...</option>
           {agents.map((agent) => (
@@ -207,10 +228,11 @@ export function AgentSelector({
         {/* Story 3.7 Task 1.1-1.6: New Conversation button */}
         {/* AC-7.1: "New Conversation" button visible in UI */}
         {/* AC-7.6: Button is clearly labeled and easy to find */}
+        {/* Story 8.1: Secondary button style (white bg, slate border, cyan hover) */}
         {onNewConversation && (
           <button
             onClick={onNewConversation}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-accent hover:text-accent-hover hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-all duration-200 whitespace-nowrap"
             aria-label="Start a new conversation"
             title="Start a new conversation"
           >
@@ -233,10 +255,11 @@ export function AgentSelector({
           </button>
         )}
         {/* Story 6.1: File Viewer Toggle Button (AC-1, AC-2) - Only show when viewer is closed */}
+        {/* Story 8.1: Secondary button style with cyan hover */}
         {!isOpen && (
           <button
             onClick={toggle}
-            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors whitespace-nowrap"
+            className="flex items-center gap-2 rounded-lg border-2 border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:border-accent hover:text-accent-hover hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 transition-all duration-200 whitespace-nowrap"
             aria-label="Open file viewer"
             title="Open file viewer (Ctrl/Cmd + B)"
           >

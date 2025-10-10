@@ -26,13 +26,13 @@ import { ErrorMessage } from './ErrorMessage';
  * AC-6.8.1: Streaming cursor shows when active (blinking ▋)
  * AC-6.8.3: Markdown updates dynamically as content streams
  *
- * Styling follows design system from Story 3.1:
- * - User: Right-aligned, blue background (#3B82F6), white text (plain text, no markdown)
- * - Assistant: Left-aligned, gray background (gray-200), dark text (markdown rendered)
- * - System: Left-aligned, blue-gray background (blue-50), dark text, blue border (markdown rendered - for agent greetings)
+ * Styling follows design system from Story 8.1 (docs/design-system.md):
+ * - User: Right-aligned, deep blue background (blue-800), white text, rounded-xl (12px)
+ * - Assistant: Left-aligned, slate background (slate-100), dark text, 4px cyan left border (signature element), rounded-xl
+ * - System: Left-aligned, blue-light background (blue-50), dark text, 4px blue-800 left border (signature element), rounded-xl
  * - Error: Left-aligned, red border, light red background, warning icon (plain text, no markdown)
  * - Max width 75% for readability
- * - Border radius: rounded-lg
+ * - Border radius: rounded-xl (12px for message bubbles)
  * - Padding: px-4 py-3
  *
  * Security: react-markdown with remark-gfm, no dangerouslySetInnerHTML, external links use rel="noopener noreferrer"
@@ -49,15 +49,15 @@ export const MessageBubble = memo(function MessageBubble({
   if (message.role === 'error') {
     return <ErrorMessage message={message} />;
   }
-  // Base styles for all messages
-  const baseStyles = 'max-w-[75%] px-4 py-3 rounded-lg';
+  // Base styles for all messages - Story 8.1: rounded-xl (12px) for message bubbles
+  const baseStyles = 'max-w-[75%] px-4 py-3 rounded-xl';
 
-  // Role-specific styling
+  // Role-specific styling - Story 8.1: Deep blue primary, slate backgrounds, signature left borders
   const roleStyles: Record<string, string> = {
-    user: 'ml-auto bg-blue-500 text-white',
-    assistant: 'mr-auto bg-gray-200 text-gray-900',
+    user: 'ml-auto bg-primary text-white',  // Deep blue-800 background
+    assistant: 'mr-auto bg-slate-100 text-slate-900 border-l-4 border-accent',  // Signature 4px cyan left border
     // Story 3.10 Task 3.2: System messages styled for agent greetings (AC-10.4, AC-10.5)
-    system: 'mr-auto bg-blue-50 text-gray-900 border-2 border-blue-200', // System messages (agent greetings)
+    system: 'mr-auto bg-primary-light text-slate-900 border-l-4 border-primary',  // Signature 4px blue-800 left border
     // Tool messages should not be rendered (filtered in MessageList), but add style for safety
     tool: 'hidden',
   };
@@ -94,13 +94,13 @@ export const MessageBubble = memo(function MessageBubble({
               return <code className="font-mono text-sm">{children}</code>;
             },
 
-            // Links (AC-3.4) - Security: rel="noopener noreferrer" for external links
+            // Links (AC-3.4) - Story 8.1: Cyan accent with 2px underline offset
             a: ({ href, children }) => (
               <a
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-600 underline hover:text-blue-800"
+                className="text-accent-hover underline decoration-2 underline-offset-2 hover:text-accent-active transition-colors duration-200"
               >
                 {children}
               </a>
@@ -113,15 +113,15 @@ export const MessageBubble = memo(function MessageBubble({
             // Paragraphs (AC-3.6)
             p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
 
-            // Tables (AC-3.7)
+            // Tables (AC-3.7) - Story 8.1: Primary blue header, slate borders
             table: ({ children }) => (
-              <table className="border-collapse border border-gray-300 mb-2 w-full">{children}</table>
+              <table className="border-collapse border border-slate-200 mb-2 w-full">{children}</table>
             ),
-            thead: ({ children }) => <thead className="bg-gray-100">{children}</thead>,
+            thead: ({ children }) => <thead className="bg-primary text-white">{children}</thead>,
             tbody: ({ children }) => <tbody>{children}</tbody>,
-            tr: ({ children }) => <tr className="border-b border-gray-300">{children}</tr>,
-            th: ({ children }) => <th className="border border-gray-300 px-3 py-2 text-left font-semibold">{children}</th>,
-            td: ({ children }) => <td className="border border-gray-300 px-3 py-2">{children}</td>,
+            tr: ({ children }) => <tr className="border-b border-slate-200">{children}</tr>,
+            th: ({ children }) => <th className="border border-slate-200 px-3 py-2 text-left font-semibold">{children}</th>,
+            td: ({ children }) => <td className="border border-slate-200 px-3 py-2 text-slate-700">{children}</td>,
           }}
         >
           {message.content}
@@ -136,9 +136,9 @@ export const MessageBubble = memo(function MessageBubble({
   return (
     <div className={`${baseStyles} ${roleStyles[message.role]}`}>
       {renderContent()}
-      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator */}
+      {/* Story 6.8 AC-6.8.1: Streaming cursor indicator - Story 8.1: slate-900 color */}
       {streaming && message.role === 'assistant' && (
-        <span className="inline-block ml-1 w-2 h-4 bg-gray-900 animate-pulse">▋</span>
+        <span className="inline-block ml-1 w-2 h-4 bg-slate-900 animate-pulse">▋</span>
       )}
     </div>
   );

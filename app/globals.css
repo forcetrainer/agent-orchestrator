@@ -15,26 +15,156 @@
   }
 }
 
+/* Story 8.1: Design system color variables */
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --color-primary: #1E40AF;     /* blue-800 - Deep ocean blue */
+  --color-accent: #06B6D4;      /* cyan-500 - Vibrant cyan */
+  --color-text: #0F172A;        /* slate-900 - Primary text */
+  --color-background: #FFFFFF;  /* White - Clean background */
+  --foreground-rgb: 15, 23, 42; /* slate-900 */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Future: Dark mode support */
     --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
   }
 }
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: var(--color-background);
+}
+
+/* Flint Loader Animations */
+@layer utilities {
+  /* Sparking animation - staggered pulsing for energetic effect */
+  @keyframes spark-outer {
+    0%, 100% { opacity: 0.3; transform: scale(1.2) translate(-2px, -2px); }
+    50% { opacity: 0.6; transform: scale(1.3) translate(-3px, -3px); }
+  }
+
+  @keyframes spark-middle {
+    0%, 100% { opacity: 0.4; transform: scale(1.1) translate(-1.2px, -1.2px); }
+    50% { opacity: 0.7; transform: scale(1.15) translate(-1.8px, -1.8px); }
+  }
+
+  @keyframes spark-core {
+    0%, 100% { opacity: 0.9; }
+    50% { opacity: 1; }
+  }
+
+  .animate-spark-outer {
+    animation: spark-outer 1.5s ease-in-out infinite;
+  }
+
+  .animate-spark-middle {
+    animation: spark-middle 1.2s ease-in-out infinite;
+  }
+
+  .animate-spark-core {
+    animation: spark-core 0.8s ease-in-out infinite;
+  }
+
+  /* Slow spin for professional loading effect */
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+
+  @keyframes spin-slow-reverse {
+    from { transform: rotate(360deg); }
+    to { transform: rotate(0deg); }
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 3s linear infinite;
+  }
+
+  .animate-spin-slow-reverse {
+    animation: spin-slow-reverse 4s linear infinite;
+  }
+
+  /* Loading bar animation */
+  @keyframes loading-bar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(300%); }
+  }
+
+  .animate-loading-bar {
+    animation: loading-bar 1.5s ease-in-out infinite;
+  }
+
+  /* Loading screen animations */
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes fade-in-up {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+      opacity: 0;
+    }
+    50% {
+      opacity: 0.5;
+    }
+    100% {
+      transform: translateY(-100vh) translateX(20px);
+      opacity: 0;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 1s ease-out forwards;
+  }
+
+  .animate-fade-in-up {
+    animation: fade-in-up 0.8s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-float {
+    animation: float 15s ease-in-out infinite;
+  }
+}
+
+/* Grid pattern for splash screen */
+.bg-grid-pattern {
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+
+/* Accessibility: Disable animations for users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-spark-outer,
+  .animate-spark-middle,
+  .animate-spark-core,
+  .animate-spin-slow,
+  .animate-spin-slow-reverse,
+  .animate-loading-bar,
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-float {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

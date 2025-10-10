@@ -4,6 +4,7 @@ import "./globals.css";
 import { validateEnv } from "@/lib/utils/env";
 import { FileViewerProvider } from "@/components/file-viewer/FileViewerContext";
 import { DndWrapper } from "@/components/DndWrapper";
+import { AppInitializer } from "@/components/AppInitializer";
 
 // Validate environment variables on server startup only
 if (typeof window === 'undefined') {
@@ -13,8 +14,8 @@ if (typeof window === 'undefined') {
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Agent Orchestrator",
-  description: "BMAD agent validation and deployment platform",
+  title: "Flint - Agent Orchestration",
+  description: "Flint: The spark that ignites agent orchestration. BMAD agent validation and deployment platform.",
 };
 
 export default function RootLayout({
@@ -25,9 +26,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <DndWrapper>
-          <FileViewerProvider>{children}</FileViewerProvider>
-        </DndWrapper>
+        <AppInitializer>
+          <DndWrapper>
+            <FileViewerProvider>{children}</FileViewerProvider>
+          </DndWrapper>
+        </AppInitializer>
       </body>
     </html>
   );

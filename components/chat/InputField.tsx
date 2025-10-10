@@ -134,7 +134,7 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
     const isNearLimit = remainingChars <= 500 && remainingChars > 0;
 
     return (
-      <div className="border-t border-gray-200 bg-white px-4 py-4">
+      <div className="border-t border-slate-200 bg-white px-4 py-4">
         <div className="max-w-3xl mx-auto">
           {/* File attachment pills above text input box */}
           {attachments.length > 0 && (
@@ -152,8 +152,8 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
 
           <div
             ref={drop as any}
-            className={`border rounded-lg p-3 transition-colors ${
-              isOver ? 'border-blue-500 border-2 bg-blue-50' : 'border-gray-300'
+            className={`border-2 rounded-lg p-3 transition-colors ${
+              isOver ? 'border-accent bg-accent-light' : 'border-slate-300'
             }`}
           >
             <div className="flex gap-2 items-end">
@@ -161,11 +161,12 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
               {/* Subtask 1.7: Accept multiline input with proper textarea styling */}
               {/* AC-5.7: Long messages are accepted (multi-line support) */}
               {/* Story 6.9 AC-12: Textarea stays enabled during streaming, only send button disabled */}
+              {/* Story 8.1: Slate text colors, cyan focus states */}
               <textarea
                 ref={ref}
-                className={`flex-1 resize-none border-0 focus:ring-0 focus:outline-none text-gray-900 placeholder-gray-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent ${
+                className={`flex-1 resize-none border-0 focus:ring-0 focus:outline-none text-slate-900 placeholder-slate-400 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-transparent ${
                   isOverLimit ? 'text-red-600' : ''
-                } ${isStreaming ? 'border-blue-300' : ''}`}
+                }`}
                 placeholder="Type your message... (Shift+Enter for new line)"
                 rows={3}
                 value={value}
@@ -182,15 +183,16 @@ export const InputField = forwardRef<HTMLTextAreaElement, InputFieldProps>(
               {/* AC-13: Upward arrow when idle */}
               {/* AC-14: Stop icon when streaming */}
               {/* AC-15: Stop button interrupts stream */}
+              {/* Story 8.1: Deep blue primary, cyan focus ring, slate disabled states */}
               <button
                 onClick={isStreaming ? onCancelStream : handleButtonClick}
                 disabled={(disabled || !value.trim() || isOverLimit) && !isStreaming}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-accent focus:ring-offset-2 ${
                   isStreaming
-                    ? 'bg-gray-700 hover:bg-gray-800 text-white' // Stop button (dark)
+                    ? 'bg-slate-700 hover:bg-slate-800 text-white' // Stop button (dark)
                     : disabled || !value.trim() || isOverLimit
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed' // Disabled
-                    : 'bg-blue-600 hover:bg-blue-700 text-white' // Send button (enabled)
+                    ? 'bg-slate-200 text-slate-400 cursor-not-allowed' // Disabled
+                    : 'bg-primary hover:bg-primary-hover active:bg-primary-active text-white' // Send button (enabled)
                 }`}
                 aria-label={isStreaming ? 'Stop generating' : 'Send message'}
               >

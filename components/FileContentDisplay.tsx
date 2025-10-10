@@ -263,105 +263,75 @@ export function FileContentDisplay({
       <div ref={scrollContainerRef} className="flex-1 overflow-auto">
         {isMarkdown && viewMode === 'rendered' ? (
           // Story 5.4 AC-1, AC-3-7: Markdown rendering (reuses Epic 3 Story 3.3 config)
-          // Story 6.3 Enhancement: Updated to use markdown-rendering-spec.md light mode styles
+          // Story 8.1: Updated to use new design system (cyan accents, slate text colors, signature borders)
           <div className="markdown-light p-4 leading-[1.7]" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif' }}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                // Headings - Spec: Light Mode Typography
+                // Headings - Story 8.1: Signature left borders (6px H1, 4px H2) with cyan accent
                 h1: ({ children }) => (
-                  <h1 className="text-[32px] font-bold mt-0 mb-6" style={{ color: '#2c3e50', borderLeft: '5px solid #3498db', paddingLeft: '16px' }}>
+                  <h1 className="text-3xl font-bold mt-0 mb-6 text-slate-900 border-l-6 border-accent pl-4">
                     {children}
                   </h1>
                 ),
                 h2: ({ children }) => (
-                  <h2 className="text-[26px] font-bold mt-[30px] mb-4" style={{ color: '#2c3e50', borderLeft: '4px solid #3498db', paddingLeft: '12px' }}>
+                  <h2 className="text-2xl font-bold mt-8 mb-4 text-slate-900 border-l-4 border-accent pl-3">
                     {children}
                   </h2>
                 ),
                 h3: ({ children }) => (
-                  <h3 className="text-[20px] font-semibold mt-6 mb-3" style={{ color: '#34495e' }}>
+                  <h3 className="text-xl font-semibold mt-6 mb-3 text-slate-800">
                     {children}
                   </h3>
                 ),
                 h4: ({ children }) => (
-                  <h4 className="text-[18px] font-semibold mt-5 mb-[10px]" style={{ color: '#34495e' }}>
+                  <h4 className="text-lg font-semibold mt-5 mb-2 text-slate-800">
                     {children}
                   </h4>
                 ),
-                h5: ({ children }) => <h5 className="text-base font-semibold mb-2" style={{ color: '#34495e' }}>{children}</h5>,
-                h6: ({ children }) => <h6 className="text-sm font-semibold mb-2" style={{ color: '#34495e' }}>{children}</h6>,
+                h5: ({ children }) => <h5 className="text-base font-semibold mb-2 text-slate-700">{children}</h5>,
+                h6: ({ children }) => <h6 className="text-sm font-semibold mb-2 text-slate-700">{children}</h6>,
 
-                // Paragraphs - Spec: Body Text
-                p: ({ children }) => <p className="mb-4 leading-[1.7]" style={{ color: '#2c3e50' }}>{children}</p>,
+                // Paragraphs - Story 8.1: Slate text colors
+                p: ({ children }) => <p className="mb-4 leading-[1.7] text-slate-700">{children}</p>,
 
                 // Bold and italic - Spec: Body Text
                 strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                 em: ({ children }) => <em className="italic">{children}</em>,
 
-                // Links - Spec: Links with hover
+                // Links - Story 8.1: Cyan accent with underline (2px offset)
                 a: ({ href, children }) => (
                   <a
                     href={href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="no-underline transition-colors duration-200 hover:border-[#2980b9]"
-                    style={{ color: '#3498db', borderBottom: '1px solid #3498db' }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.color = '#2980b9';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.color = '#3498db';
-                    }}
+                    className="text-accent-hover underline decoration-2 underline-offset-2 hover:text-accent-active transition-colors duration-200"
                   >
                     {children}
                   </a>
                 ),
 
-                // Inline code - Spec: Inline Code
+                // Inline code - Story 8.1: Slate backgrounds, red accent for code
                 code: ({ className, children }) => {
                   const isInline = !className;
                   if (isInline) {
                     return (
-                      <code
-                        className="px-1.5 py-0.5 rounded font-medium"
-                        style={{
-                          backgroundColor: '#ecf0f1',
-                          color: '#e74c3c',
-                          fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
-                          fontSize: '90%',
-                          fontWeight: 500
-                        }}
-                      >
+                      <code className="px-1.5 py-0.5 rounded bg-slate-100 text-red-600 font-mono text-sm font-medium">
                         {children}
                       </code>
                     );
                   }
                   // Code inside pre blocks
                   return (
-                    <code
-                      className="text-sm leading-[1.5]"
-                      style={{
-                        fontFamily: '"Consolas", "Monaco", "Courier New", monospace',
-                        color: '#a8e6cf',
-                        backgroundColor: 'transparent'
-                      }}
-                    >
+                    <code className="font-mono text-sm leading-[1.5] text-green-300">
                       {children}
                     </code>
                   );
                 },
 
-                // Code blocks - Spec: Code Blocks
+                // Code blocks - Story 8.1: Dark slate background
                 pre: ({ children }) => (
-                  <pre
-                    className="rounded mb-4 overflow-x-auto p-4 text-sm leading-[1.5]"
-                    style={{
-                      backgroundColor: '#2c3e50',
-                      color: '#ecf0f1',
-                      fontFamily: '"Consolas", "Monaco", "Courier New", monospace'
-                    }}
-                  >
+                  <pre className="rounded-lg mb-4 overflow-x-auto p-4 bg-slate-800 text-slate-100 font-mono text-sm leading-[1.5]">
                     {children}
                   </pre>
                 ),
@@ -379,29 +349,21 @@ export function FileContentDisplay({
                 ),
                 li: ({ children }) => <li className="mb-[6px] leading-[1.7]">{children}</li>,
 
-                // Blockquotes - Spec: Blockquotes
+                // Blockquotes - Story 8.1: Cyan left border (signature element)
                 blockquote: ({ children }) => (
-                  <blockquote
-                    className="ml-0 mb-4 py-2 italic"
-                    style={{
-                      borderLeft: '4px solid #3498db',
-                      paddingLeft: '16px',
-                      color: '#555',
-                      backgroundColor: '#f8f9fa'
-                    }}
-                  >
+                  <blockquote className="ml-0 mb-4 py-2 pl-4 italic border-l-4 border-accent bg-slate-50 text-slate-600">
                     {children}
                   </blockquote>
                 ),
 
-                // Tables - Spec: Tables
+                // Tables - Story 8.1: Primary blue headers, slate borders
                 table: ({ children }) => (
-                  <table className="border-collapse w-full mb-4" style={{ border: 'none' }}>
+                  <table className="border-collapse w-full mb-4">
                     {children}
                   </table>
                 ),
                 thead: ({ children }) => (
-                  <thead style={{ backgroundColor: '#3498db', color: 'white' }}>
+                  <thead className="bg-primary text-white">
                     {children}
                   </thead>
                 ),
@@ -410,25 +372,25 @@ export function FileContentDisplay({
                   // Apply alternating row background (even rows)
                   const isEven = props.node?.position?.start.line ? props.node.position.start.line % 2 === 0 : false;
                   return (
-                    <tr style={{ backgroundColor: isEven ? '#f8f9fa' : 'transparent' }}>
+                    <tr className={isEven ? 'bg-slate-50' : ''}>
                       {children}
                     </tr>
                   );
                 },
                 th: ({ children }) => (
-                  <th className="px-3 py-3 text-left font-semibold" style={{ border: '1px solid #dfe6e9' }}>
+                  <th className="px-3 py-3 text-left font-semibold border border-slate-200">
                     {children}
                   </th>
                 ),
                 td: ({ children }) => (
-                  <td className="px-3 py-[10px]" style={{ border: '1px solid #dfe6e9' }}>
+                  <td className="px-3 py-2 border border-slate-200 text-slate-700">
                     {children}
                   </td>
                 ),
 
-                // Horizontal Rule - Spec: Horizontal Rule
+                // Horizontal Rule - Story 8.1: Slate divider
                 hr: () => (
-                  <hr className="my-6" style={{ border: 'none', borderTop: '2px solid #e0e0e0' }} />
+                  <hr className="my-6 border-0 border-t-2 border-slate-200" />
                 ),
               }}
             >
