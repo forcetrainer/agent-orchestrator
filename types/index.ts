@@ -73,6 +73,19 @@ export interface Message {
 }
 
 /**
+ * Cached context for conversation performance optimization.
+ * Stores system prompt and critical actions to avoid rebuilding on every message.
+ */
+export interface CachedContext {
+  /** Pre-built system prompt content */
+  systemPrompt: string;
+  /** Critical context messages (from critical actions processor) */
+  criticalMessages: Array<any>; // ChatCompletionMessageParam[]
+  /** Bundle configuration from critical actions */
+  bundleConfig: Record<string, any> | null;
+}
+
+/**
  * Conversation containing multiple messages.
  * Tracks conversation state with timestamps.
  */
@@ -89,6 +102,8 @@ export interface Conversation {
   updatedAt: Date;
   /** Story 6.3: Session ID for file-based session manifest (if created) */
   sessionId?: string;
+  /** Performance Optimization: Cached context to avoid rebuilding on every message */
+  cachedContext?: CachedContext;
 }
 
 /**
