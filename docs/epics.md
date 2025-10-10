@@ -1849,7 +1849,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.1: Create Dockerfile for Next.js App
+#### Story 7.1: Create Dockerfile for Next.js App
 
 **As a** developer
 **I want** a Dockerfile that builds and runs the Next.js application
@@ -1874,13 +1874,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.2: Configure Volume Mounts
+#### Story 7.2: Configure Volume Mounts
 
 **As an** agent builder
 **I want** to mount my bundle and core folders into the container
 **So that** the platform can access agents and shared BMAD files
 
-**Prerequisites:** Story 6.1 (Dockerfile)
+**Prerequisites:** Story 7.1 (Dockerfile)
 
 **Acceptance Criteria:**
 1. Bundle folder (`bmad/custom/bundles`) mounts as read-only volume
@@ -1903,13 +1903,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.3: Environment Variable Configuration
+#### Story 7.3: Environment Variable Configuration
 
 **As a** deployer
 **I want** to configure the app via environment variables
 **So that** I don't have to modify code for deployment
 
-**Prerequisites:** Story 6.1 (Dockerfile)
+**Prerequisites:** Story 7.1 (Dockerfile)
 
 **Acceptance Criteria:**
 1. OPENAI_API_KEY loaded from environment
@@ -1931,13 +1931,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.4: Create docker-compose.yml
+#### Story 7.4: Create docker-compose.yml
 
 **As a** deployer
 **I want** a docker-compose file for easy deployment
 **So that** I can start the app with one command
 
-**Prerequisites:** Stories 5.1, 5.2, 5.3 (Docker configured)
+**Prerequisites:** Stories 7.1, 7.2, 7.3 (Docker configured)
 
 **Acceptance Criteria:**
 1. docker-compose.yml defines complete setup
@@ -1956,13 +1956,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.5: Deployment Documentation
+#### Story 7.5: Deployment Documentation
 
 **As a** new deployer
 **I want** clear instructions for deploying the platform
 **So that** I can get it running quickly
 
-**Prerequisites:** All Epic 5 stories complete
+**Prerequisites:** All Epic 7 stories complete
 
 **Acceptance Criteria:**
 1. README includes deployment section
@@ -1981,13 +1981,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 6.6: Basic Logging and Health Check
+#### Story 7.6: Basic Logging and Health Check
 
 **As a** deployer
 **I want** basic logging and health check
 **So that** I can verify the app is running correctly
 
-**Prerequisites:** Story 6.4 (docker-compose)
+**Prerequisites:** Story 7.4 (docker-compose)
 
 **Acceptance Criteria:**
 1. Application logs startup messages
@@ -2020,13 +2020,13 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 **Dependencies:** Epics 1-6 ALL COMPLETE - final polish phase after all features working
 
-**⚠️ Solo Developer Note:** While some polish can happen during development, save the bulk of Epic 6 for the end. Polishing incomplete features wastes time. Exception: Story 7.5 (Agent Builder Guide) and 6.6 (End User Guide) can be drafted earlier as you learn the system.
+**⚠️ Solo Developer Note:** While some polish can happen during development, save the bulk of Epic 8 for the end. Polishing incomplete features wastes time. Exception: Story 8.5 (Agent Builder Guide) and Story 8.6 (End User Guide) can be drafted earlier as you learn the system.
 
 **Estimated Stories:** 8
 
 ---
 
-#### Story 7.1: UI/UX Polish Pass
+#### Story 8.1: UI/UX Polish Pass
 
 **As an** end user
 **I want** a polished, professional-looking interface
@@ -2052,7 +2052,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.2: Error Message Improvements
+#### Story 8.2: Error Message Improvements
 
 **As an** end user
 **I want** helpful error messages
@@ -2077,7 +2077,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.3: Cross-Browser Testing
+#### Story 8.3: Cross-Browser Testing
 
 **As a** user on any modern browser
 **I want** the platform to work correctly
@@ -2102,7 +2102,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.4: Performance Optimization
+#### Story 8.4: Performance Optimization
 
 **As an** end user
 **I want** fast response times
@@ -2127,7 +2127,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.5: Agent Builder Guide
+#### Story 8.5: Agent Builder Guide
 
 **As an** agent builder
 **I want** documentation on deploying BMAD agents with bundle structure
@@ -2156,7 +2156,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.6: End User Guide
+#### Story 8.6: End User Guide
 
 **As an** end user
 **I want** basic usage instructions
@@ -2181,7 +2181,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.7: Code Quality and Cleanup
+#### Story 8.7: Code Quality and Cleanup
 
 **As a** developer
 **I want** clean, maintainable code
@@ -2206,7 +2206,7 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ---
 
-#### Story 7.8: MVP Validation Test
+#### Story 8.8: MVP Validation Test
 
 **As a** product owner
 **I want** to validate MVP meets success criteria

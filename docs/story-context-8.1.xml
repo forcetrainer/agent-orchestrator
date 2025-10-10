@@ -1,0 +1,153 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>8</epicId>
+    <storyId>8.1</storyId>
+    <title>UI/UX Polish Pass</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-10</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-8.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>an end user</asA>
+    <iWant>a polished, professional-looking interface</iWant>
+    <soThat>the platform feels trustworthy and pleasant to use</soThat>
+    <tasks>
+      - Task 1: Create distinctive design system (AC: #1, #2, #3)
+      - Task 2: Standardize spacing and alignment (AC: #1)
+      - Task 3: Unify color scheme (AC: #2)
+      - Task 4: Polish typography (AC: #3)
+      - Task 5: Refine button states (AC: #4)
+      - Task 6: Validate transitions and animations (AC: #5)
+      - Task 7: Clarify loading states (AC: #6)
+      - Task 8: Test responsive layout (AC: #7)
+      - Task 9: Regression testing (AC: #8)
+      - Task 10: Documentation and handoff (AC: all)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC-1: Consistent Spacing and Alignment
+    - All interface components use Tailwind spacing scale consistently
+    - Vertical rhythm maintained with consistent line heights
+    - Proper alignment within containers
+    - No pixel-pushing or hardcoded margins
+    - Component padding matches design system
+
+    AC-2: Cohesive Color Scheme
+    - All colors sourced from Tailwind CSS palette (no hardcoded hex values)
+    - Consistent color usage: blue for primary actions, gray for neutral elements, red for errors
+    - Text colors follow contrast guidelines
+    - Background colors consistent across similar component types
+    - Hover states use predictable lightness shifts
+
+    AC-3: Typography Clarity
+    - Font sizes consistent across component types
+    - Line heights appropriate for readability
+    - Font weights used consistently
+    - Message content uses readable font size
+    - Code blocks and filenames use monospace font
+
+    AC-4: Button States Styled
+    - Hover states clearly visible
+    - Active/pressed states provide tactile feedback
+    - Disabled states visually distinct
+    - Focus states visible for keyboard navigation
+    - Send button (Claude-style) properly styled for all states
+
+    AC-5: Transitions and Animations Subtle
+    - File viewer toggle uses smooth animation
+    - Loading indicators animate smoothly
+    - Button state changes have subtle transitions
+    - No distracting or excessive animations
+    - Animations respect prefers-reduced-motion
+
+    AC-6: Loading States Clear
+    - Status indicator shows tool-specific activity
+    - Streaming cursor visible during response generation
+    - File viewer displays loading state
+    - Send button disabled during streaming
+    - Loading states don't block UI
+
+    AC-7: Responsive Layout Works
+    - Layout tested at 1920x1080, 1366x768, 1440x900
+    - File viewer collapse/expand works smoothly
+    - Chat panel uses available width effectively
+    - No horizontal scrolling on standard desktop widths
+    - Content remains readable at all tested resolutions
+
+    AC-8: No Visual Regressions
+    - Screenshot comparison with Epic 6 final state
+    - All Epic 6 features remain visually intact
+    - No layout shifts or flash of unstyled content
+    - Color scheme, spacing, and typography match existing design language
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-8.md" title="Epic 8 Technical Specification" section="AC-8.1: UI/UX Polish Pass (lines 359-368)" snippet="Defines acceptance criteria for consistent spacing, cohesive color scheme, typography clarity, button states, transitions, loading states, responsive layout, and no visual regressions"/>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Visual Design System (lines 476-606)" snippet="Defines color palette (Primary Blue #3B82F6, grays, semantic colors), typography (Inter font, sizes, weights), spacing system (4px base), border radius, shadows, and icons"/>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Markdown Rendering Specification (lines 609-778)" snippet="More distinctive styling with border-left accents on headings (5px solid blue on H1, 4px on H2), unique color scheme (#3498db primary, #2c3e50 text, #e74c3c code highlight), styled blockquotes, dark mode support (#4fc3f7 cyan-blue)"/>
+      <doc path="docs/ux-specification.md" title="UX Specification" section="Component Specifications (lines 156-474)" snippet="Detailed specifications for Agent Selector, Chat Message Display, Message Input Area, File Viewer, Top Navigation Bar, Error &amp; Status Messages"/>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Section 15: Testing Philosophy" snippet="Manual testing approach for UI/UX polish - automated tests expensive to write and maintain for visual appearance"/>
+      <doc path="docs/tech-spec-epic-6.md" title="Epic 6 Technical Specification" snippet="Epic 6 UI enhancements: file viewer toggle animation, Claude-style send button, dynamic status messages, session metadata display"/>
+      <doc path="docs/epic-6-architecture.md" title="Epic 6 Architecture" snippet="File viewer toggle design, top/bottom split layout, send button design patterns"/>
+    </docs>
+    <code>
+      <file path="app/globals.css" kind="stylesheet" lines="1-41" reason="Contains global CSS including Tailwind directives, animation utilities for loading indicators (Story 3.6), and root CSS variables for dark mode"/>
+      <file path="tailwind.config.ts" kind="config" lines="1-55" reason="Tailwind configuration defining current design system: primary blue (#3B82F6), max-width for chat (1200px), bounce-dot animation for loading indicators"/>
+      <file path="app/layout.tsx" kind="component" reason="Root layout component that applies global styles and theme"/>
+      <file path="app/page.tsx" kind="component" reason="Main page component for chat interface"/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0" reason="Next.js framework (App Router)"/>
+        <package name="react" version="^18" reason="UI framework"/>
+        <package name="tailwindcss" version="^3.4.0" reason="Utility-first CSS framework (primary styling approach)"/>
+        <package name="framer-motion" version="^10.16.4" reason="Animation library for file viewer toggle and smooth transitions"/>
+        <package name="react-markdown" version="^10.1.0" reason="Markdown rendering in chat messages and file viewer"/>
+        <package name="autoprefixer" version="^10.4.17" reason="CSS vendor prefixing"/>
+        <package name="postcss" version="^8" reason="CSS processing"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint>Desktop-first approach: Focus on desktop resolutions (1366x768 and above). Mobile optimization out of scope for MVP.</constraint>
+    <constraint>Browser compatibility: Modern evergreen browsers only (Chrome 90+, Firefox 88+, Safari 14+, Edge 90+). Cross-browser testing in Story 8.3.</constraint>
+    <constraint>Feature freeze: No new features in Epic 8 (polish only). Changes limited to visual refinement, no behavioral changes.</constraint>
+    <constraint>Tailwind-first styling: Use Tailwind utility classes in component JSX (primary method). Minimal global styles in app/globals.css. No component-specific CSS modules.</constraint>
+    <constraint>Manual testing only: Per solution-architecture.md Section 15, NO automated tests for UI/UX polish. Manual visual inspection and screenshot comparison.</constraint>
+    <constraint>Accessibility: Maintain WCAG AA contrast ratios, visible focus states (ring-2 ring-[primary] ring-offset-2), motion-reduce support for animations.</constraint>
+    <constraint>Design system creation: Task 1 requires proposing distinctive visual identity (not standard Tailwind blues/grays), choosing 2-3 signature elements, and getting stakeholder approval before implementation.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="Tailwind Config" kind="configuration" signature="Config interface from tailwindcss" path="tailwind.config.ts" description="Extend with custom colors, spacing, animations for design system"/>
+    <interface name="Framer Motion" kind="library" signature="import { motion } from 'framer-motion'" description="Use for file viewer toggle animation (300ms spring physics) and other smooth transitions"/>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Per solution-architecture.md Section 15 and Story 8.1 Dev Notes: UI/UX polish stories rely entirely on manual visual inspection. NO automated tests should be written. Manual testing approach:
+      1. Visual Checklist: Spacing consistent with design system, colors match Tailwind palette (no hardcoded hex), typography follows scale, interactive states work (hover, active, disabled, focus), animations smooth and subtle.
+      2. Cross-Resolution Testing: Test at 1920x1080, 1366x768, 1440x900. Verify no horizontal scrolling. Check layout adapts correctly (file viewer collapse, chat width).
+      3. Regression Testing: Screenshot baseline before changes, screenshot after changes, compare visually for unintended changes, verify all Epic 6 features intact.
+    </standards>
+    <locations>
+      No automated test locations for this story. Manual testing performed in browser across multiple resolutions.
+    </locations>
+    <ideas>
+      <test ac="AC-1" idea="MANUAL: Take screenshots of all components at baseline. After spacing changes, compare screenshots to verify consistent Tailwind spacing scale usage (p-2, p-4, p-6, gap-2, gap-4, gap-6). Check vertical rhythm and alignment in browser DevTools."/>
+      <test ac="AC-2" idea="MANUAL: Search codebase for hardcoded hex colors (grep '#[0-9A-F]{6}'), verify all use Tailwind palette. Use browser DevTools color picker to verify text contrast meets WCAG AA (4.5:1 minimum). Check hover states use predictable lightness shifts."/>
+      <test ac="AC-3" idea="MANUAL: View chat messages in browser at different zoom levels. Verify font sizes consistent across component types, line heights appropriate for readability, monospace font applied to code blocks. Test with long messages."/>
+      <test ac="AC-4" idea="MANUAL: Interact with all buttons in browser - hover, click (active), tab navigation (focus), disabled state. Verify hover states clearly visible, active states provide tactile feedback, focus ring visible (2px outline), disabled states muted."/>
+      <test ac="AC-5" idea="MANUAL: Test file viewer toggle animation - should be 300ms spring physics (smooth, not linear). Verify pulsing dot animation on status indicator looks good (not too fast/slow). Check button transitions are subtle (100-200ms). Test with prefers-reduced-motion enabled."/>
+      <test ac="AC-6" idea="MANUAL: Trigger agent execution, verify status indicator shows tool-specific messages ('Reading X...', 'Writing Y...', 'Loading resources...'). Verify streaming cursor visible during response generation. Check send button shows stop icon (not arrow) during streaming."/>
+      <test ac="AC-7" idea="MANUAL: Resize browser window to 1920x1080, 1366x768, 1440x900. Take screenshots at each resolution. Verify file viewer collapse works smoothly, chat panel adapts width (70% / 100%), no horizontal scrolling appears."/>
+      <test ac="AC-8" idea="MANUAL: Compare baseline screenshots (from Task 1) with post-polish screenshots. Verify all Epic 6 features visually intact: file viewer toggle animation, send button state changes (arrow ↔ stop icon), dynamic status messages, session metadata (friendly names), drag-drop indicators."/>
+      <test ac="Design System" idea="MANUAL: Review proposed design system document with stakeholder before implementation. Verify 2-3 signature elements chosen create distinction while staying clean/professional. Check rationale explains how choices differentiate from generic AI sites."/>
+    </ideas>
+  </tests>
+</story-context>
