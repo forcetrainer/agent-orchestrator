@@ -98,10 +98,6 @@ export function mapToolCallToStatus(
     case 'list_files':
       return 'Browsing files...';
 
-    case 'execute_workflow':
-      // Generic message (no workflow filename - too technical)
-      return 'Executing workflow...';
-
     default:
       return 'Processing...';
   }

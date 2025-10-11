@@ -81,11 +81,11 @@ import { executeToolCall } from '@/lib/tools/toolExecutor';
 /**
  * Gets tool definitions for OpenAI function calling.
  *
- * Story 4.9: Import all tool definitions including execute_workflow
+ * Story 9.1: Only read_file and save_output tools remain
  */
 function getToolDefinitions() {
-  const { readFileTool, saveOutputTool, executeWorkflowTool } = require('@/lib/tools/toolDefinitions');
-  return [readFileTool, saveOutputTool, executeWorkflowTool];
+  const { readFileTool, saveOutputTool } = require('@/lib/tools/toolDefinitions');
+  return [readFileTool, saveOutputTool];
 }
 
 /**

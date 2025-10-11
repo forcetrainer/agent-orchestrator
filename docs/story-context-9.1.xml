@@ -1,0 +1,154 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>9.1</storyId>
+    <title>Remove execute_workflow Tool</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-11</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-9.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>remove the execute_workflow tool from the codebase</iWant>
+    <soThat>LLM orchestrates workflow execution instead of hidden tool logic</soThat>
+    <tasks>
+- Task 1: Document current execute_workflow behavior
+- Task 2: Remove executeWorkflow function from fileOperations.ts
+- Task 3: Remove executeWorkflowTool from toolDefinitions.ts
+- Task 4: Remove execute_workflow from agenticLoop.ts
+- Task 5: Update test suite
+- Task 6: Verify compilation and final cleanup
+- Task 7: Move session management to conversation initialization
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">lib/tools/fileOperations.ts - Remove executeWorkflow function (lines 289-516)</criterion>
+    <criterion id="AC2">lib/tools/toolDefinitions.ts - Remove executeWorkflowTool export</criterion>
+    <criterion id="AC3">lib/agents/agenticLoop.ts - Remove from tool definitions list</criterion>
+    <criterion id="AC4">Only two file operation tools remain: read_file, save_output</criterion>
+    <criterion id="AC5">All tests referencing execute_workflow removed or updated</criterion>
+    <criterion id="AC6">Code compiles without errors after removal</criterion>
+    <criterion id="AC7">Session management preserved for Phase 2 conversation history:
+      - UUID generation moves to conversation start (not execute_workflow)
+      - Session folder created at conversation start (in chat API route)
+      - Manifest.json initialized with agent, workflow, user, timestamps
+      - LLM receives SESSION_ID and SESSION_FOLDER variables in system prompt
+      - save_output validates writes are within current session folder
+      - Phase 2 Ready: Manifest schema supports adding messages[] field without breaking changes</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-9.md" title="Epic 9 Technical Specification" section="Story 9.1">
+        Comprehensive technical specification for removing execute_workflow tool. Describes current architecture problems (640 lines of magic), proposed simple architecture (LLM orchestration), acceptance criteria, and implementation phases.
+      </doc>
+      <doc path="docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md" title="Workflow Execution Simplification Spec" section="Phase 1-6">
+        Detailed refactor specification explaining why execute_workflow is over-engineered. Documents 5-pass variable resolution, complex tool results, hidden session management. Proposes simple read_file/save_output pattern matching Claude Code architecture.
+      </doc>
+      <doc path="docs/SESSION-OUTPUT-SPEC.md" title="Session Output Management Specification" section="Overview, Manifest Schema">
+        Defines session folder structure (/data/agent-outputs/{uuid}/), manifest.json schema with agent/workflow/execution metadata. Documents session lifecycle, discovery patterns, and Phase 2 conversation history readiness.
+      </doc>
+      <doc path="docs/PRD.md" title="Product Requirements Document" section="Phase 2 Features">
+        PRD Phase 2 includes conversation history persistence feature. Story 9.1 establishes foundation (conversation-scoped UUIDs, session folders, manifest.json) that enables future message[] storage without architectural changes.
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture" section="Agentic Loop">
+        Current agentic loop architecture (Epic 4) showing tool registration and execution flow. Will need updates after execute_workflow removal to document new LLM-orchestrated workflow pattern.
+      </doc>
+      <doc path="docs/AGENT-EXECUTION-SPEC.md" title="Agent Execution Specification" section="Tool Execution">
+        Specification for agentic execution loop. Defines tool calling conventions, result handling. Story 9.1 simplifies to 2 tools (read_file, save_output) with simple JSON results.
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/tools/fileOperations.ts" kind="implementation" symbol="executeWorkflow" lines="301-516" reason="Primary target for removal. Contains 215 lines of workflow orchestration logic including: UUID generation, session folder creation, manifest generation, multi-pass variable resolution (5 passes), dynamic file loading, and complex result object construction. This function does too much 'magic' without LLM awareness."/>
+      <artifact path="lib/tools/fileOperations.ts" kind="implementation" symbol="executeReadFile" lines="78-126" reason="Will remain after execute_workflow removal. Provides simple read_file tool that returns file content only. Story 9.1 preserves this tool for LLM orchestration pattern."/>
+      <artifact path="lib/tools/fileOperations.ts" kind="implementation" symbol="executeSaveOutput" lines="138-234" reason="Will remain after execute_workflow removal. Provides simple save_output tool. AC7 requires extracting security validation logic from execute_workflow before removal and preserving in save_output path validation."/>
+      <artifact path="lib/tools/fileOperations.ts" kind="implementation" symbol="createInitialManifest" lines="249-287" reason="Session management logic that must be preserved and moved to conversation initialization (Task 7). Generates manifest.json with agent, workflow, execution metadata. Critical for Phase 2 conversation history."/>
+      <artifact path="lib/tools/toolDefinitions.ts" kind="tool-schema" symbol="executeWorkflowTool" lines="73-96" reason="Target for removal (AC2). OpenAI function calling schema for execute_workflow tool. Must be removed from exports and tools array."/>
+      <artifact path="lib/tools/toolDefinitions.ts" kind="tool-schema" symbol="readFileTool" lines="17-35" reason="Remains after removal. Defines read_file tool schema for LLM orchestration."/>
+      <artifact path="lib/tools/toolDefinitions.ts" kind="tool-schema" symbol="saveOutputTool" lines="43-65" reason="Remains after removal. Defines save_output tool schema for LLM orchestration."/>
+      <artifact path="lib/agents/agenticLoop.ts" kind="orchestration" symbol="getToolDefinitions" lines="86-89" reason="Target for removal (AC3). Returns array including executeWorkflowTool. Must remove executeWorkflowTool from array, leaving only readFileTool and saveOutputTool."/>
+      <artifact path="lib/agents/agenticLoop.ts" kind="orchestration" symbol="executeAgent" lines="109-303" reason="Context for understanding tool registration flow. Shows how tools are passed to OpenAI and executed in agentic loop. Story 9.1 simplifies from 3 tools to 2 tools."/>
+      <artifact path="app/api/chat/route.ts" kind="api-route" symbol="POST" lines="50-442" reason="Target for session management migration (AC7, Task 7). Currently creates session on first message (line 72-80). Must be enhanced to initialize UUID, session folder, manifest.json, and inject SESSION_ID and SESSION_FOLDER variables into system prompt."/>
+      <artifact path="app/api/chat/route.ts" kind="api-route" lines="231-232" reason="Tool definitions import location. Shows where executeWorkflowTool is currently imported and registered. Must be updated to remove executeWorkflowTool after removal."/>
+      <artifact path="lib/tools/toolExecutor.ts" kind="implementation" reason="Referenced in code as shared tool executor. Will need to handle executeWorkflow removal by updating tool dispatch logic to only handle read_file and save_output."/>
+      <artifact path="scripts/test-session-management.ts" kind="test-script" reason="Test script referencing executeWorkflow. Must be removed or updated as part of test cleanup (AC5, Task 5)."/>
+    </code>
+    <dependencies>
+      <ecosystem name="node">
+        <package name="uuid" version="^13.0.0" reason="Used for UUID v4 generation in execute_workflow. Task 7 requires extracting this logic for session initialization at conversation start."/>
+        <package name="js-yaml" version="^4.1.0" reason="Used to parse workflow.yaml in execute_workflow. After removal, YAML parsing moves to LLM orchestration (Stories 9.2-9.5)."/>
+        <package name="openai" version="^4.104.0" reason="OpenAI SDK for function calling. Story 9.1 simplifies tool definitions from 3 to 2 tools."/>
+        <package name="next" version="14.2.0" reason="Next.js framework. Session initialization will be added to API route (app/api/chat/route.ts)."/>
+        <package name="typescript" version="^5" reason="TypeScript for type safety. Compilation verification required (AC6) after removal."/>
+        <package name="jest" version="^30.2.0" reason="Testing framework. No executeWorkflow tests found currently. Task 5 handles test cleanup."/>
+      </ecosystem>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="security" priority="critical">
+      Extract and preserve security validation logic from executeWorkflow before deletion (lines 435-443 validateWritePath, lines 175-184 validateWritePath in save_output). Security checks for path traversal, symlinks, write restrictions MUST be preserved and reused in simplified path resolver (Story 9.2).
+    </constraint>
+    <constraint type="architecture" priority="high">
+      Removal is intentionally destructive. Workflows will not function after this story until Stories 9.2-9.5 provide replacement architecture (simplified path resolver, system prompt instructions, updated workflow files). Epic 6 MUST be complete before starting Story 9.1.
+    </constraint>
+    <constraint type="architecture" priority="high">
+      Session management preservation (AC7): UUID generation, manifest.json creation, and session folder creation must move to conversation initialization (app/api/chat/route.ts) not be lost during executeWorkflow removal. This is foundation for Phase 2 conversation history.
+    </constraint>
+    <constraint type="testing" priority="medium">
+      Integration tests that depend on execute_workflow will temporarily fail. This is expected and documented. Tests will be fixed in Stories 9.2-9.5 when replacement architecture is in place.
+    </constraint>
+    <constraint type="process" priority="high">
+      Comprehensive grep for "execute_workflow" required in final cleanup (AC6). Verify 0 results in source code (except documentation). Use: git grep "execute_workflow" lib/ app/
+    </constraint>
+    <constraint type="compatibility" priority="high">
+      Align with unified-project-structure.md: Tool implementations in lib/tools/, tool definitions in lib/tools/toolDefinitions.ts, agentic loop in lib/agents/agenticLoop.ts. No structural conflicts detected.
+    </constraint>
+  </constraints>
+  <interfaces>
+    <interface name="ToolResult" kind="type" signature="{ success: boolean; path?: string; content?: string; size?: number; error?: string; [key: string]: any }" path="lib/tools/fileOperations.ts:25-38" usage="Standard result format for all file operation tools. Used by read_file and save_output. Must remain unchanged."/>
+    <interface name="ExecuteWorkflowParams" kind="type" signature="{ workflow_path: string; user_input?: Record<string, any> }" path="lib/tools/fileOperations.ts:61-66" usage="Parameter interface for execute_workflow tool. Will be removed along with executeWorkflow function (AC1)."/>
+    <interface name="PathContext" kind="type" signature="{ bundleRoot: string; coreRoot: string; projectRoot: string; bundleConfig: Record<string, any> | null; toolCallCount: number; sessionFolder?: string }" path="lib/pathResolver.ts" usage="Context passed to all file operation tools. sessionFolder field must be populated by conversation initialization (AC7) after Story 9.1, not by execute_workflow."/>
+    <interface name="ChatCompletionTool" kind="type" signature="OpenAI tool schema format" path="openai/resources/chat/completions" usage="OpenAI function calling tool definition format. executeWorkflowTool must be removed from exports (AC2)."/>
+  </interfaces>
+  <tests>
+    <standards>
+      Testing framework: Jest (^30.2.0) with TypeScript support via ts-jest (^29.4.4). Testing approach follows Next.js patterns with @testing-library/react for component tests. Security-critical code paths require 100% coverage. Current status: No executeWorkflow unit tests exist (grep found 0 test files), which simplifies Task 5 (test cleanup). Integration tests may exist that indirectly use execute_workflow through workflow execution flows - these are expected to fail after Story 9.1 and will be fixed in Stories 9.2-9.5.
+    </standards>
+    <locations>
+      Test files follow pattern: **/*.test.ts, **/*.test.tsx. Security tests should exist for read_file and save_output validation. Path resolver tests should exist for security validation. After Story 9.1, verify tests exist for: path traversal prevention, write path restrictions (/data/agent-outputs only), symlink validation.
+    </locations>
+    <ideas>
+      <test-idea ac-ref="AC1" priority="high">
+        Unit test: Verify executeWorkflow function removed from lib/tools/fileOperations.ts. Test: Import fileOperations module, assert executeWorkflow is undefined. Prevents regression.
+      </test-idea>
+      <test-idea ac-ref="AC2" priority="high">
+        Unit test: Verify executeWorkflowTool removed from lib/tools/toolDefinitions.ts exports. Test: Import toolDefinitions, assert executeWorkflowTool is undefined, assert fileOperationTools array length === 2 (only readFileTool and saveOutputTool).
+      </test-idea>
+      <test-idea ac-ref="AC3" priority="high">
+        Unit test: Verify agenticLoop.ts getToolDefinitions returns exactly 2 tools. Test: Call getToolDefinitions(), assert array length === 2, assert names are 'read_file' and 'save_output' only.
+      </test-idea>
+      <test-idea ac-ref="AC4" priority="high">
+        Integration test: Verify only read_file and save_output tools registered with OpenAI. Test: Mock OpenAI client, intercept chat.completions.create call, assert tools array passed has exactly 2 tools.
+      </test-idea>
+      <test-idea ac-ref="AC5" priority="medium">
+        Test cleanup verification: Run git grep "execute_workflow" on test files. Test: Execute command, parse output, assert 0 matches in test files (except documentation).
+      </test-idea>
+      <test-idea ac-ref="AC6" priority="critical">
+        Compilation test: Verify TypeScript compilation succeeds after removal. Test: Run npm run build, assert exit code 0, verify no TypeScript errors. Also run npm run lint, assert no warnings.
+      </test-idea>
+      <test-idea ac-ref="AC7" priority="high">
+        Integration test: Verify session initialization at conversation start. Test: Mock conversation start (first message), assert UUID generated, assert session folder created at /data/agent-outputs/{uuid}/, assert manifest.json exists with correct schema, assert SESSION_ID and SESSION_FOLDER variables injected into system prompt.
+      </test-idea>
+      <test-idea ac-ref="AC7" priority="high">
+        Security test: Verify save_output validates writes within session folder. Test: Call save_output with path outside /data/agent-outputs, assert error returned with message 'Security violation'.
+      </test-idea>
+      <test-idea ac-ref="AC7" priority="medium">
+        Phase 2 readiness test: Verify manifest.json schema can accept messages[] field without breaking. Test: Load manifest, add messages: [{role: 'user', content: 'test'}], save manifest, reload and parse successfully.
+      </test-idea>
+    </ideas>
+  </tests>
+</story-context>

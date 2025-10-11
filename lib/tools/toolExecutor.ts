@@ -8,7 +8,7 @@
  * This avoids code duplication and ensures consistent tool execution behavior.
  */
 
-import { executeReadFile, executeSaveOutput, executeWorkflow } from './fileOperations';
+import { executeReadFile, executeSaveOutput } from './fileOperations';
 
 /**
  * Execute a single tool call with path resolution.
@@ -46,16 +46,6 @@ export async function executeToolCall(toolCall: any, context: any): Promise<any>
           console.log(`[save_output] ✅ Written ${result.size} bytes to: ${result.path}`);
         } else {
           console.error(`[save_output] ❌ Failed: ${result.error}`);
-        }
-        break;
-
-      case 'execute_workflow':
-        console.log(`[execute_workflow] 🔄 Loading workflow: ${functionArgs.workflow_path}`);
-        result = await executeWorkflow(functionArgs, context);
-        if (result.success) {
-          console.log(`[execute_workflow] ✅ Workflow loaded: ${result.workflow_name || 'unknown'}`);
-        } else {
-          console.error(`[execute_workflow] ❌ Failed: ${result.error}`);
         }
         break;
 

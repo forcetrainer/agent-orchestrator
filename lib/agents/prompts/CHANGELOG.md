@@ -12,7 +12,62 @@ Each entry includes:
 
 ---
 
-## v2.2 - Minimal Prompt (Defer to Workflow) (2025-10-11) - TESTING
+## v2.3 - Post Epic 9.1 Cleanup (2025-10-11) - ACTIVE
+
+### Problem/Observation
+After completing Story 9.1 (Remove execute_workflow Tool), the system prompt still referenced the removed tool in two places:
+1. Lines 41-43: Instructions to "Call `execute_workflow` with the workflow path"
+2. Lines 49-51: Listed `execute_workflow` in "Available Tools" section
+
+**Console Error Observed**:
+```
+[toolExecutor] Executing tool: execute_workflow {...}
+[toolExecutor] Tool execute_workflow failed: Unknown function: execute_workflow
+```
+
+**Root Cause**: System prompt was not updated when `execute_workflow` was removed in Story 9.1. The LLM was instructed to use a tool that no longer exists.
+
+**Story 9.1 Context**: Epic 9 "Simplify Workflow Execution Architecture" removed the over-engineered 640-line `execute_workflow` tool to enable LLM-orchestrated workflow execution using only `read_file` and `save_output` tools.
+
+### Change Made
+**This follows the "reduce rather than inject" principle** - minimal changes to remove obsolete references:
+
+**Removed:**
+- Line 43: "Call `execute_workflow` with the workflow path from the run-workflow attribute"
+- Line 44: "The tool will return all workflow files and configuration - everything you need is in the tool result"
+- Line 49: "`execute_workflow`: Load and execute a workflow (use for commands with run-workflow attribute)"
+
+**Added (minimal clarification):**
+- Line 37: "When a command has a `run-workflow` attribute, follow the agent's handler instructions for that command type."
+- Tool usage note updated to use `{{SESSION_FOLDER}}/filename.md` syntax (reflects Story 9.1 session management changes)
+
+**Further Simplified (user feedback):**
+- Removed prescriptive instructions about loading workflow.md (lines 39-42 in v2.3 draft)
+- Agent XML handlers already contain this logic - system prompt shouldn't duplicate it
+- Reduced "Workflow Execution Handler" section from 4 steps to 1 simple directive
+
+**Updated:**
+- Version: v2.2 → v2.3
+- Status: TESTING → ACTIVE
+- Date: 2025-10-11
+
+**Result**: 74 lines (was 82 in v2.2) - 10% reduction by removing obsolete tool and prescriptive controls
+
+### Expected Outcome
+- No more "Unknown function: execute_workflow" errors
+- Agents will use `read_file` to load workflow.yaml and workflow.md
+- Agents will orchestrate workflow execution using only `read_file` and `save_output`
+- Behavior aligns with Epic 9 architecture (LLM-orchestrated, not tool-automated)
+
+### Actual Result
+_[To be filled in after testing]_
+
+### Files Modified
+- `lib/agents/prompts/system-prompt.md` - Updated to v2.3 (removed execute_workflow references)
+
+---
+
+## v2.2 - Minimal Prompt (Defer to Workflow) (2025-10-11) - SUPERSEDED
 
 ### Problem/Observation
 User reported that the system prompt and the core workflow file (`bmad/core/tasks/workflow.md`) are conflicting, causing errant agent behavior. The system prompt (v2.0/v2.1) contains extensive prescriptive rules about:

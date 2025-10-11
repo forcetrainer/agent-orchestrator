@@ -68,15 +68,17 @@ export async function POST(request: NextRequest) {
     const conversation = getConversation(body.conversationId, body.agentId);
 
     // Story 6.3: Create session manifest on first message
+    // Story 9.1 AC7: Session management moved to conversation initialization
     const isFirstMessage = conversation.messages.length === 0;
     if (isFirstMessage) {
-      const { sessionId } = await createChatSession(
+      const { sessionId, sessionFolder } = await createChatSession(
         agent.id,
         agent.title,
         body.message,
         'Bryan' // TODO: Get from config or request context
       );
       conversation.sessionId = sessionId;
+      conversation.sessionFolder = sessionFolder; // Story 9.1 AC7: Store session folder
     }
 
     // Story 6.7: Process file attachments if present
@@ -227,9 +229,9 @@ export async function POST(request: NextRequest) {
           const client = getOpenAIClient();
           const model = env.OPENAI_MODEL || 'gpt-4';
 
-          // Import tool definitions
-          const { readFileTool, saveOutputTool, executeWorkflowTool } = require('@/lib/tools/toolDefinitions');
-          const tools = [readFileTool, saveOutputTool, executeWorkflowTool];
+          // Import tool definitions (Story 9.1: Only read_file and save_output remain)
+          const { readFileTool, saveOutputTool } = require('@/lib/tools/toolDefinitions');
+          const tools = [readFileTool, saveOutputTool];
 
           // Path context for tool execution
           const pathContext = {
@@ -357,13 +359,6 @@ export async function POST(request: NextRequest) {
                   // Execute tool (existing logic from agenticLoop.ts)
                   pathContext.toolCallCount++;
                   const result = await executeToolCall(toolCall, pathContext);
-
-                  // Update pathContext with session_folder if execute_workflow returned one
-                  if (toolCall.function.name === 'execute_workflow' && result.success && result.session_folder) {
-                    pathContext.sessionFolder = result.session_folder;
-                    conversation.sessionFolder = result.session_folder;  // Persist in conversation
-                    console.log(`[/api/chat] Set pathContext.sessionFolder: ${pathContext.sessionFolder}`);
-                  }
 
                   // Clear status after tool execution (Story 6.9: AC #8)
                   controller.enqueue(
