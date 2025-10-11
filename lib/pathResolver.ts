@@ -264,8 +264,7 @@ export function validatePathSecurity(
  *
  * @param pathTemplate - Path template with config variables
  * @param context - PathContext with bundleConfig
- * @returns Path with config variables resolved
- * @throws Error if config variable not found
+ * @returns Path with config variables resolved (leaves unresolved if variable not found)
  */
 function resolveConfigVariables(
   pathTemplate: string,
@@ -275,11 +274,13 @@ function resolveConfigVariables(
   const configPattern = /\{config_source\}:(\w+)/g;
 
   return pathTemplate.replace(configPattern, (match, varName) => {
+    // If config doesn't exist or variable not found, leave it as-is
     if (!context.bundleConfig || !(varName in context.bundleConfig)) {
-      throw new Error(
-        `Config variable not found: ${varName}. ` +
-        `Available variables: ${context.bundleConfig ? Object.keys(context.bundleConfig).join(', ') : 'none'}`
+      console.debug(
+        `[resolveConfigVariables] Variable not found: ${varName}. ` +
+        `Leaving unresolved. Available variables: ${context.bundleConfig ? Object.keys(context.bundleConfig).join(', ') : 'none'}`
       );
+      return match; // Return original {config_source}:varName unchanged
     }
 
     const value = context.bundleConfig[varName];

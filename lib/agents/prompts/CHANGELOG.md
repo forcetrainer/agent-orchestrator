@@ -12,6 +12,89 @@ Each entry includes:
 
 ---
 
+## v2.2 - Minimal Prompt (Defer to Workflow) (2025-10-11) - TESTING
+
+### Problem/Observation
+User reported that the system prompt and the core workflow file (`bmad/core/tasks/workflow.md`) are conflicting, causing errant agent behavior. The system prompt (v2.0/v2.1) contains extensive prescriptive rules about:
+- How to interpret `<action>` tags
+- When to ask questions vs provide guidance
+- Step execution patterns
+- Question cadence
+- Formatting rules
+- Output style
+
+Meanwhile, `workflow.md` contains its own comprehensive execution rules:
+- `<WORKFLOW-RULES>` with 5 critical rules
+- `<llm>` mandates about file reading and step execution
+- Detailed flow with substeps
+- Special tag handling (`<template-output>`, `<elicit-required>`, etc.)
+
+**Hypothesis**: The system prompt's prescriptive rules may be overriding or conflicting with the workflow.md rules, causing agents to not follow the workflow instructions properly.
+
+**Test Objective**: Remove all prescriptive rules from system prompt and see if agents follow workflow.md rules more accurately when the system prompt simply says "follow the workflow instructions exactly as written."
+
+### Change Made
+Created a **minimal system prompt** (v2.2) that:
+
+**Kept:**
+- Agent identity/persona variables ({{AGENT_NAME}}, {{PERSONA_ROLE}}, etc.)
+- Basic tool descriptions (execute_workflow, read_file, save_output)
+- Environment variable references
+- Essential tool usage notes (session folders, file updates)
+
+**Removed (everything else from v2.0):**
+- All prescriptive rules about action tag interpretation
+- All rules about question cadence and when to ask vs suggest
+- All step execution guidance
+- All formatting and output style rules
+- All conversational style instructions
+- All pattern recognition decision trees
+- All examples and "CRITICAL" sections
+
+**Added:**
+- Single core directive: "Follow all instructions, workflows, and tasks exactly as written"
+- Simple bullet list: Read files completely, execute steps in order, follow all rules from workflow/task files, defer to workflow instructions
+
+**Result**: Reduced from 312 lines (v2.0) to 72 lines (v2.2) - 77% reduction
+
+**Philosophy**: Let the workflow.md file be the "operating system" for agent behavior, not the system prompt. The system prompt should only handle identity and basic tool orientation.
+
+### Expected Outcome
+**If hypothesis is correct:**
+- Agents will follow workflow.md rules more accurately
+- Less cognitive conflict between system prompt and workflow rules
+- Behavior will be more predictable and follow the BMAD Method workflow structure
+- Issues like skipping steps, not waiting for user input, or misinterpreting tags should decrease
+
+**If hypothesis is incorrect:**
+- Agents may need SOME guidance from system prompt to interpret workflow instructions properly
+- May reveal which specific rules from v2.0 were actually helpful
+- Can incrementally add back only the necessary rules
+
+### Testing Plan
+1. Run Casey agent with same test workflow used previously
+2. Compare behavior with v2.0 and v2.2
+3. Document specific differences in how agents interpret and execute workflow instructions
+4. Look for: Does agent follow workflow.md rules? Does it skip steps? Does it wait for user input? Does it handle special tags correctly?
+
+### Actual Result
+**UPDATED (2025-10-11)**: During testing, discovered that workflow.md was not being loaded at all. The system prompt didn't include instructions for the agent to load `bmad/core/tasks/workflow.md` when encountering a run-workflow command.
+
+**Root Cause**: The agent definition files used in Claude Code (`.claude/commands/bmad`) contain explicit `<handlers>` sections that tell the agent to load workflow.md. The app agents (in `bmad/custom/bundles`) don't have these handlers, and the system prompt didn't include this critical instruction.
+
+**Fix Applied**: Added "Workflow Execution Handler" section to v2.2 system prompt with explicit instructions:
+- When command has `run-workflow` attribute → call `read_file` to load `{project-root}/bmad/core/tasks/workflow.md`
+- Read entire workflow.md contents (the core execution engine)
+- Call `execute_workflow` with the workflow path
+- Follow workflow.md instructions exactly
+
+This ensures agents always load the workflow execution rules before running any workflow.
+
+### Files Modified
+- `lib/agents/prompts/system-prompt.md` - Updated to v2.2 minimal version with workflow handler
+
+---
+
 ## v2.1 - Consolidation and Clarification (2025-10-09) - PROPOSED
 
 ### Problem/Observation

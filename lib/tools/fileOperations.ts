@@ -307,25 +307,17 @@ export async function executeWorkflow(
   try {
     // Resolve workflow path (includes security validation)
     resolvedWorkflowPath = resolvePath(params.workflow_path, context);
+    console.log(`[executeWorkflow] 📄 Loading workflow.yaml: ${resolvedWorkflowPath}`);
 
     // Read and parse workflow.yaml
     const workflowContent = await readFile(resolvedWorkflowPath, 'utf-8');
+    console.log(`[executeWorkflow] ✅ Loaded workflow.yaml (${workflowContent.length} bytes)`);
     const workflowConfig = parseYaml(workflowContent) as Record<string, any>;
 
     // Extract workflow metadata
     const workflowName = workflowConfig.name || 'Unnamed Workflow';
     const description = workflowConfig.description || '';
-
-    // Load bundle config if config_source is specified
-    let bundleConfig = context.bundleConfig;
-    if (workflowConfig.config_source) {
-      const configSourcePath = resolvePath(
-        workflowConfig.config_source,
-        context
-      );
-      const configContent = await readFile(configSourcePath, 'utf-8');
-      bundleConfig = parseYaml(configContent) as Record<string, any>;
-    }
+    console.log(`[executeWorkflow] Workflow name: "${workflowName}"`);
 
     // Story 5.0: Generate UUID v4 session ID
     const sessionId = uuidv4();
@@ -334,10 +326,10 @@ export async function executeWorkflow(
     // Story 5.0: Inject session_id into workflow config for variable resolution
     workflowConfig.session_id = sessionId;
 
-    // Create enhanced context with loaded config
+    // Create enhanced context - we'll update bundleConfig if we find config files
     const enhancedContext: PathContext = {
       ...context,
-      bundleConfig,
+      bundleConfig: context.bundleConfig,
     };
 
     // First pass: Resolve workflow config variables
@@ -353,24 +345,67 @@ export async function executeWorkflow(
       enhancedContext
     );
 
-    // Load instructions if specified
-    let instructions = '';
-    if (resolvedConfig.instructions) {
-      const instructionsPath = resolvePath(
-        resolvedConfig.instructions,
-        enhancedContext
-      );
-      instructions = await readFile(instructionsPath, 'utf-8');
-    }
+    // Dynamic file loading: Load any file paths found in the workflow config
+    // This replaces hardcoded keys like 'instructions', 'template', 'config_source'
+    const loadedFiles: Record<string, string> = {};
 
-    // Load template if specified
-    let template = '';
-    if (resolvedConfig.template && typeof resolvedConfig.template === 'string') {
-      const templatePath = resolvePath(
-        resolvedConfig.template,
-        enhancedContext
-      );
-      template = await readFile(templatePath, 'utf-8');
+    for (const [key, value] of Object.entries(resolvedConfig)) {
+      // Skip non-string values and known non-file keys
+      if (typeof value !== 'string') continue;
+      if (key === 'name' || key === 'description' || key === 'author' || key === 'category' || key === 'request_type') continue;
+      if (key === 'session_id' || key === 'project_slug' || key === 'date') continue;
+
+      // Skip values that still contain unresolved variables
+      if (value.includes('{') || value.includes('{{')) {
+        console.log(`[executeWorkflow] ⏭️  Skipping ${key}: contains unresolved variables: ${value}`);
+        continue;
+      }
+
+      // Skip values that look like variable references (e.g., "config.yaml:project_name")
+      if (value.includes(':') && !value.startsWith('/') && !value.startsWith('{')) {
+        console.log(`[executeWorkflow] ⏭️  Skipping ${key}: looks like variable reference, not a file: ${value}`);
+        continue;
+      }
+
+      // Check if value looks like a file path with extension
+      const hasFileExtension = /\.(md|yaml|yml|json|txt|csv|js|ts|xml|html|css)$/i.test(value);
+
+      // Only load if it has a file extension (to avoid directories and other non-file paths)
+      if (hasFileExtension) {
+        try {
+          const filePath = resolvePath(value, enhancedContext);
+          console.log(`[executeWorkflow] 📄 Loading ${key}: ${filePath}`);
+          const fileContent = await readFile(filePath, 'utf-8');
+          console.log(`[executeWorkflow] ✅ Loaded ${key} (${fileContent.length} bytes, ${fileContent.split('\n').length} lines)`);
+          loadedFiles[key] = fileContent;
+
+          // Special handling: if this looks like a config file, parse it and update bundleConfig
+          if (key.toLowerCase().includes('config') && (filePath.endsWith('.yaml') || filePath.endsWith('.yml'))) {
+            try {
+              const parsedConfig = parseYaml(fileContent) as Record<string, any>;
+              enhancedContext.bundleConfig = { ...enhancedContext.bundleConfig, ...parsedConfig };
+              console.log(`[executeWorkflow] Updated bundleConfig with variables from ${key}: ${Object.keys(parsedConfig).join(', ')}`);
+
+              // Re-resolve workflow variables now that we have more config
+              resolvedConfig = await resolveWorkflowVariables(resolvedConfig, enhancedContext);
+            } catch (error) {
+              console.warn(`[executeWorkflow] Could not parse ${key} as YAML config: ${error}`);
+            }
+          }
+        } catch (error: any) {
+          if (error.code === 'ENOENT') {
+            console.log(`[executeWorkflow] ❌ File not found for ${key}: ${value}`);
+          } else if (error.code === 'EISDIR') {
+            console.log(`[executeWorkflow] ⏭️  Skipping ${key}: is a directory, not a file: ${value}`);
+          } else if (error.message?.includes('Unable to resolve variables')) {
+            console.log(`[executeWorkflow] ❌ Cannot resolve path for ${key}: ${value}`);
+            console.log(`[executeWorkflow]    Error: ${error.message}`);
+          } else {
+            console.warn(`[executeWorkflow] ❌ Could not load ${key}: ${error.message}`);
+            console.warn(`[executeWorkflow]    Path was: ${value}`);
+          }
+        }
+      }
     }
 
     // Story 5.0: Create session folder - ALWAYS create for all workflows
@@ -416,22 +451,40 @@ export async function executeWorkflow(
     const author = workflowConfig.author || 'Unknown Agent';
     const bundleName = context.bundleRoot.split('/').pop() || 'unknown';
 
-    await createInitialManifest(sessionId, sessionFolder, workflowName, description, author, bundleName, bundleConfig);
+    await createInitialManifest(sessionId, sessionFolder, workflowName, description, author, bundleName, enhancedContext.bundleConfig);
 
-    console.log(`[executeWorkflow] Returning session_folder: ${sessionFolder}`);
+    console.log(`[executeWorkflow] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+    console.log(`[executeWorkflow] 🎯 Workflow loaded successfully: "${workflowName}"`);
+    console.log(`[executeWorkflow] 📁 Session folder: ${sessionFolder}`);
+    console.log(`[executeWorkflow] 🆔 Session ID: ${sessionId}`);
+    console.log(`[executeWorkflow] 📂 Loaded files: ${Object.keys(loadedFiles).length > 0 ? Object.keys(loadedFiles).join(', ') : 'none'}`);
+    console.log(`[executeWorkflow] ⚙️  Config variables: ${Object.keys(resolvedConfig).length} total`);
+    console.log(`[executeWorkflow] ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
 
-    return {
+    // Return all loaded files dynamically
+    const toolResult = {
       success: true,
       path: resolvedWorkflowPath,
       workflow_name: workflowName,
       description: description,
-      instructions: instructions,
-      template: template,
       config: resolvedConfig,
       user_input: params.user_input || {},
       session_id: sessionId,
       session_folder: sessionFolder,
+      ...loadedFiles, // Spread all loaded files into the result (instructions, template, etc.)
     };
+
+    // Log what's being returned to the LLM
+    console.log(`[executeWorkflow] 🔄 Returning to LLM:`);
+    console.log(`[executeWorkflow]    - workflow_name: ${toolResult.workflow_name}`);
+    console.log(`[executeWorkflow]    - session_id: ${toolResult.session_id}`);
+    console.log(`[executeWorkflow]    - session_folder: ${toolResult.session_folder}`);
+    for (const [key, value] of Object.entries(loadedFiles)) {
+      const content = typeof value === 'string' ? value : JSON.stringify(value);
+      console.log(`[executeWorkflow]    - ${key}: ${content.length} chars, ${content.split('\n').length} lines`);
+    }
+
+    return toolResult;
   } catch (error: any) {
     // Handle various error types
     if (error.code === 'ENOENT') {
