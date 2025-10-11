@@ -44,7 +44,7 @@ Flint provides three core capabilities:
 - **Framework**: Next.js 14 (App Router)
 - **Runtime**: Node.js 18+
 - **Language**: TypeScript
-- **AI Provider**: OpenAI API - Testing primarily with gpt-5-mini
+- **AI Provider**: OpenAI API - Testing primarily with gpt-4.1
 - **UI Library**: React 18
 - **Styling**: Tailwind CSS
 - **Testing**: Jest + React Testing Library
@@ -289,32 +289,6 @@ npm start
 - Advanced analytics and usage tracking
 
 
-
-## Built With BMAD
-
-This project is built to support agents created with the [BMAD-METHOD™](https://github.com/bmad-code-org/BMAD-METHOD), a universal AI agent framework for "Agentic Agile Driven Development."
-
-**BMAD™ and BMAD-METHOD™ are trademarks of BMad Code, LLC.**
-
-Flint provides a deployment platform for BMAD agents, enabling them to work seamlessly with OpenAI's API and making them accessible to end users through an intuitive chat interface. While Flint is specifically designed for BMAD agents, the underlying architecture can support other agent frameworks with similar file-based instruction patterns.
-
-Learn more about BMAD:
-- [BMAD Method GitHub](https://github.com/bmad-code-org/BMAD-METHOD)
-- [BMAD Documentation](https://github.com/bmad-code-org/BMAD-METHOD#readme)
-
-If you find this project useful, please consider ⭐ starring both repositories to help others discover them!
-
-## License
-
-This project is licensed under the **Flint Non-Commercial License** - see the [LICENSE](LICENSE) file for details.
-
-**TL;DR:**
-- ✅ Free for personal projects, education, research, and internal corporate use
-- ✅ Modify, adapt, and redistribute (with attribution)
-- ❌ Cannot be used in commercial products or services that charge fees
-- 💼 Commercial licensing available upon request
-
-For commercial licensing inquiries, please open an issue on GitHub.
 
 ## Support
 

@@ -21,9 +21,9 @@ export default function OverviewPage() {
               <span className="text-sm text-cyan-200">Prototype Ready for Scale</span>
             </div>
 
-            <h1 className="text-5xl sm:text-7xl font-bold mb-6 tracking-tight">
-              Flint ⚡
-            </h1>
+            <div className="flex justify-center mb-6">
+              <FlintLogo size="lg" showTagline={false} />
+            </div>
             <p className="text-2xl sm:text-3xl font-semibold mb-4 text-cyan-100">
               The foundation that generates the spark to ignite your agents
             </p>
