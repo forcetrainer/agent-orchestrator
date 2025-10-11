@@ -1,21 +1,24 @@
 # Agent Orchestrator - Epic Breakdown
 
 **Author:** Bryan
-**Date:** 2025-10-02 (Updated: 2025-10-07)
+**Date:** 2025-10-02 (Updated: 2025-10-11)
 **Project Level:** Level 3 (Full Product)
-**Target Scale:** 62 stories across 8 epics
+**Target Scale:** 68 stories across 9 epics
 
 ---
 
 ## Epic Overview
 
-This epic breakdown supports the Agent Orchestrator PRD, organizing development into 8 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
+This epic breakdown supports the Agent Orchestrator PRD, organizing development into 9 major epics that deliver the MVP platform. The primary goal is validating OpenAI API compatibility with BMAD agents while enabling rapid deployment to end users.
 
 **IMPORTANT ARCHITECTURAL PIVOT (October 2025):**
 Epic 2 and Epic 3 validation testing revealed that the initial OpenAI integration approach did not properly implement the agentic execution loop required for BMAD agents. Epic 4 "Agent Execution Architecture & Bundle System" was created to implement the correct architecture per AGENT-EXECUTION-SPEC.md and BUNDLE-SPEC.md, replacing the deprecated Epic 2 implementation.
 
-**NEW EPIC ADDED (October 2025):**
-Epic 6 "Enhanced UX & Interactive Features" was added based on user feedback from Epics 1-5. Users reported that the always-visible file viewer reduces chat space, sessions/files are hard to distinguish, and waiting for full responses feels slow. Epic 6 addresses these pain points before Docker deployment.
+**NEW EPIC ADDED (October 2025 - Epic 6):**
+Epic 6 "Enhanced UX & Interactive Features" was added based on user feedback from Epics 1-5. Users reported that the always-visible file viewer reduces chat space, sessions/files are hard to distinguish, and waiting for full responses feels slow. Epic 6 addressed these pain points before Docker deployment.
+
+**NEW EPIC ADDED (October 2025 - Epic 9):**
+Epic 9 "Simplify Workflow Execution Architecture" was added to address agent behavior issues caused by over-engineered workflow execution system. Refactor simplifies tool architecture, improves LLM agency, and aligns with Claude Code's proven patterns. See REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md for detailed rationale.
 
 **Epic Sequencing (Solo Developer - Revised Sequential Order):**
 1. **Epic 1** (Backend Foundation) - ✅ COMPLETE
@@ -23,21 +26,23 @@ Epic 6 "Enhanced UX & Interactive Features" was added based on user feedback fro
 3. **Epic 3** (Chat Interface) - ✅ COMPLETE
 4. **Epic 4** (Agent Execution Architecture & Bundle System) - ✅ COMPLETE
 5. **Epic 5** (File Viewer) - ✅ COMPLETE
-6. **Epic 6** (Enhanced UX & Interactive Features) - 🎯 NEXT (NEW - added based on user feedback)
-7. **Epic 7** (Docker Deployment) - Requires fully working application (Epics 1-6 complete)
-8. **Epic 8** (Polish & Docs) - Final polish after all features complete
+6. **Epic 6** (Enhanced UX & Interactive Features) - ✅ COMPLETE
+7. **Epic 9** (Simplify Workflow Execution Architecture) - 🎯 NEXT (NEW - architectural refactor)
+8. **Epic 7** (Docker Deployment) - Requires clean architecture (Epic 9 complete)
+9. **Epic 8** (Polish & Docs) - Final polish after all features complete
 
-**Critical Dependency Chain (Solo Developer):** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → **Epic 6 🎯** → Epic 7 → Epic 8
+**Critical Dependency Chain (Solo Developer):** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → Epic 6 ✅ → **Epic 9 🎯** → Epic 7 → Epic 8
 
 **⚠️ Solo Developer Warning:** Unlike team environments where epics can overlap, as a solo developer you MUST complete each epic fully before moving to the next. Half-built epics create technical debt and context switching overhead.
 
-**Total Estimated Effort:** 62 stories (Level 3 scope: 12-40 stories, expanded due to architectural correction + UX improvements)
+**Total Estimated Effort:** 68 stories (Level 3 scope: 12-40 stories, expanded due to architectural correction + UX improvements + workflow simplification)
 - Epic 1: 6 stories ✅ COMPLETE
 - Epic 2: 10 stories ⚠️ DEPRECATED
 - Epic 3: 9 stories ✅ COMPLETE
 - Epic 4: 12 stories ✅ COMPLETE
 - Epic 5: 7 stories ✅ COMPLETE
-- Epic 6: 10 stories 🎯 NEXT
+- Epic 6: 10 stories ✅ COMPLETE
+- Epic 9: 6 stories 🎯 NEXT (NEW - Workflow Simplification)
 - Epic 7: 6 stories (Docker)
 - Epic 8: 8 stories (Polish)
 
@@ -1821,6 +1826,212 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 - Performance targets met (60fps, <1s load times)
 - Documentation updated
 - Code quality high (no warnings, clean linting)
+
+---
+
+
+
+### Epic 9: Simplify Workflow Execution Architecture
+
+**Epic Goal:** Refactor workflow execution system to LLM-orchestrated pattern, removing over-engineered tool abstractions
+
+**Business Value:** Fixes agent behavior issues caused by over-engineered workflow execution. The current `execute_workflow` tool (640 lines) does too much "magic" without LLM awareness, creating cognitive overhead and reducing LLM agency. Refactor gives LLM full control through explicit file operations.
+
+**Success Criteria:**
+- LLM orchestrates all workflow steps explicitly
+- Tool results are simple (no complex nested objects)
+- Path resolver reduced to ~150 lines
+- execute_workflow tool removed
+- All workflows produce identical outputs
+
+**Dependencies:** Epic 6 COMPLETE (workflow engine currently in use)
+
+**Blocks:** Epic 7 (Docker) - clean up architecture before production deployment
+
+**Estimated Stories:** 6 stories
+**Estimated Effort:** 1-2 sprints
+
+---
+
+#### Story 9.1: Remove execute_workflow Tool
+
+**As a** developer
+**I want** to remove the execute_workflow tool from the codebase
+**So that** LLM orchestrates workflow execution instead of hidden tool logic
+
+**Prerequisites:** Epic 6 complete, all existing workflows documented
+
+**Acceptance Criteria:**
+1. `lib/tools/fileOperations.ts` - Remove `executeWorkflow` function (lines 289-516)
+2. `lib/tools/toolDefinitions.ts` - Remove `executeWorkflowTool` export
+3. `lib/agents/agenticLoop.ts` - Remove from tool definitions list
+4. Only two file operation tools remain: `read_file`, `save_output`
+5. All tests referencing execute_workflow removed or updated
+6. Code compiles without errors after removal
+
+**Technical Notes:**
+- This is destructive - ensure Epic 6 is complete and working before starting
+- Document current execute_workflow behavior for reference during migration
+- Keep security validation logic (will be reused in simplified path resolver)
+
+---
+
+#### Story 9.2: Simplify Path Resolver
+
+**As a** developer
+**I want** to simplify the path resolver from 471 lines to ~150 lines
+**So that** variable resolution is transparent and maintainable
+
+**Prerequisites:** Story 9.1 (execute_workflow removed)
+
+**Acceptance Criteria:**
+1. **Keep** in `lib/pathResolver.ts`:
+   - Basic path resolution for `{bundle-root}`, `{core-root}`, `{project-root}`
+   - Security validation (stays within allowed directories)
+   - Write path validation (restrict to /data/agent-outputs)
+2. **Remove** from `lib/pathResolver.ts`:
+   - `{config_source}:variable_name` resolution (LLM handles this by reading config.yaml)
+   - `{date}` and `{user_name}` resolution (LLM generates these)
+   - `{session_id}` resolution (LLM manages session IDs)
+   - Multi-pass nested variable resolution
+   - Config file auto-loading and parsing
+   - Circular reference detection
+3. Path resolver reduced to ~150 lines (68% reduction from 471 lines)
+4. All path security tests pass
+5. Unit tests updated for simplified resolver
+
+**Technical Notes:**
+- Follow refactor spec Section "Phase 3: Simplify Path Resolver"
+- Document what was removed and why (LLM now handles these responsibilities)
+- Security validation is critical - do not simplify security checks
+
+---
+
+#### Story 9.3: Update System Prompt with Workflow Orchestration Instructions
+
+**As a** developer
+**I want** to add workflow orchestration instructions to the system prompt
+**So that** LLM knows how to load workflows, resolve variables, and manage sessions
+
+**Prerequisites:** Story 9.2 (path resolver simplified)
+
+**Acceptance Criteria:**
+1. Add new section to `lib/agents/prompts/system-prompt.md`: "Running Workflows"
+2. Section includes (~80 lines):
+   - Step 1: Load Workflow Configuration (call read_file with workflow.yaml path)
+   - Step 2: Load Referenced Files (instructions, template, config)
+   - Step 3: Load Core Workflow Engine (read bmad/core/tasks/workflow.md)
+   - Step 4: Execute Workflow Instructions (follow steps in exact order)
+   - Step 5: Session and Output Management (generate UUID, create folders, save files)
+   - Variable Resolution rules (bundle-root, project-root, core-root, date, config variables)
+3. System prompt emphasizes: "You are in control. Read what you need, when you need it."
+4. Examples provided for each step
+5. System prompt tested with sample workflow to verify LLM follows instructions
+
+**Technical Notes:**
+- Follow refactor spec Section "Phase 2: Update System Prompt for Workflow Orchestration"
+- Be explicit and detailed - LLM needs clear instructions
+- Test with GPT-4 to ensure instructions are clear
+
+---
+
+#### Story 9.4: Update save_output Tool to Remove Session Folder Auto-Prepending
+
+**As a** developer
+**I want** to simplify save_output to accept full paths from LLM
+**So that** LLM explicitly controls where files are saved
+
+**Prerequisites:** Story 9.3 (system prompt updated)
+
+**Acceptance Criteria:**
+1. Remove session folder auto-prepending logic from `lib/tools/fileOperations.ts`
+2. **OLD behavior**: `if (sessionFolder && relative path) { prepend sessionFolder }`
+3. **NEW behavior**: LLM provides full paths, tool resolves variables and saves
+4. Path security validation still enforced (must be within /data/agent-outputs)
+5. Tool returns simple result: `{ success: true, path: resolvedPath }` or error
+6. Unit tests updated for new behavior
+7. Integration test: LLM calls save_output with full path, file saved correctly
+
+**Technical Notes:**
+- Follow refactor spec Section "Phase 4: Update save_output Tool"
+- LLM must now provide paths like: `/data/agent-outputs/{session-id}/output.md`
+- Security checks remain - only /data/agent-outputs is writable
+
+---
+
+#### Story 9.5: Update Workflow Instructions to Make Session Management Explicit
+
+**As a** developer
+**I want** to update all workflow instruction files to explicitly create sessions
+**So that** session management is visible in workflow steps, not hidden in tooling
+
+**Prerequisites:** Stories 9.1-9.4 complete (new architecture in place)
+
+**Acceptance Criteria:**
+1. Update Step 0 in all workflow instruction files (15 files total):
+   - Alex workflows: 6 files
+   - Casey workflows: 6 files
+   - Pixel workflows: 3 files
+2. New Step 0 format:
+   ```markdown
+   <step n="0" goal="Initialize session and load template">
+   <action>Generate session ID using uuid v4 or timestamp format YYYY-MM-DD-HHMMSS</action>
+   <action>Create session folder at {project-root}/data/agent-outputs/{session-id}/</action>
+   <action>Read template file from {bundle-root}/templates/template-name.md</action>
+   <action>Save template to {project-root}/data/agent-outputs/{session-id}/output.md</action>
+   <action>Throughout this workflow, you will read output.md, modify it, and save it back</action>
+   </step>
+   ```
+3. All 15 workflow files updated consistently
+4. Test one workflow end-to-end to verify LLM follows new instructions
+5. Document changes in workflow instruction migration guide
+
+**Technical Notes:**
+- Follow refactor spec Section "Phase 5: Update Workflow Instructions"
+- This is the most time-consuming story (15 files)
+- Use find/replace carefully - each workflow may have slight variations
+- Test incrementally - update one workflow, test, then continue
+
+---
+
+#### Story 9.6: End-to-End Validation and Documentation
+
+**As a** developer
+**I want** to validate that all workflows produce identical outputs with new architecture
+**So that** we confirm the refactor is successful and document the new patterns
+
+**Prerequisites:** All Epic 9 stories 9.1-9.5 complete
+
+**Acceptance Criteria:**
+1. **Validation Testing**:
+   - Run at least 3 different workflows (one from Alex, Casey, Pixel bundles)
+   - Compare outputs to baseline from old architecture
+   - Verify identical functionality (same files created, same content)
+   - Verify session folders created correctly
+   - Verify manifest.json generated
+2. **Performance Testing**:
+   - Measure workflow execution time (should be similar or faster)
+   - Verify no performance regressions
+3. **Documentation Updates**:
+   - Update `docs/solution-architecture.md` with new architecture (remove execute_workflow, add LLM orchestration section)
+   - Create `docs/WORKFLOW-MIGRATION-GUIDE.md` explaining old vs new pattern
+   - Update `docs/tech-spec-epic-9.md` (if creating separate tech spec)
+4. **Code Cleanup**:
+   - Remove all dead code related to execute_workflow
+   - Update comments referencing old architecture
+   - ESLint clean, no warnings
+5. **Success Metrics Validated**:
+   - ✅ LLM orchestrates all workflow steps explicitly
+   - ✅ Tool results are simple (no complex nested objects)
+   - ✅ Path resolver reduced to ~150 lines
+   - ✅ execute_workflow tool removed
+   - ✅ All workflows produce identical outputs
+
+**Technical Notes:**
+- This is the validation story - thorough testing before moving to Epic 7
+- Create baseline outputs from old architecture for comparison
+- Document any differences discovered (should be none)
+- If issues found, fix before marking Epic 9 complete
 
 ---
 

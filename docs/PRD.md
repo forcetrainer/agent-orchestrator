@@ -626,10 +626,42 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 ---
 
+### Epic 9: Simplify Workflow Execution Architecture
+**Goal:** Refactor workflow execution system to LLM-orchestrated pattern, removing over-engineered tool abstractions
+
+**Status:** 🎯 NEXT
+
+**Scope:**
+- Remove execute_workflow tool (640 lines) from codebase
+- Simplify path resolver from 471 lines to ~150 lines (remove multi-pass nested resolution)
+- Update system prompt with workflow orchestration instructions (~80 lines)
+- Update save_output tool to remove session folder auto-prepending
+- Update workflow instruction files to make session management explicit (15 files)
+- End-to-end validation and documentation updates
+
+**Value:** Fixes agent behavior issues caused by over-engineered workflow execution. The current `execute_workflow` tool does too much "magic" (creates sessions, resolves variables, auto-loads files) without LLM awareness, creating cognitive overhead and reducing LLM agency. Refactor gives LLM full control through explicit file operations guided by system prompt instructions.
+
+**Impact:**
+- ~580 lines of code removed
+- Improved LLM behavior (simpler tool results)
+- Easier debugging (all actions visible in conversation)
+- Architecture aligns with Claude Code patterns
+
+**Dependencies:**
+- Epic 6 must be complete (workflow engine currently in use)
+- Blocks Epic 7 (clean architecture before Docker deployment)
+
+**Estimated Stories:** 6 stories
+**Estimated Effort:** 1-2 sprints
+
+**Related Documentation:** `/docs/tech-spec-epic-9.md`, `/docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md`
+
+---
+
 ### Epic 7: Docker Deployment and Configuration
 **Goal:** Package platform for easy deployment via Docker with minimal configuration
 
-**Status:** PLANNED
+**Status:** PLANNED (requires Epic 9 complete)
 
 **Scope:**
 - Dockerfile for Next.js application
@@ -678,7 +710,7 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 
 ---
 
-**Total Estimated Stories:** 62 stories across 8 epics
+**Total Estimated Stories:** 68 stories across 9 epics
 
 **Epic Summary:**
 - Epic 1: Backend Foundation - 6 stories ✅ COMPLETE
@@ -686,19 +718,22 @@ Epic 4 was created to implement these specifications, replacing the deprecated E
 - Epic 3: Chat Interface - 9 stories ✅ COMPLETE
 - Epic 4: Agent Execution & Bundle System - 12 stories ✅ COMPLETE
 - Epic 5: File Viewer - 7 stories ✅ COMPLETE
-- Epic 6: Enhanced UX & Interactive Features - 10 stories (NEXT)
-- Epic 7: Docker Deployment - 6 stories (PLANNED)
+- Epic 6: Enhanced UX & Interactive Features - 10 stories ✅ COMPLETE
+- Epic 9: Simplify Workflow Execution Architecture - 6 stories 🎯 NEXT (NEW - architectural refactor)
+- Epic 7: Docker Deployment - 6 stories (PLANNED - requires Epic 9 complete)
 - Epic 8: Polish & Documentation - 8 stories (PLANNED)
 
-**Timeline Impact:** Added Epic 6 (2-3 sprints) for UX improvements before Docker deployment
+**Timeline Impact:**
+- Added Epic 6 (2-3 sprints) for UX improvements ✅ COMPLETE
+- Added Epic 9 (1-2 sprints) for workflow execution simplification 🎯 NEXT
 
 **Critical Architectural Note:** Epic 1 (Backend Foundation) must be completed first before any other epic can begin. This is the foundational infrastructure that enables both OpenAI integration and the chat interface.
 
 **Solo Developer Execution Plan:**
-- **Revised Sequential Order:** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → **Epic 6 (NEXT)** → Epic 7 → Epic 8
+- **Revised Sequential Order:** Epic 1 ✅ → Epic 4 ✅ → Epic 3 ✅ → Epic 5 ✅ → Epic 6 ✅ → **Epic 9 (NEXT)** → Epic 7 → Epic 8
 - **Complete each epic 100%** before moving to the next - no epic overlap
-- **Epic 6 builds on Epic 5:** File viewer and chat interface foundation required
-- **Epic 6 before Docker (Epic 7):** UX improvements make platform production-ready
+- **Epic 6 builds on Epic 5:** File viewer and chat interface foundation required ✅ COMPLETE
+- **Epic 9 before Docker (Epic 7):** Clean up architecture before production deployment
 - **Test thoroughly** at the end of each epic before proceeding
 - **Epic 2 Deprecated:** Learning from Epic 2 informs Epic 4 implementation
 

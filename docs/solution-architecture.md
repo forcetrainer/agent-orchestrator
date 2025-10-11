@@ -302,6 +302,34 @@ All API routes under `/app/api/`:
 5. Return function results to OpenAI, get final response
 6. Return response to frontend
 
+**⚠️ Architectural Simplification (Epic 9 - October 2025):**
+
+The workflow execution architecture was significantly simplified to improve LLM agency and reduce complexity:
+
+**OLD APPROACH (Before Epic 9):**
+- `execute_workflow` tool (640 lines) orchestrated entire workflow execution
+- System automatically created session folders, generated UUIDs, auto-loaded files
+- Complex tool returned 10+ field objects with mixed concerns
+- LLM received massive structured data without knowing where it came from
+- Path resolver did 5-pass nested variable resolution (471 lines)
+
+**NEW APPROACH (After Epic 9 - LLM-Orchestrated):**
+- LLM orchestrates workflow execution through explicit `read_file` and `save_output` calls
+- System prompt instructs LLM on workflow execution pattern
+- LLM decides when to create folders, load files, save outputs
+- Simple tool results: `{ success: true, content: "file content here" }`
+- Simplified path resolver (~150 lines) handles basic variable resolution only
+- All actions visible in conversation (better debugging)
+
+**Why the Change:**
+- Removes LLM confusion from complex tool results
+- Gives LLM full control and visibility over workflow steps
+- Aligns with Claude Code patterns (simple file operations)
+- Reduces codebase by ~580 lines
+- Improves agent behavior (less "magic", more explicit actions)
+
+See `/docs/tech-spec-epic-9.md` and `/docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md` for detailed rationale.
+
 ---
 
 #### GET /api/files
