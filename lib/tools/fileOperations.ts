@@ -12,7 +12,7 @@
 
 import { readFile, writeFile, mkdir } from 'fs/promises';
 import { dirname, resolve, sep, basename } from 'path';
-import { resolvePath, PathContext, loadBundleConfig, validateWritePath } from '@/lib/pathResolver';
+import { resolvePath, PathContext, validateWritePath } from '@/lib/pathResolver';
 import { validateFilename } from '@/lib/files/filenameValidator';
 
 /**
@@ -142,13 +142,14 @@ export async function executeSaveOutput(
       };
     }
 
-    // If sessionFolder is set and file_path is relative (doesn't start with { or /),
+    // If session-folder is set and file_path is relative (doesn't start with { or /),
     // prepend session folder to ensure files save in session directory
     let filePathToResolve = params.file_path;
-    console.log(`[save_output] DEBUG - sessionFolder: ${context.sessionFolder}, file_path: ${params.file_path}`);
+    const sessionFolder = context['session-folder'];
+    console.log(`[save_output] DEBUG - session-folder: ${sessionFolder}, file_path: ${params.file_path}`);
 
-    if (context.sessionFolder && !params.file_path.startsWith('{') && !params.file_path.startsWith('/')) {
-      filePathToResolve = resolve(context.sessionFolder, params.file_path);
+    if (sessionFolder && !params.file_path.startsWith('{') && !params.file_path.startsWith('/')) {
+      filePathToResolve = resolve(sessionFolder, params.file_path);
       console.log(`[save_output] Using session folder, filePathToResolve: ${filePathToResolve}`);
     }
 
@@ -171,7 +172,7 @@ export async function executeSaveOutput(
     }
 
     // Legacy check: if path is within core-root (read-only directory)
-    const normalizedCoreRoot = resolve(context.coreRoot);
+    const normalizedCoreRoot = resolve(context['core-root']);
     const normalizedPath = resolve(resolvedPath);
     const isInCore = normalizedPath.startsWith(normalizedCoreRoot + sep) || normalizedPath === normalizedCoreRoot;
 

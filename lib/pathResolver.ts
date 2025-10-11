@@ -1,138 +1,91 @@
 /**
- * Path Variable Resolution System
+ * Path Variable Resolution System (Simplified)
  *
  * Resolves BMAD path variables in file paths to enable portable agent workflows.
  * This system allows agents and workflows to reference files using variables instead
  * of hardcoded paths, making bundles portable across different installations.
  *
- * SUPPORTED VARIABLES:
- * - Path variables: {bundle-root}, {core-root}, {project-root}
- * - Config references: {config_source}:variable_name
- * - System variables: {date}, {user_name}
- * - Nested variable resolution (variables can reference other variables)
+ * ARCHITECTURE:
+ * Generic variable resolution using a data-driven PathContext interface.
+ * Variables in format {variable-name} are replaced with values from PathContext.
+ * Simple single-pass string replacement - no nested resolution, no config loading.
  *
- * RESOLUTION ORDER (CRITICAL - order matters!):
- * 1. Config references ({config_source}:variable_name) - Load values from bundle config.yaml
- * 2. System variables ({date}, {user_name}) - Generate runtime values
- * 3. Path variables ({bundle-root}, {core-root}, {project-root}) - Replace with actual paths
- * 4. Nested resolution - If replaced values contain variables, repeat steps 1-3 (max 10 iterations)
+ * SUPPORTED VARIABLES (extensible):
+ * Currently standardized: {bundle-root}, {core-root}, {project-root}
+ * Architecture is generic: any {variable-name} can be added to PathContext
  *
  * EXAMPLE:
- * Input:  "{config_source}:output_folder/report-{date}.md"
- * Step 1: "{project-root}/docs/report-{date}.md" (config says output_folder = "{project-root}/docs")
- * Step 2: "{project-root}/docs/report-2025-10-05.md" (date resolved)
- * Step 3: "/Users/bryan/agent-orchestrator/docs/report-2025-10-05.md" (project-root resolved)
- * Output: "/Users/bryan/agent-orchestrator/docs/report-2025-10-05.md"
+ * context = { 'bundle-root': '/app/bmad/bundles/my-bundle', ... }
+ * Input:  "{bundle-root}/workflows/intake.yaml"
+ * Output: "/app/bmad/bundles/my-bundle/workflows/intake.yaml"
+ *
+ * WHAT WAS REMOVED (Epic 9, Story 9.2):
+ * - {config_source}:variable_name resolution (LLM now reads config.yaml directly)
+ * - {date} and {user_name} resolution (LLM generates these values)
+ * - Multi-pass nested variable resolution
+ * - Config file auto-loading and YAML parsing
+ * - Circular reference detection
+ *
+ * WHY THIS IS SAFE:
+ * Story 9.1 removed execute_workflow tool and moved session management to conversation
+ * initialization. LLM now explicitly handles variable substitution through read_file calls.
+ * This simplification makes variable resolution transparent and maintainable.
  *
  * SECURITY:
  * - All resolved paths validated to be within bundleRoot, coreRoot, or projectRoot
  * - Path traversal attempts (..) are blocked
  * - Symbolic links resolved to real paths and validated
+ * - Write operations restricted to /data/agent-outputs
  * - Null bytes and invalid characters rejected
  *
- * For complete specification, see: docs/AGENT-EXECUTION-SPEC.md Section 5
- * @see https://github.com/your-repo/docs/AGENT-EXECUTION-SPEC.md#5-path-resolution-system
+ * For complete specification, see: docs/tech-spec-epic-9.md Section "Story 9.2"
  */
 
 import { resolve, normalize, isAbsolute, sep } from 'path';
-import { readFile } from 'fs/promises';
 import { realpathSync } from 'fs';
-import { load as parseYaml } from 'js-yaml';
 import { env } from '@/lib/utils/env';
 
 /**
  * Context for path variable resolution
+ *
+ * ARCHITECTURE: Generic key-value interface for extensible variable resolution.
+ * Any {variable-name} in a path template is replaced with context[variable-name].
+ *
+ * STANDARD VARIABLES (currently used):
+ * - 'bundle-root': Path to bundle directory (bmad/custom/bundles/{bundle-name})
+ * - 'core-root': Path to core directory (bmad/core)
+ * - 'project-root': Project root directory (absolute path)
+ *
+ * EXTENSIBILITY:
+ * New variables can be added without code changes, just update the PathContext object:
+ * Example: context['workflow-root'] = '{bundle-root}/workflows'
+ * Then use: "{workflow-root}/intake.yaml"
  */
 export interface PathContext {
-  /** Path to bundle directory: bmad/custom/bundles/{bundle-name} */
-  bundleRoot: string;
-  /** Path to core directory: bmad/core */
-  coreRoot: string;
-  /** Project root directory (absolute path) */
-  projectRoot: string;
-  /** Parsed bundle config.yaml (optional) */
-  bundleConfig?: Record<string, any>;
-  /** Active session folder path (set by conversation initialization, used by save_output) */
-  sessionFolder?: string;
+  [key: string]: string;
+
+  // Standard variables (documented but not enforced at compile time)
+  'bundle-root': string;
+  'core-root': string;
+  'project-root': string;
 }
 
 /**
- * Cache for parsed bundle configs to avoid repeated file reads
- */
-const configCache = new Map<string, Record<string, any>>();
-
-/**
- * Clears the bundle config cache (mainly for testing)
- */
-export function clearConfigCache(): void {
-  configCache.clear();
-}
-
-/**
- * Maximum iterations for nested variable resolution (prevents infinite loops)
- */
-const MAX_RESOLUTION_ITERATIONS = 10;
-
-/**
- * Creates a PathContext from bundle name and optional config
+ * Creates a PathContext from bundle name
  *
  * @param bundleName - Name of the bundle (e.g., "requirements-workflow")
- * @param bundleConfig - Optional pre-loaded bundle config
  * @returns PathContext for use with resolvePath
  */
-export function createPathContext(
-  bundleName: string,
-  bundleConfig?: Record<string, any>
-): PathContext {
+export function createPathContext(bundleName: string): PathContext {
   const projectRoot = env.PROJECT_ROOT;
   const bundleRoot = resolve(projectRoot, 'bmad/custom/bundles', bundleName);
   const coreRoot = resolve(projectRoot, 'bmad/core');
 
   return {
-    bundleRoot,
-    coreRoot,
-    projectRoot,
-    bundleConfig,
+    'bundle-root': bundleRoot,
+    'core-root': coreRoot,
+    'project-root': projectRoot,
   };
-}
-
-/**
- * Loads and parses config.yaml from bundle directory
- *
- * @param bundleRoot - Absolute path to bundle directory
- * @returns Parsed config object, or empty object if config doesn't exist
- */
-export async function loadBundleConfig(
-  bundleRoot: string
-): Promise<Record<string, any>> {
-  // Check cache first
-  if (configCache.has(bundleRoot)) {
-    return configCache.get(bundleRoot)!;
-  }
-
-  const configPath = resolve(bundleRoot, 'config.yaml');
-
-  try {
-    const content = await readFile(configPath, 'utf-8');
-    const config = parseYaml(content) as Record<string, any>;
-
-    // Cache the parsed config
-    configCache.set(bundleRoot, config);
-
-    return config;
-  } catch (error: any) {
-    // If file doesn't exist, return empty config (not an error)
-    if (error.code === 'ENOENT') {
-      const emptyConfig = {};
-      configCache.set(bundleRoot, emptyConfig);
-      return emptyConfig;
-    }
-
-    // Re-throw other errors (parsing errors, permission issues)
-    throw new Error(
-      `Failed to load bundle config at ${configPath}: ${error.message}`
-    );
-  }
 }
 
 /**
@@ -141,7 +94,7 @@ export async function loadBundleConfig(
  * Story 5.0: Path validator blocks writes outside /data/agent-outputs
  *
  * @param resolvedPath - Absolute path after variable resolution
- * @param context - PathContext with projectRoot
+ * @param context - PathContext with project-root
  * @throws Error if write path is not within /data/agent-outputs
  */
 export function validateWritePath(
@@ -149,7 +102,8 @@ export function validateWritePath(
   context: PathContext
 ): void {
   const normalizedPath = resolve(normalize(resolvedPath));
-  const agentOutputsPath = resolve(context.projectRoot, 'data/agent-outputs');
+  const projectRoot = context['project-root'];
+  const agentOutputsPath = resolve(projectRoot, 'data/agent-outputs');
 
   // Check if path is within /data/agent-outputs/
   const isInAgentOutputs =
@@ -168,11 +122,11 @@ export function validateWritePath(
 
   // Additional check: Block writes to specific protected paths even if they're in project root
   const protectedPaths = [
-    resolve(context.projectRoot, 'agents'),
-    resolve(context.projectRoot, 'bmad'),
-    resolve(context.projectRoot, 'lib'),
-    resolve(context.projectRoot, 'app'),
-    resolve(context.projectRoot, 'docs'),
+    resolve(projectRoot, 'agents'),
+    resolve(projectRoot, 'bmad'),
+    resolve(projectRoot, 'lib'),
+    resolve(projectRoot, 'app'),
+    resolve(projectRoot, 'docs'),
   ];
 
   for (const protectedPath of protectedPaths) {
@@ -226,9 +180,13 @@ export function validatePathSecurity(
   }
 
   // Validate real path is within bundleRoot OR coreRoot OR projectRoot
-  const normalizedBundleRoot = resolve(context.bundleRoot);
-  const normalizedCoreRoot = resolve(context.coreRoot);
-  const normalizedProjectRoot = resolve(context.projectRoot);
+  const bundleRoot = context['bundle-root'];
+  const coreRoot = context['core-root'];
+  const projectRoot = context['project-root'];
+
+  const normalizedBundleRoot = resolve(bundleRoot);
+  const normalizedCoreRoot = resolve(coreRoot);
+  const normalizedProjectRoot = resolve(projectRoot);
 
   // Check if real path is within any allowed directory
   const isInBundle =
@@ -260,200 +218,41 @@ export function validatePathSecurity(
 }
 
 /**
- * Resolves config variable references ({config_source}:variable_name)
+ * Resolves BMAD path variables in file paths using generic pattern matching
  *
- * @param pathTemplate - Path template with config variables
- * @param context - PathContext with bundleConfig
- * @returns Path with config variables resolved (leaves unresolved if variable not found)
- */
-function resolveConfigVariables(
-  pathTemplate: string,
-  context: PathContext
-): string {
-  // Pattern: {config_source}:variable_name
-  const configPattern = /\{config_source\}:(\w+)/g;
-
-  return pathTemplate.replace(configPattern, (match, varName) => {
-    // If config doesn't exist or variable not found, leave it as-is
-    if (!context.bundleConfig || !(varName in context.bundleConfig)) {
-      console.debug(
-        `[resolveConfigVariables] Variable not found: ${varName}. ` +
-        `Leaving unresolved. Available variables: ${context.bundleConfig ? Object.keys(context.bundleConfig).join(', ') : 'none'}`
-      );
-      return match; // Return original {config_source}:varName unchanged
-    }
-
-    const value = context.bundleConfig[varName];
-
-    // Convert value to string
-    const strValue = String(value);
-
-    // Recursively resolve any path variables in the config value itself
-    // This handles cases like agent_outputs_folder: '{project-root}/data/agent-outputs'
-    if (strValue.includes('{')) {
-      try {
-        return resolvePathVariables(strValue, context);
-      } catch (error) {
-        // If recursive resolution fails, return the original value
-        console.warn(`[resolveConfigVariables] Failed to recursively resolve ${varName}: ${error}`);
-        return strValue;
-      }
-    }
-
-    return strValue;
-  });
-}
-
-/**
- * Resolves system variables ({date}, {user_name}, etc.)
+ * ARCHITECTURE:
+ * Generic single-pass variable resolution. Any {variable-name} in the path template
+ * is replaced with the corresponding value from the PathContext.
  *
- * @param pathTemplate - Path template with system variables
- * @param context - PathContext (may contain bundleConfig with user_name)
- * @returns Path with system variables resolved
- */
-function resolveSystemVariables(
-  pathTemplate: string,
-  context: PathContext
-): string {
-  let result = pathTemplate;
-
-  // {date} - format: YYYY-MM-DD
-  result = result.replace(/\{date\}/g, () => {
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-  });
-
-  // {user_name} - from bundleConfig if available
-  result = result.replace(/\{user_name\}/g, () => {
-    if (context.bundleConfig && 'user_name' in context.bundleConfig) {
-      return String(context.bundleConfig.user_name);
-    }
-    // Default to environment user or 'user'
-    return process.env.USER || process.env.USERNAME || 'user';
-  });
-
-  return result;
-}
-
-/**
- * Resolves path variables ({bundle-root}, {core-root}, {project-root})
+ * WHY THIS IS SIMPLE:
+ * - No nested variables: Variables don't contain other variables
+ * - No multi-pass: Single regex replacement is sufficient
+ * - No config loading: LLM reads config.yaml and extracts values
+ * - No system variables: LLM generates dates and usernames
  *
- * @param pathTemplate - Path template with path variables
- * @param context - PathContext with directory paths
- * @returns Path with path variables resolved
- */
-function resolvePathVariables(
-  pathTemplate: string,
-  context: PathContext
-): string {
-  let result = pathTemplate;
-
-  // Simple string replacement - no regex needed since we're matching literal strings
-  result = result.replace(/\{bundle-root\}/g, context.bundleRoot);
-  result = result.replace(/\{core-root\}/g, context.coreRoot);
-  result = result.replace(/\{project-root\}/g, context.projectRoot);
-
-  return result;
-}
-
-/**
- * Checks if a string contains any unresolved variables
+ * EXAMPLE:
+ * context = { 'bundle-root': '/app/bundles/my-bundle', 'core-root': '/app/core' }
+ * Input:  "{bundle-root}/workflows/{core-root}/tasks.yaml"
+ * Output: "/app/bundles/my-bundle/workflows//app/core/tasks.yaml"
  *
- * @param str - String to check
- * @returns true if unresolved variables exist
- */
-function hasUnresolvedVariables(str: string): boolean {
-  // Check for any {variable} pattern or {config_source}:variable pattern
-  return /\{[^}]+\}/.test(str);
-}
-
-/**
- * Resolves BMAD path variables in file paths
- *
- * This is the main entry point for path resolution. It takes a path template with
- * variables (like "{bundle-root}/workflows/intake.yaml") and returns a fully resolved
- * absolute path by replacing all variables with their actual values.
- *
- * RESOLUTION ORDER (CRITICAL - order matters!):
- * 1. Config references ({config_source}:variable_name) - Must resolve first because
- *    config values may contain other variables (e.g., output_folder = "{project-root}/docs")
- * 2. System variables ({date}, {user_name}) - Runtime-generated values
- * 3. Path variables ({bundle-root}, {core-root}, {project-root}) - Actual directory paths
- * 4. Nested resolution - If any replaced value contains variables, repeat steps 1-3
- *    (max 10 iterations to prevent infinite loops)
- *
- * WHY THIS ORDER?
- * - Config vars first: They may reference system/path vars, so resolve them early
- * - System vars second: They're simple runtime values with no dependencies
- * - Path vars last: They're concrete paths, unlikely to need further resolution
- * - Nested resolution: Handles cases like config value = "{project-root}/docs/{date}"
- *
- * EXAMPLE NESTED RESOLUTION:
- * Input:  "{config_source}:output_folder/report-{date}.md"
- * Iteration 1:
- *   Step 1: "{project-root}/docs/report-{date}.md" (config: output_folder = "{project-root}/docs")
- *   Step 2: "{project-root}/docs/report-2025-10-05.md" (date = "2025-10-05")
- *   Step 3: "/path/to/project/docs/report-2025-10-05.md" (project-root = "/path/to/project")
- * Iteration 2: No variables remain → done
- *
- * @param pathTemplate - Path template with variables (e.g., "{bundle-root}/workflows/intake/workflow.yaml")
- * @param context - PathContext with directory paths and optional bundleConfig
+ * @param pathTemplate - Path template with variables (e.g., "{bundle-root}/workflows/intake.yaml")
+ * @param context - PathContext with variable values
  * @returns Resolved absolute path
- * @throws Error if variables cannot be resolved, circular references detected, or security validation fails
+ * @throws Error if variables cannot be resolved or security validation fails
  */
 export function resolvePath(pathTemplate: string, context: PathContext): string {
-  let result = pathTemplate;
-  let iterations = 0;
-  const seenValues = new Set<string>();
-
-  // NESTED RESOLUTION LOOP
-  // Iterative resolution for nested variables (e.g., config value contains another variable)
-  // We keep looping while unresolved variables exist AND we haven't hit max iterations
-  while (hasUnresolvedVariables(result) && iterations < MAX_RESOLUTION_ITERATIONS) {
-    // CIRCULAR REFERENCE DETECTION
-    // If we've seen this exact value before, we're in a circular reference
-    // Example: var1 = "{var2}", var2 = "{var1}" → infinite loop
-    if (seenValues.has(result)) {
-      throw new Error(
-        `Circular variable reference detected in path resolution: ${result}`
-      );
+  // Generic single-pass variable resolution
+  // Regex: \{([a-z-]+)\} matches {variable-name} format (lowercase and hyphens only)
+  const result = pathTemplate.replace(/\{([a-z-]+)\}/g, (match, varName) => {
+    if (varName in context) {
+      return context[varName];
     }
-    seenValues.add(result);
-
-    // Track if anything changed during this iteration
-    const beforeResolution = result;
-
-    // RESOLUTION ORDER (CRITICAL - DO NOT CHANGE ORDER!)
-    // 1. Config variables FIRST - may contain system/path variables
-    result = resolveConfigVariables(result, context);
-
-    // 2. System variables SECOND - runtime-generated values
-    result = resolveSystemVariables(result, context);
-
-    // 3. Path variables LAST - concrete directory paths
-    result = resolvePathVariables(result, context);
-
-    // If nothing changed, we have unresolvable variables
-    if (result === beforeResolution) {
-      throw new Error(
-        `Unable to resolve variables in path: ${result}. ` +
-        `Variables may be undefined or contain typos.`
-      );
-    }
-
-    iterations++;
-  }
-
-  // Check if we exceeded max iterations
-  if (iterations >= MAX_RESOLUTION_ITERATIONS && hasUnresolvedVariables(result)) {
+    // Variable not found in context
     throw new Error(
-      `Maximum resolution iterations (${MAX_RESOLUTION_ITERATIONS}) exceeded. ` +
-      `Possible circular reference or too many nested variables: ${result}`
+      `Unknown variable: {${varName}}. ` +
+      `Available variables: ${Object.keys(context).join(', ')}`
     );
-  }
+  });
 
   // Check for path traversal BEFORE normalization (normalize removes .. segments)
   if (result.includes('..')) {
@@ -461,10 +260,10 @@ export function resolvePath(pathTemplate: string, context: PathContext): string 
   }
 
   // Normalize the final path
-  result = normalize(result);
+  const normalizedPath = normalize(result);
 
   // Security validation
-  validatePathSecurity(result, context);
+  validatePathSecurity(normalizedPath, context);
 
-  return result;
+  return normalizedPath;
 }

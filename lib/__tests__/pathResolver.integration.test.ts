@@ -1,44 +1,37 @@
 /**
- * Integration Tests for Path Variable Resolution System
+ * Integration Tests for Path Variable Resolution System (Simplified)
  *
- * Tests path resolution with real bundle structure and config.yaml files.
- * Verifies end-to-end workflows and performance characteristics.
+ * Story 9.2: Tests simplified path resolution with real bundle structure.
+ * After simplification, tests focus on:
+ * - Basic path variable resolution ({bundle-root}, {core-root}, {project-root})
+ * - Custom variable resolution (extensibility)
+ * - Performance characteristics
+ * - Edge cases and error handling
+ *
+ * REMOVED (no longer tested):
+ * - Config file loading and parsing (LLM handles this)
+ * - {config_source}:variable_name resolution
+ * - {date} and {user_name} system variables
+ * - Multi-pass nested resolution
  */
 
 import {
   resolvePath,
   createPathContext,
-  loadBundleConfig,
-  clearConfigCache,
   type PathContext,
 } from '@/lib/pathResolver';
 import { resolve } from 'path';
 import { mkdir, writeFile, rm } from 'fs/promises';
 
-describe('pathResolver - Integration Tests', () => {
+describe('pathResolver - Integration Tests (Story 9.2 Simplified)', () => {
   const projectRoot = process.cwd();
-  const testBundleRoot = resolve(projectRoot, 'temp-integration-test-bundle');
-  const configPath = resolve(testBundleRoot, 'config.yaml');
+  // Note: createPathContext generates paths like: bmad/custom/bundles/{bundleName}
+  const testBundleRoot = resolve(projectRoot, 'bmad/custom/bundles/temp-integration-test-bundle');
 
   beforeEach(async () => {
-    // Clear config cache
-    clearConfigCache();
-
     // Create realistic bundle structure
     await mkdir(resolve(testBundleRoot, 'workflows/intake'), { recursive: true });
     await mkdir(resolve(testBundleRoot, 'agents'), { recursive: true });
-
-    // Create sample config.yaml
-    const configContent = `
-# BMM Module Configuration
-project_name: Test Project
-tech_docs: '{project-root}/docs'
-dev_story_location: '{project-root}/docs/stories'
-output_folder: '{project-root}/docs/output'
-user_name: TestUser
-communication_language: English
-`;
-    await writeFile(configPath, configContent, 'utf-8');
   });
 
   afterEach(async () => {
@@ -46,106 +39,9 @@ communication_language: English
     await rm(testBundleRoot, { recursive: true, force: true });
   });
 
-  describe('Real Bundle Structure (AC-4.2.6)', () => {
-    it('should load config.yaml and resolve complex paths', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
-
-      const result = resolvePath(
-        '{config_source}:dev_story_location/story-4.2.md',
-        context
-      );
-
-      expect(result).toBe(resolve(projectRoot, 'docs/stories/story-4.2.md'));
-    });
-
-    it('should resolve nested config variables with path variables', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
-
-      const result = resolvePath(
-        '{config_source}:tech_docs/AGENT-EXECUTION-SPEC.md',
-        context
-      );
-
-      expect(result).toBe(
-        resolve(projectRoot, 'docs/AGENT-EXECUTION-SPEC.md')
-      );
-    });
-
-    it('should resolve output paths with date stamps', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
-
-      const result = resolvePath(
-        '{config_source}:output_folder/{date}/report.md',
-        context
-      );
-
-      expect(result).toContain(resolve(projectRoot, 'docs/output'));
-      expect(result).toMatch(/\d{4}-\d{2}-\d{2}/);
-    });
-  });
-
-  describe('Performance (AC-4.2.8)', () => {
-    it('should resolve complex paths quickly', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
-
-      const start = Date.now();
-
-      // Resolve 100 paths
-      for (let i = 0; i < 100; i++) {
-        resolvePath('{config_source}:dev_story_location/story-{date}.md', context);
-      }
-
-      const duration = Date.now() - start;
-
-      // Should complete in under 100ms (1ms per resolution)
-      expect(duration).toBeLessThan(100);
-    });
-
-    it('should benefit from config caching', async () => {
-      // First load - reads from disk
-      const config1 = await loadBundleConfig(testBundleRoot);
-
-      // Second load - uses cache
-      const config2 = await loadBundleConfig(testBundleRoot);
-
-      // Same object reference indicates caching
-      expect(config1).toBe(config2);
-    });
-  });
-
-  describe('Workflow Integration Scenarios', () => {
-    it('should support agent workflow file references', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
+  describe('Real Bundle Structure', () => {
+    it('should resolve bundle workflow paths', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
       // Simulate agent loading workflow instructions
       const workflowPath = resolvePath(
@@ -158,14 +54,8 @@ communication_language: English
       );
     });
 
-    it('should support core task references from workflows', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
+    it('should resolve core task references from workflows', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
       const taskPath = resolvePath('{core-root}/tasks/workflow.md', context);
 
@@ -174,35 +64,110 @@ communication_language: English
       );
     });
 
-    it('should resolve paths for multiple bundles independently', async () => {
-      // Create second test bundle
-      const bundle2Root = resolve(projectRoot, 'temp-integration-test-bundle-2');
-      await mkdir(resolve(bundle2Root, 'workflows'), { recursive: true });
+    it('should resolve project-relative documentation paths', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
-      const config2Path = resolve(bundle2Root, 'config.yaml');
-      await writeFile(
-        config2Path,
-        'project_name: Bundle 2\noutput_folder: /different/output\n',
-        'utf-8'
+      const docPath = resolvePath(
+        '{project-root}/docs/stories/story-9.2.md',
+        context
       );
 
+      expect(docPath).toBe(
+        resolve(projectRoot, 'docs/stories/story-9.2.md')
+      );
+    });
+  });
+
+  describe('Custom Variables (Extensibility)', () => {
+    it('should support custom workflow-root variable', () => {
+      const context: PathContext = {
+        'bundle-root': testBundleRoot,
+        'core-root': resolve(projectRoot, 'bmad/core'),
+        'project-root': projectRoot,
+        'workflow-root': `${testBundleRoot}/workflows`,
+      };
+
+      const result = resolvePath('{workflow-root}/intake/instructions.md', context);
+
+      expect(result).toBe(
+        resolve(testBundleRoot, 'workflows/intake/instructions.md')
+      );
+    });
+
+    it('should support custom output-root variable', () => {
+      const outputRoot = resolve(projectRoot, 'data/agent-outputs');
+      const context: PathContext = {
+        'bundle-root': testBundleRoot,
+        'core-root': resolve(projectRoot, 'bmad/core'),
+        'project-root': projectRoot,
+        'output-root': outputRoot,
+      };
+
+      const result = resolvePath('{output-root}/session-123/report.md', context);
+
+      expect(result).toBe(
+        resolve(outputRoot, 'session-123/report.md')
+      );
+    });
+
+    it('should support multiple custom variables in one path', () => {
+      const context: PathContext = {
+        'bundle-root': testBundleRoot,
+        'core-root': resolve(projectRoot, 'bmad/core'),
+        'project-root': projectRoot,
+        'docs-root': `${projectRoot}/docs`,
+        'stories-dir': 'stories',
+      };
+
+      const result = resolvePath('{docs-root}/{stories-dir}/story-9.2.md', context);
+
+      expect(result).toBe(
+        resolve(projectRoot, 'docs/stories/story-9.2.md')
+      );
+    });
+  });
+
+  describe('Performance', () => {
+    it('should resolve paths quickly (single-pass is fast)', () => {
+      const context = createPathContext('temp-integration-test-bundle');
+
+      const start = Date.now();
+
+      // Resolve 1000 paths (more than before since single-pass is faster)
+      for (let i = 0; i < 1000; i++) {
+        resolvePath('{bundle-root}/workflows/test-{core-root}.md', context);
+      }
+
+      const duration = Date.now() - start;
+
+      // Should complete in under 100ms (0.1ms per resolution)
+      // Single-pass is much faster than multi-pass nested resolution
+      expect(duration).toBeLessThan(100);
+    });
+
+    it('should not have caching complexity (stateless resolution)', () => {
+      const context1 = createPathContext('bundle-1');
+      const context2 = createPathContext('bundle-2');
+
+      // Each call is independent - no caching needed
+      const path1 = resolvePath('{bundle-root}/test.yaml', context1);
+      const path2 = resolvePath('{bundle-root}/test.yaml', context2);
+
+      // Different bundles = different paths
+      expect(path1).toContain('bundle-1');
+      expect(path2).toContain('bundle-2');
+    });
+  });
+
+  describe('Multiple Bundle Independence', () => {
+    it('should resolve paths for multiple bundles independently', async () => {
+      // Create second test bundle
+      const bundle2Root = resolve(projectRoot, 'bmad/custom/bundles/temp-integration-test-bundle-2');
+      await mkdir(resolve(bundle2Root, 'workflows'), { recursive: true });
+
       try {
-        const config1 = await loadBundleConfig(testBundleRoot);
-        const config2 = await loadBundleConfig(bundle2Root);
-
-        const context1: PathContext = {
-          bundleRoot: testBundleRoot,
-          coreRoot: resolve(projectRoot, 'bmad/core'),
-          projectRoot,
-          bundleConfig: config1,
-        };
-
-        const context2: PathContext = {
-          bundleRoot: bundle2Root,
-          coreRoot: resolve(projectRoot, 'bmad/core'),
-          projectRoot,
-          bundleConfig: config2,
-        };
+        const context1 = createPathContext('temp-integration-test-bundle');
+        const context2 = createPathContext('temp-integration-test-bundle-2');
 
         const path1 = resolvePath('{bundle-root}/workflows/test.yaml', context1);
         const path2 = resolvePath('{bundle-root}/workflows/test.yaml', context2);
@@ -217,33 +182,17 @@ communication_language: English
     });
   });
 
-  describe('Error Recovery and Edge Cases', () => {
-    it('should handle missing config gracefully', async () => {
-      // Delete config.yaml
-      await rm(configPath, { force: true });
+  describe('Error Handling', () => {
+    it('should throw clear error for unknown variables', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
-
-      // Should still resolve path variables
-      const result = resolvePath('{bundle-root}/workflows/test.yaml', context);
-
-      expect(result).toBe(resolve(testBundleRoot, 'workflows/test.yaml'));
+      expect(() => {
+        resolvePath('{unknown-var}/test.yaml', context);
+      }).toThrow('Unknown variable: {unknown-var}');
     });
 
-    it('should handle special characters in paths', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
+    it('should handle special characters in paths', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
       const result = resolvePath(
         '{bundle-root}/files/file-with-dashes_and_underscores.yaml',
@@ -255,14 +204,8 @@ communication_language: English
       );
     });
 
-    it('should normalize paths with redundant separators', async () => {
-      const bundleConfig = await loadBundleConfig(testBundleRoot);
-      const context: PathContext = {
-        bundleRoot: testBundleRoot,
-        coreRoot: resolve(projectRoot, 'bmad/core'),
-        projectRoot,
-        bundleConfig,
-      };
+    it('should normalize paths with redundant separators', () => {
+      const context = createPathContext('temp-integration-test-bundle');
 
       const result = resolvePath(
         '{bundle-root}//workflows///test.yaml',
@@ -272,6 +215,49 @@ communication_language: English
       // Should normalize to single separators
       expect(result).toBe(resolve(testBundleRoot, 'workflows/test.yaml'));
       expect(result).not.toContain('//');
+    });
+
+    it('should reject paths with .. segments (security)', () => {
+      const context = createPathContext('temp-integration-test-bundle');
+
+      // After Story 9.2, .. segments are blocked as path traversal attempts
+      expect(() => {
+        resolvePath(
+          '{bundle-root}/workflows/./subfolder/../test.yaml',
+          context
+        );
+      }).toThrow('Security violation: Path traversal attempt detected');
+    });
+  });
+
+  describe('Real-World Scenarios', () => {
+    it('should support session-based output paths', () => {
+      const sessionId = 'session-20251011-123456';
+      const context: PathContext = {
+        'bundle-root': testBundleRoot,
+        'core-root': resolve(projectRoot, 'bmad/core'),
+        'project-root': projectRoot,
+        'session-folder': resolve(projectRoot, `data/agent-outputs/${sessionId}`),
+      };
+
+      const result = resolvePath('{session-folder}/report.md', context);
+
+      expect(result).toBe(
+        resolve(projectRoot, `data/agent-outputs/${sessionId}/report.md`)
+      );
+    });
+
+    it('should support complex nested directory structures', () => {
+      const context = createPathContext('temp-integration-test-bundle');
+
+      const result = resolvePath(
+        '{bundle-root}/workflows/intake/substeps/detailed/step-3/instructions.md',
+        context
+      );
+
+      expect(result).toBe(
+        resolve(testBundleRoot, 'workflows/intake/substeps/detailed/step-3/instructions.md')
+      );
     });
   });
 });

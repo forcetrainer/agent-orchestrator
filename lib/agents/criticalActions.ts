@@ -91,10 +91,9 @@ export async function processCriticalActions(
 
   // Initialize path context for resolution
   const context: PathContext = {
-    bundleRoot,
-    coreRoot: `${process.cwd()}/bmad/core`,
-    projectRoot: process.cwd(),
-    bundleConfig: undefined,
+    'bundle-root': bundleRoot,
+    'core-root': `${process.cwd()}/bmad/core`,
+    'project-root': process.cwd(),
   };
 
   // SEQUENTIAL PROCESSING
@@ -131,11 +130,11 @@ export async function processCriticalActions(
         });
 
         // AC-4.3.5: PARSE CONFIG - Parse config.yaml files and store variables
-        // Special handling for config files: parse YAML and make variables available
-        // for path resolution in subsequent critical actions
+        // Special handling for config files: parse YAML and store for later use
+        // Note: After Story 9.2, config variables are no longer auto-resolved in paths
+        // LLM now explicitly handles config variable substitution
         if (filePath.includes('config.yaml')) {
           bundleConfig = parseYaml(fileContent) as Record<string, any>;
-          context.bundleConfig = bundleConfig;
         }
       } else {
         // NON-FILE INSTRUCTION PATTERN
@@ -148,13 +147,13 @@ export async function processCriticalActions(
         // If config was loaded in previous actions, variables like {user_name} will be replaced
         let resolvedInstruction = instruction;
 
-        if (context.bundleConfig) {
+        if (bundleConfig) {
           // Replace {variable_name} with values from bundleConfig
           resolvedInstruction = instruction.replace(
             /\{(\w+)\}/g,
             (match, varName) => {
-              if (context.bundleConfig && varName in context.bundleConfig) {
-                return String(context.bundleConfig[varName]);
+              if (bundleConfig && varName in bundleConfig) {
+                return String(bundleConfig[varName]);
               }
               return match; // Keep original if not found
             }

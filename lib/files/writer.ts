@@ -34,7 +34,7 @@ export async function writeFileContent(
 
   try {
     // Create PathContext for secure path validation
-    const context = createPathContext('', {}); // Empty bundle name for general file operations
+    const context = createPathContext(''); // Empty bundle name for general file operations
 
     // Resolve full path from OUTPUT_PATH (legacy support for relative paths)
     const fullPath = relativePath.startsWith('/')

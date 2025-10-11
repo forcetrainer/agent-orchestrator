@@ -34,10 +34,9 @@ describe('File Operations - Filename Validation (Story 6.5)', () => {
 
     // Create test context
     context = {
-      bundleRoot: resolve(testDir, 'bundles/test-bundle'),
-      coreRoot: resolve(testDir, 'core'),
-      projectRoot: testDir,
-      bundleConfig: {},
+      'bundle-root': resolve(testDir, 'bundles/test-bundle'),
+      'core-root': resolve(testDir, 'core'),
+      'project-root': testDir,
     };
   });
 

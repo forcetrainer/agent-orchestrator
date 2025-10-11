@@ -15,7 +15,7 @@ describe('validateWritePath - Story 5.1 Security', () => {
   let context: ReturnType<typeof createPathContext>;
 
   beforeEach(() => {
-    context = createPathContext('test-bundle', {});
+    context = createPathContext('test-bundle');
   });
 
   describe('✅ Allowed Writes (ONLY /data/agent-outputs)', () => {

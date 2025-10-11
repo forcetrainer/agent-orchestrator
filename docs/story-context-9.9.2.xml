@@ -1,0 +1,179 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>9.2</storyId>
+    <title>Simplify Path Resolver</title>
+    <status>Approved</status>
+    <generatedAt>2025-10-11</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-9.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>simplify the path resolver from 471 lines to ~150 lines</iWant>
+    <soThat>variable resolution is transparent and maintainable</soThat>
+    <tasks>
+      <task id="1" title="Analyze current pathResolver.ts and identify functions to remove">
+        <subtask id="1.1">Map all functions in pathResolver.ts (line ranges, dependencies)</subtask>
+        <subtask id="1.2">Identify functions related to config_source resolution</subtask>
+        <subtask id="1.3">Identify functions related to date/user_name/session_id resolution</subtask>
+        <subtask id="1.4">Identify multi-pass and circular reference detection logic</subtask>
+        <subtask id="1.5">Create removal plan documenting what stays vs what goes</subtask>
+      </task>
+      <task id="2" title="Remove complex variable resolution functions">
+        <subtask id="2.1">Remove config_source variable resolution (resolveConfigVariable(), config loading logic)</subtask>
+        <subtask id="2.2">Remove system variable resolution for date, user_name, session_id</subtask>
+        <subtask id="2.3">Remove multi-pass nested variable resolution loop</subtask>
+        <subtask id="2.4">Remove circular reference detection</subtask>
+        <subtask id="2.5">Remove config file auto-loading and YAML parsing</subtask>
+        <subtask id="2.6">Verify file compiles after removal</subtask>
+      </task>
+      <task id="3" title="Preserve and refactor core path resolution">
+        <subtask id="3.1">Refactor to generic variable resolution using regex pattern matching</subtask>
+        <subtask id="3.2">Replace {variable-name} with values from PathContext (data-driven, not hardcoded)</subtask>
+        <subtask id="3.3">Simplify to single-pass resolution (no nested variables, no multi-pass loops)</subtask>
+        <subtask id="3.4">Keep security validation logic (validatePath, checkPathTraversal)</subtask>
+        <subtask id="3.5">Keep write path validation (validateWritePath)</subtask>
+        <subtask id="3.6">Keep symlink resolution with security checks</subtask>
+      </task>
+      <task id="4" title="Update PathContext interface to generic design">
+        <subtask id="4.1">Change PathContext to generic key-value interface: [key: string]: string</subtask>
+        <subtask id="4.2">Remove bundleConfig from PathContext (no longer needed)</subtask>
+        <subtask id="4.3">Remove sessionId from PathContext (managed by LLM now)</subtask>
+        <subtask id="4.4">Document standard variables: 'bundle-root', 'core-root', 'project-root'</subtask>
+        <subtask id="4.5">Add examples showing extensibility (any {variable-name} can be added)</subtask>
+      </task>
+      <task id="5" title="Update unit tests for simplified resolver">
+        <subtask id="5.1">Remove tests for config_source variable resolution</subtask>
+        <subtask id="5.2">Remove tests for date/user_name/session_id resolution</subtask>
+        <subtask id="5.3">Remove tests for nested variable resolution</subtask>
+        <subtask id="5.4">Keep and verify security tests pass (path traversal, write restrictions)</subtask>
+        <subtask id="5.5">Add tests for generic variable resolution (any {variable-name} in PathContext)</subtask>
+        <subtask id="5.6">Add test for unknown variable error handling</subtask>
+        <subtask id="5.7">Add tests for simplified single-pass resolution</subtask>
+      </task>
+      <task id="6" title="Verify integration with file operation tools">
+        <subtask id="6.1">Test read_file with {bundle-root} path resolution</subtask>
+        <subtask id="6.2">Test read_file with {core-root} path resolution</subtask>
+        <subtask id="6.3">Test save_output with {project-root} path resolution</subtask>
+        <subtask id="6.4">Test security validation in both tools</subtask>
+        <subtask id="6.5">Verify no regressions in file operations</subtask>
+      </task>
+      <task id="7" title="Update documentation">
+        <subtask id="7.1">Update pathResolver.ts inline comments explaining simplification</subtask>
+        <subtask id="7.2">Document what was removed and why (LLM now handles)</subtask>
+        <subtask id="7.3">Update tech-spec-epic-9.md with actual line count and changes</subtask>
+        <subtask id="7.4">Add migration notes for developers referencing old path resolver</subtask>
+      </task>
+      <task id="8" title="Validate line count and compilation">
+        <subtask id="8.1">Count lines in simplified pathResolver.ts (target: ~150 lines)</subtask>
+        <subtask id="8.2">Verify TypeScript compilation successful</subtask>
+        <subtask id="8.3">Verify ESLint clean (no new warnings)</subtask>
+        <subtask id="8.4">Run all security tests and verify 100% pass rate</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="1">
+      <description>Keep in lib/pathResolver.ts: Generic variable resolution (replace {variable-name} with values from PathContext), currently supporting {bundle-root}, {core-root}, {project-root} but extensible architecture, simple pattern matching and string replacement (no nested variables, no multi-pass), security validation (stays within allowed directories), write path validation (restrict to /data/agent-outputs), symlink resolution with security checks</description>
+    </criterion>
+    <criterion id="2">
+      <description>Remove from lib/pathResolver.ts: {config_source}:variable_name resolution (LLM handles this by reading config.yaml), {date} and {user_name} resolution (LLM generates these), {session_id} resolution (LLM manages session IDs per Story 9.1), multi-pass nested variable resolution, config file auto-loading and parsing, circular reference detection</description>
+    </criterion>
+    <criterion id="3">
+      <description>Path resolver reduced to ~150 lines (68% reduction from 471 lines)</description>
+    </criterion>
+    <criterion id="4">
+      <description>All path security tests pass</description>
+    </criterion>
+    <criterion id="5">
+      <description>Unit tests updated for simplified resolver</description>
+    </criterion>
+    <criterion id="6">
+      <description>read_file and save_output tools work correctly with simplified resolver</description>
+    </criterion>
+    <criterion id="7">
+      <description>Documentation updated to reflect removed functionality</description>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-9.md" title="Tech Spec: Epic 9" section="Story 9.2">
+        <snippet>Story 9.2: Simplify Path Resolver - Reduce path resolver from 471 lines to ~150 lines by removing config_source variable resolution, date/user_name/session_id resolution, multi-pass nested variable resolution, config file auto-loading. Keep basic path resolution for {bundle-root}, {core-root}, {project-root}, security validation, write path validation. Generic variable resolution architecture using data-driven PathContext interface.</snippet>
+      </doc>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md" title="Refactor Spec: Simplify Workflow Execution" section="Phase 3">
+        <snippet>Phase 3: Simplify Path Resolver - Remove complex variable resolution that was needed to support execute_workflow. Most complexity not needed if LLM orchestrates variable resolution. Reduce from 471 lines to ~150 lines by removing config_source resolution, date/user_name resolution, multi-pass nested resolution, circular reference detection. Keep security validation.</snippet>
+      </doc>
+      <doc path="/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/solution-architecture.md" title="Solution Architecture Document" section="Epic 9 Architectural Simplification">
+        <snippet>Epic 9 (October 2025) simplified workflow execution to LLM-orchestrated pattern. OLD: execute_workflow tool (640 lines) with 5-pass nested variable resolution. NEW: LLM orchestrates through explicit read_file and save_output calls. Path resolver simplified to ~150 lines handling basic variable resolution only. All actions visible in conversation.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath" lines="1-470" reason="Current path resolver implementation (470 lines) that needs simplification to ~150 lines. Contains functions to remove: resolveConfigVariables, resolveSystemVariables, loadBundleConfig, nested resolution loop, circular reference detection. Functions to keep: resolvePathVariables (basic), validatePathSecurity, validateWritePath."/>
+      <artifact path="lib/pathResolver.ts" kind="interface" symbol="PathContext" lines="46-57" reason="Current PathContext interface with bundleConfig and sessionFolder fields. Needs to be simplified to generic key-value interface [key: string]: string to support extensible variable resolution without hardcoded fields."/>
+      <artifact path="lib/tools/fileOperations.ts" kind="module" symbol="read_file, save_output" lines="N/A" reason="File operation tools that depend on path resolver. May need minor updates if PathContext interface changes. Must verify read_file and save_output work correctly with simplified resolver."/>
+      <artifact path="lib/__tests__/pathResolver.test.ts" kind="test" symbol="pathResolver tests" lines="N/A" reason="Unit tests for path resolver. Need to remove tests for config_source, date, user_name, session_id resolution, nested variable resolution. Keep security tests. Add tests for generic variable resolution."/>
+    </code>
+    <dependencies>
+      <node>
+        <package name="js-yaml" version="^4.1.0" reason="Used for config.yaml parsing - may be removable if LLM handles YAML parsing"/>
+        <package name="next" version="14.2.0" reason="Framework"/>
+        <package name="typescript" version="^5" reason="Type safety"/>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Generic variable resolution - Use data-driven PathContext interface where any {variable-name} can be resolved, not hardcoded specific variables. This makes the architecture extensible.</constraint>
+    <constraint type="security">NEVER simplify security validation - Path traversal prevention, write path restrictions, and symlink resolution must remain intact. All security tests must pass 100%.</constraint>
+    <constraint type="line-count">Target pathResolver.ts to ~150 lines (±10%). This requires removing ~320 lines of complex variable resolution logic.</constraint>
+    <constraint type="testing">All security tests must pass. Path traversal attacks must be blocked. Writes outside /data/agent-outputs must be rejected. Symlink escapes must be detected.</constraint>
+    <constraint type="backwards-compatibility">Story 9.1 prerequisite: execute_workflow must be removed and session management moved to conversation initialization before starting this story.</constraint>
+    <constraint type="llm-responsibility">LLM now handles: (1) Reading config.yaml and extracting values, (2) Generating date and user_name, (3) Managing session IDs. Path resolver only handles basic {variable-name} replacement.</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="PathContext" kind="TypeScript interface" path="lib/pathResolver.ts" signature="interface PathContext { [key: string]: string }">
+      <description>Generic key-value interface for path variable resolution. Currently has hardcoded fields (bundleRoot, coreRoot, projectRoot, bundleConfig, sessionFolder). Needs to become extensible: [key: string]: string with standard variables documented but not hardcoded.</description>
+    </interface>
+    <interface name="resolvePath" kind="function" path="lib/pathResolver.ts" signature="function resolvePath(pathTemplate: string, context: PathContext): string">
+      <description>Main path resolution function. Currently does 5-pass nested resolution with circular reference detection. Needs to simplify to single-pass generic regex replacement: replace {variable-name} with context[variable-name].</description>
+    </interface>
+    <interface name="validatePathSecurity" kind="function" path="lib/pathResolver.ts" signature="function validatePathSecurity(resolvedPath: string, context: PathContext): void">
+      <description>Security validation function that must be preserved. Validates path is within allowed directories, no path traversal, no symlink escapes. CRITICAL: Do not modify this function's security checks.</description>
+    </interface>
+    <interface name="validateWritePath" kind="function" path="lib/pathResolver.ts" signature="function validateWritePath(resolvedPath: string, context: PathContext): void">
+      <description>Write path validation function that must be preserved. Ensures writes only to /data/agent-outputs. CRITICAL: Do not modify this function's security checks.</description>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>The project uses Jest for unit testing with TypeScript support. Testing philosophy per solution-architecture.md: Focus on security-critical tests, business logic edge cases, and error handling. DO NOT test simple CRUD, rendering, or type exports. Test security vulnerabilities (path traversal, injection), critical failure scenarios, and edge cases. Target: 2-3 tests per critical module focusing on high-value scenarios.</standards>
+    <locations>
+      <location>lib/__tests__/pathResolver.test.ts - Unit tests for path resolver functions</location>
+      <location>lib/__tests__/pathResolver.security.test.ts - Security-focused tests for path validation</location>
+      <location>lib/__tests__/pathResolver.integration.test.ts - Integration tests for path resolution</location>
+      <location>lib/tools/__tests__/fileOperations.test.ts - Tests for read_file and save_output tools</location>
+    </locations>
+    <ideas>
+      <idea ac="1">Test generic variable resolution: Verify {variable-name} replaced with context[variable-name] for any variable (extensible architecture)</idea>
+      <idea ac="1">Test unknown variable error handling: Verify clear error when variable not in PathContext</idea>
+      <idea ac="1">Test single-pass resolution: Verify no nested variables or multi-pass loops (simplified behavior)</idea>
+      <idea ac="2">Remove tests for config_source variable resolution (no longer supported)</idea>
+      <idea ac="2">Remove tests for date/user_name/session_id resolution (LLM handles these)</idea>
+      <idea ac="2">Remove tests for nested variable resolution (no longer supported)</idea>
+      <idea ac="2">Remove tests for circular reference detection (no longer needed)</idea>
+      <idea ac="4">Security test: Path traversal to /etc/passwd blocked</idea>
+      <idea ac="4">Security test: Write to source code directories blocked</idea>
+      <idea ac="4">Security test: Symlink escape attempts detected</idea>
+      <idea ac="4">Security test: Writes outside /data/agent-outputs rejected</idea>
+      <idea ac="4">Security test: Null byte injection blocked</idea>
+      <idea ac="6">Integration test: read_file with {bundle-root} path resolution</idea>
+      <idea ac="6">Integration test: read_file with {core-root} path resolution</idea>
+      <idea ac="6">Integration test: save_output with {project-root} path resolution</idea>
+      <idea ac="6">Integration test: Security validation in both tools</idea>
+    </ideas>
+  </tests>
+</story-context>

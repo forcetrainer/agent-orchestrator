@@ -1,0 +1,36 @@
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+
+exports[`LoadingIndicator matches snapshot 1`] = `
+<div
+  aria-label="Agent status: Agent is thinking"
+  aria-live="polite"
+  class="max-w-[75%] mr-auto bg-slate-100 text-slate-900 px-4 py-3 rounded-xl border-l-4 border-cyan-500"
+  role="status"
+>
+  <div
+    class="flex items-center gap-3"
+  >
+    <div
+      class="flex items-center gap-1.5 "
+    >
+      <div
+        class="w-2 h-2 bg-cyan-500 rounded-full animate-bounce motion-reduce:animate-none"
+        style="animation-delay: 0ms;"
+      />
+      <div
+        class="w-2 h-2 bg-cyan-500 rounded-full animate-bounce motion-reduce:animate-none"
+        style="animation-delay: 150ms;"
+      />
+      <div
+        class="w-2 h-2 bg-cyan-500 rounded-full animate-bounce motion-reduce:animate-none"
+        style="animation-delay: 300ms;"
+      />
+    </div>
+    <span
+      class="text-slate-700"
+    >
+      Agent is thinking
+    </span>
+  </div>
+</div>
+`;
