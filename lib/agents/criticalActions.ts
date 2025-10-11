@@ -86,11 +86,8 @@ export async function processCriticalActions(
 
   // If no critical actions, return empty context
   if (criticalActions.length === 0) {
-    console.log('[criticalActions] No critical actions found in agent definition');
     return { messages, config: bundleConfig };
   }
-
-  console.log(`[criticalActions] Processing ${criticalActions.length} critical actions`);
 
   // Initialize path context for resolution
   const context: PathContext = {
@@ -120,8 +117,6 @@ export async function processCriticalActions(
         const filePath = fileLoadMatch[1].trim();
         const variables = fileLoadMatch[2]?.trim();
 
-        console.log(`[criticalActions] Loading file: ${filePath}`);
-
         // AC-4.3.3: Execute file loads via path resolution + read_file
         // Path resolution handles {bundle-root}, {core-root}, etc.
         const resolvedPath = resolvePath(filePath, context);
@@ -141,14 +136,6 @@ export async function processCriticalActions(
         if (filePath.includes('config.yaml')) {
           bundleConfig = parseYaml(fileContent) as Record<string, any>;
           context.bundleConfig = bundleConfig;
-          console.log(
-            `[criticalActions] Parsed config.yaml with variables: ${Object.keys(bundleConfig).join(', ')}`
-          );
-
-          // Log if specific variables were mentioned
-          if (variables) {
-            console.log(`[criticalActions] Setting variables: ${variables}`);
-          }
         }
       } else {
         // NON-FILE INSTRUCTION PATTERN
@@ -174,8 +161,6 @@ export async function processCriticalActions(
           );
         }
 
-        console.log(`[criticalActions] Non-file instruction: ${resolvedInstruction}`);
-
         // Inject as system message
         messages.push({
           role: 'system',
@@ -189,10 +174,6 @@ export async function processCriticalActions(
       throw new Error(errorMessage);
     }
   }
-
-  console.log(
-    `[criticalActions] Completed successfully: ${messages.length} messages, config ${bundleConfig ? 'loaded' : 'not loaded'}`
-  );
 
   return { messages, config: bundleConfig };
 }

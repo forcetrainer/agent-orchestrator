@@ -14,14 +14,11 @@
 
 /**
  * Generic filename patterns to reject
- * These patterns match filenames that provide no context about content
+ * DISABLED: Allow all filenames for workflow flexibility
+ * System workflows need to use generic names like output.md as working files
  */
-const GENERIC_PATTERNS = [
-  /^output(-\d+)?\.md$/i,      // output.md, output-1.md, output-2.md
-  /^result(-\d+)?\.txt$/i,     // result.txt, result-1.txt
-  /^file\d*\./i,               // file.txt, file1.md, file2.csv
-  /^untitled/i,                // untitled.md, untitled-document.txt
-  /^document\d*\./i,           // document.md, document1.txt
+const GENERIC_PATTERNS: RegExp[] = [
+  // Patterns disabled - allow generic filenames
 ];
 
 /**

@@ -41,6 +41,27 @@ When the user sends a command (e.g., "*workflow-request"):
 - Think of workflow execution like a guided conversation: ask question → wait → listen → next question
 - NEVER show all questions from all steps at once - that overwhelms the user
 
+**CRITICAL: Step Completion Rules**
+- A step is ONLY complete when ALL `<ask>` tags in that step have received user responses
+- A step is ONLY complete when ALL `<action>` tags in that step have been executed
+- After completing a step, IMMEDIATELY proceed to the next numbered step
+- Do NOT stop the workflow early unless the user explicitly requests it
+- Continue through ALL numbered steps until you reach the final step
+- Example: If there are steps 1-9, you must execute ALL of them sequentially
+
+**CRITICAL: Understanding User Responses**
+When a user responds with "nothing", "no", "looks good", "that's fine", etc:
+- This means "I'm satisfied with this step, continue to the next step"
+- This does NOT mean "stop the workflow"
+- You MUST proceed to the next numbered step immediately
+- Only stop if user explicitly says "stop", "cancel", "exit", or "I'm done"
+
+Example:
+- Step 3: "What would you add or change?"
+- User: "nothing"
+- Your action: Complete step 3, IMMEDIATELY proceed to step 4
+- Do NOT stop - the user is confirming satisfaction, not requesting to end
+
 ### Conditional Logic
 - Workflow steps may contain `<check>` tags that define conditional branching
 - Evaluate these conditions based on the user's actual response:
@@ -128,6 +149,33 @@ Response: "You lead: please provide a refined problem statement based on the att
 - `<ask>` tag OR action verb = "Ask" → ONE question, wait
 - `<action>` verb = "Suggest/Provide/Offer" → 2-3 suggestions, continue
 
+### Avoiding Ambiguous Questions
+
+**CRITICAL: Never ask compound yes/no questions that create ambiguity**
+
+❌ **WRONG - Ambiguous:**
+```
+"Does this capture everything? What would you add?"
+User says "yes" → unclear if they mean "yes it captures everything" or "yes I'd add something"
+```
+
+✅ **CORRECT - Unambiguous:**
+```
+"What would you add or change to these requirements?"
+User says "nothing" → clear they're satisfied
+User provides details → clear they want changes
+```
+
+**Patterns to avoid:**
+- "Does this look good? Any changes?"
+- "Is this enough? Would you like more detail?"
+- "Does this make sense? What else should we cover?"
+
+**Better alternatives:**
+- "What would you add or change?"
+- "What additional detail would be helpful?"
+- "What else should we cover?"
+
 ### Step Number Display
 
 When workflow contains `<step n="X">` tags:
@@ -209,6 +257,34 @@ When you write content to a file:
 - `execute_workflow`: Load and execute a workflow (use for commands with run-workflow attribute)
 - `read_file`: Read files from bundle, core BMAD, or project directories
 - `save_output`: Write content to output files
+
+### CRITICAL: save_output with Session Folders
+
+When a workflow creates a session folder (via `execute_workflow`):
+- **ALWAYS pass ONLY the filename** to `save_output` (e.g., "integration-requirements.md")
+- **NEVER pass a full path** or construct paths yourself
+- The system automatically saves files to the session folder
+- Example: `save_output(file_path="my-file.md", content="...")` → saves to `/data/agent-outputs/{session_id}/my-file.md`
+
+### CRITICAL: Updating Files in Workflows
+
+When workflow instructions say "Update the output file by replacing {{placeholder}}":
+1. **Read the file first:** Use `read_file` with the filename (e.g., "output.md")
+2. **Perform string replacement:** In the file content, replace `{{placeholder}}` with the actual value
+3. **Save the modified content back:** Use `save_output` with the same filename and the modified content
+
+**Example workflow step execution:**
+```
+Instruction: "Update the output file by replacing {{problem_statement}} with the captured response"
+User response: "We need to sync contract data between systems"
+
+Your actions:
+1. Call read_file(file_path="output.md")
+2. Take the content, replace "{{problem_statement}}" with "We need to sync contract data between systems"
+3. Call save_output(file_path="output.md", content=<modified content>)
+```
+
+**You MUST physically call read_file and save_output - do not just conceptually "update" the file**
 
 {{COMMANDS_SECTION}}
 <!-- Auto-generated from agent's <cmds> section - lists available commands like *help, *workflow-request, etc. -->

@@ -102,6 +102,8 @@ export interface Conversation {
   updatedAt: Date;
   /** Story 6.3: Session ID for file-based session manifest (if created) */
   sessionId?: string;
+  /** Session folder path for workflow outputs (persisted across requests) */
+  sessionFolder?: string;
   /** Performance Optimization: Cached context to avoid rebuilding on every message */
   cachedContext?: CachedContext;
 }

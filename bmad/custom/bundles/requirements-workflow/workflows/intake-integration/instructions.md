@@ -5,6 +5,14 @@
 
 <workflow>
 
+<step n="0" goal="Initialize output file from template">
+<critical>The workflow has already loaded the template content - it is available in the workflow data you received from execute_workflow</critical>
+<action>Locate the template content from the workflow result (it was loaded from the template path in workflow.yaml)</action>
+<action>Save the complete template content to the default_output_file using save_output (path: "output.md")</action>
+<critical>This creates a working file that you will read and update throughout the workflow</critical>
+<action>Throughout this workflow, you will read the file, replace placeholders, and save it back after each step</action>
+</step>
+
 <step n="1" goal="Set expectations and context">
 <action>Explain the focus: "I want to understand what systems you need to connect and what business problem that solves."</action>
 
@@ -88,7 +96,7 @@
 Am I capturing this correctly? Anything missing?"
 </example>
 
-<ask response="initial_requirements">Does this capture your initial requirements? What would you add or change?</ask>
+<ask response="initial_requirements">What would you add or change to these requirements?</ask>
 
 <action>Refine the list based on feedback</action>
 
@@ -150,7 +158,7 @@ Does anything else come to mind that we should flag for the detailed session?"
 
 <template-output>
 Display the complete, cohesive requirements document to the user for final approval.
-Ask: "I've reviewed the document for logical flow and consistency. Does this accurately capture everything we discussed? Any final edits needed?"
+Ask: "I've reviewed the document for logical flow and consistency. What edits or changes would you like to make?"
 </template-output>
 </step>
 

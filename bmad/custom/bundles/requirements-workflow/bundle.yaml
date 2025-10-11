@@ -30,6 +30,13 @@ agents:
     entry_point: true
     description: "Transforms detailed requirements into clear, actionable user stories"
 
+  - id: test-agent
+    name: Tester
+    title: Test Agent
+    file: agents/test-agent.md
+    entry_point: true
+    description: "Simple test agent to verify session folder functionality"
+
 # Bundle resources
 resources:
   workflows: workflows/

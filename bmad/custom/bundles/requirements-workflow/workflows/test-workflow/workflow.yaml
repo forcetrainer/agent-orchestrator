@@ -1,0 +1,17 @@
+# Test Workflow Configuration
+name: "test-workflow"
+description: "Simple test workflow to verify session folder functionality"
+author: "Tester"
+
+# Critical variables load from config_source
+config_source: "{bundle-root}/config.yaml"
+user_name: "{config_source}:user_name"
+
+# Session variables (auto-populated by workflow engine - Story 5.0)
+session_id: ""
+session_folder: "{project-root}/data/agent-outputs/{{session_id}}"
+manifest_file: "{session_folder}/manifest.json"
+
+# Module path and component files
+installed_path: "{bundle-root}/workflows/test-workflow"
+instructions: "{installed_path}/instructions.md"

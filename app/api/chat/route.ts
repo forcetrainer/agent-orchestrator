@@ -183,7 +183,6 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         try {
           const perfStart = Date.now();
-          console.log('[Performance] ========== REQUEST START ==========');
 
           // PERFORMANCE OPTIMIZATION: Cache system prompt and critical context
           // Only build on first message, reuse on subsequent messages
@@ -195,7 +194,6 @@ export async function POST(request: NextRequest) {
           const contextStart = Date.now();
           if (isFirstMessage || !conversation.cachedContext) {
             // First message: Build and cache context
-            console.log('[Performance] Building system prompt and critical context (first message)');
             systemPromptContent = buildSystemPrompt(agent);
             const criticalContextResult = await processCriticalActions(agent, effectiveBundleRoot);
             criticalContext = criticalContextResult;
@@ -206,16 +204,13 @@ export async function POST(request: NextRequest) {
               criticalMessages: criticalContextResult.messages,
               bundleConfig: criticalContextResult.config
             };
-            console.log(`[Performance] Context built in ${Date.now() - contextStart}ms`);
           } else {
             // Subsequent messages: Use cached context (MAJOR PERFORMANCE WIN)
-            console.log('[Performance] Using cached context (subsequent message)');
             systemPromptContent = conversation.cachedContext.systemPrompt;
             criticalContext = {
               messages: conversation.cachedContext.criticalMessages,
               config: conversation.cachedContext.bundleConfig
             };
-            console.log(`[Performance] Context retrieved from cache in ${Date.now() - contextStart}ms`);
           }
 
           // Build complete messages array with system prompt and critical context
@@ -243,7 +238,7 @@ export async function POST(request: NextRequest) {
             projectRoot: process.cwd(),
             bundleConfig: criticalContext.config,
             toolCallCount: 0,
-            sessionFolder: undefined as string | undefined  // Will be set by execute_workflow
+            sessionFolder: conversation.sessionFolder || undefined  // Restore from conversation if exists
           };
 
           // AC-6.8.3: AGENTIC LOOP with streaming
@@ -252,11 +247,8 @@ export async function POST(request: NextRequest) {
           let iterations = 0;
           let accumulatedContent = '';
 
-          console.log(`[Performance] Starting agentic loop with ${completeMessages.length} messages (${JSON.stringify(completeMessages).length} chars)`);
-
           while (iterations < MAX_ITERATIONS) {
             iterations++;
-            console.log(`[Performance] ===== Iteration ${iterations} =====`);
 
             // Send "Agent is thinking..." status at start of each iteration
             controller.enqueue(
@@ -265,7 +257,6 @@ export async function POST(request: NextRequest) {
 
             // AC-6.8.2: Call OpenAI with streaming enabled
             const apiCallStart = Date.now();
-            console.log(`[Performance] Calling OpenAI API (model: ${model})...`);
             const response = await client.chat.completions.create({
               model,
               messages: completeMessages,
@@ -273,7 +264,6 @@ export async function POST(request: NextRequest) {
               tool_choice: 'auto',
               stream: true, // Story 6.8: Enable streaming
             });
-            console.log(`[Performance] OpenAI API response received in ${Date.now() - apiCallStart}ms`);
 
             let assistantMessage: any = {
               role: 'assistant',
@@ -282,21 +272,12 @@ export async function POST(request: NextRequest) {
             };
 
             // AC-6.8.3: Process streaming chunks
-            const streamStart = Date.now();
-            let firstTokenTime: number | null = null;
-            let tokenCount = 0;
-
             for await (const chunk of response) {
               const delta = chunk.choices[0]?.delta;
               const finishReason = chunk.choices[0]?.finish_reason;
 
               // AC-6.8.3: Stream tokens when delta.content present
               if (delta?.content) {
-                if (firstTokenTime === null) {
-                  firstTokenTime = Date.now();
-                  console.log(`[Performance] First token received in ${firstTokenTime - apiCallStart}ms (TTFT - Time To First Token)`);
-                }
-                tokenCount++;
 
                 // Clear "Agent is thinking..." status when first content arrives
                 if (assistantMessage.content === '') {
@@ -350,7 +331,6 @@ export async function POST(request: NextRequest) {
 
               // AC-6.8.7: Handle completion
               if (finishReason) {
-                console.log(`[Performance] Stream finished: ${tokenCount} tokens in ${Date.now() - streamStart}ms`);
                 break;
               }
             }
@@ -364,7 +344,6 @@ export async function POST(request: NextRequest) {
               assistantMessage.tool_calls = assistantMessage.tool_calls.filter((tc: any) => tc.id);
 
               if (assistantMessage.tool_calls.length > 0) {
-                console.log(`[Performance] Processing ${assistantMessage.tool_calls.length} tool calls`);
                 // AC-6.8.6: Emit status events for tool execution
                 // Story 6.9: Context-aware status messages
                 for (const toolCall of assistantMessage.tool_calls) {
@@ -377,14 +356,13 @@ export async function POST(request: NextRequest) {
 
                   // Execute tool (existing logic from agenticLoop.ts)
                   pathContext.toolCallCount++;
-                  console.log(`[Performance] Executing tool: ${toolCall.function.name}...`);
                   const result = await executeToolCall(toolCall, pathContext);
-                  console.log(`[Performance] Tool ${toolCall.function.name} executed in ${Date.now() - toolStart}ms`);
 
                   // Update pathContext with session_folder if execute_workflow returned one
                   if (toolCall.function.name === 'execute_workflow' && result.success && result.session_folder) {
                     pathContext.sessionFolder = result.session_folder;
-                    console.log(`[Performance] Session folder set: ${result.session_folder}`);
+                    conversation.sessionFolder = result.session_folder;  // Persist in conversation
+                    console.log(`[/api/chat] Set pathContext.sessionFolder: ${pathContext.sessionFolder}`);
                   }
 
                   // Clear status after tool execution (Story 6.9: AC #8)
@@ -402,13 +380,11 @@ export async function POST(request: NextRequest) {
                 }
 
                 // Continue loop to resume streaming with tool results
-                console.log(`[Performance] Tool calls complete, continuing loop (iteration ${iterations})`);
                 continue;
               }
             }
 
             // No tool calls - streaming complete
-            console.log(`[Performance] Response complete (no tool calls), total time: ${Date.now() - perfStart}ms`);
 
             // AC-6.8.7: Send conversationId before completion event
             controller.enqueue(
@@ -431,7 +407,6 @@ export async function POST(request: NextRequest) {
               await incrementMessageCount(conversation.sessionId);
             }
 
-            console.log('[Performance] ========== REQUEST END ==========');
             return; // Exit successfully
           }
 

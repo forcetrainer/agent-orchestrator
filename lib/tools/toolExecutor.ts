@@ -22,6 +22,7 @@ export async function executeToolCall(toolCall: any, context: any): Promise<any>
   const functionArgs = JSON.parse(toolCall.function.arguments);
 
   console.log(`[toolExecutor] Executing tool: ${functionName}`, functionArgs);
+  console.log(`[toolExecutor] Context sessionFolder: ${context.sessionFolder}`);
 
   let result: any;
 

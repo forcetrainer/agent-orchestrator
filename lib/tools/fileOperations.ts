@@ -158,13 +158,19 @@ export async function executeSaveOutput(
     // If sessionFolder is set and file_path is relative (doesn't start with { or /),
     // prepend session folder to ensure files save in session directory
     let filePathToResolve = params.file_path;
+    console.log(`[save_output] DEBUG - sessionFolder: ${context.sessionFolder}, file_path: ${params.file_path}`);
+
     if (context.sessionFolder && !params.file_path.startsWith('{') && !params.file_path.startsWith('/')) {
       filePathToResolve = resolve(context.sessionFolder, params.file_path);
-      console.log(`[save_output] Using session folder: ${filePathToResolve}`);
+      console.log(`[save_output] Using session folder, filePathToResolve: ${filePathToResolve}`);
     }
 
     // Resolve path variables (includes security validation)
+    // IMPORTANT: If sessionFolder was prepended, filePathToResolve is already an absolute path
+    // resolvePath should handle it without modification since it has no variables
+    console.log(`[save_output] Before resolvePath: ${filePathToResolve}`);
     resolvedPath = resolvePath(filePathToResolve, context);
+    console.log(`[save_output] After resolvePath: ${resolvedPath}`);
 
     // Story 5.0: Validate write path is within /data/agent-outputs only
     try {
@@ -367,8 +373,9 @@ export async function executeWorkflow(
       template = await readFile(templatePath, 'utf-8');
     }
 
-    // Story 5.0: Create session folder if session_folder is defined in config
+    // Story 5.0: Create session folder - ALWAYS create for all workflows
     let sessionFolder = '';
+
     if (resolvedConfig.session_folder) {
       // Story 5.0: Final mustache replacement for {{session_id}} in session_folder
       sessionFolder = resolvedConfig.session_folder
@@ -383,29 +390,35 @@ export async function executeWorkflow(
           console.warn(`[executeWorkflow] Could not fully resolve session_folder: ${error.message}`);
         }
       }
-
-      // Story 5.1 Security: Validate session folder is within /data/agent-outputs ONLY
-      try {
-        validateWritePath(sessionFolder, enhancedContext);
-      } catch (error: any) {
-        return {
-          success: false,
-          error: `Security violation: Session folder must be within /data/agent-outputs. ${error.message}`,
-          path: sessionFolder,
-        };
-      }
-
-      // Create the session directory
-      await mkdir(sessionFolder, { recursive: true });
-      console.log(`[executeWorkflow] Created session folder: ${sessionFolder}`);
-
-      // Story 5.0: Create initial manifest.json
-      // Extract agent metadata from workflow and context
-      const author = workflowConfig.author || 'Unknown Agent';
-      const bundleName = context.bundleRoot.split('/').pop() || 'unknown';
-
-      await createInitialManifest(sessionId, sessionFolder, workflowName, description, author, bundleName, bundleConfig);
+    } else {
+      // If workflow doesn't define session_folder, auto-generate one
+      sessionFolder = resolve(context.projectRoot, 'data/agent-outputs', sessionId);
+      console.log(`[executeWorkflow] Auto-generated session folder (not defined in workflow): ${sessionFolder}`);
     }
+
+    // Story 5.1 Security: Validate session folder is within /data/agent-outputs ONLY
+    try {
+      validateWritePath(sessionFolder, enhancedContext);
+    } catch (error: any) {
+      return {
+        success: false,
+        error: `Security violation: Session folder must be within /data/agent-outputs. ${error.message}`,
+        path: sessionFolder,
+      };
+    }
+
+    // Create the session directory
+    await mkdir(sessionFolder, { recursive: true });
+    console.log(`[executeWorkflow] Created session folder: ${sessionFolder}`);
+
+    // Story 5.0: Create initial manifest.json
+    // Extract agent metadata from workflow and context
+    const author = workflowConfig.author || 'Unknown Agent';
+    const bundleName = context.bundleRoot.split('/').pop() || 'unknown';
+
+    await createInitialManifest(sessionId, sessionFolder, workflowName, description, author, bundleName, bundleConfig);
+
+    console.log(`[executeWorkflow] Returning session_folder: ${sessionFolder}`);
 
     return {
       success: true,

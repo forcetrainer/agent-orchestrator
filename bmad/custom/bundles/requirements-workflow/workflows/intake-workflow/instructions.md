@@ -81,7 +81,7 @@
 Am I capturing this correctly? Anything missing?"
 </example>
 
-<ask response="initial_requirements">Does this capture your initial requirements? What would you add or change?</ask>
+<ask response="initial_requirements">What would you add or change to these requirements?</ask>
 
 <action>Refine the list based on feedback</action>
 
@@ -141,7 +141,7 @@ Does anything else come to mind that we should flag for the detailed session?"
 
 <template-output>
 Display the complete, cohesive requirements document to the user for final approval.
-Ask: "I've reviewed the document for logical flow and consistency. Does this accurately capture everything we discussed? Any final edits needed?"
+Ask: "I've reviewed the document for logical flow and consistency. What edits or changes would you like to make?"
 </template-output>
 </step>
 
