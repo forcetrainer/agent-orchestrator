@@ -1,6 +1,6 @@
 # Story 9.2: Simplify Path Resolver
 
-Status: Ready for Review
+Status: Done
 
 ## Story
 
