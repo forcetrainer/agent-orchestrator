@@ -1,0 +1,274 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>6</storyId>
+    <title>End-to-End Validation and Documentation</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-9.6.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>to validate that all workflows produce identical outputs with the new architecture and document the refactored patterns</iWant>
+    <soThat>we confirm Epic 9 refactor is successful, stable, and properly documented for future development</soThat>
+    <tasks>
+      - Phase 1: Validation Testing
+        - Task 1.1: Baseline Documentation
+        - Task 1.2: Execute Test Workflows
+        - Task 1.3: Validate Outputs
+        - Task 1.4: Performance Benchmarking
+      - Phase 2: Documentation Updates
+        - Task 2.1: Create WORKFLOW-MIGRATION-GUIDE.md
+        - Task 2.2: Update solution-architecture.md
+        - Task 2.3: Update tech-spec-epic-9.md
+        - Task 2.4: Update README.md
+      - Phase 3: Code Cleanup
+        - Task 3.1: Remove Dead Code
+        - Task 3.2: Lint and Format
+        - Task 3.3: Update Comments
+        - Task 3.4: Test Suite Cleanup
+      - Phase 4: Success Metrics Validation
+        - Task 4.1: Validate Each Success Criterion
+        - Task 4.2: Create Validation Report
+        - Task 4.3: Code Review
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    AC1: Multi-Bundle Workflow Validation
+    - Test 3 workflows from different agent bundles (Alex, Casey, Pixel)
+    - Validate session folder structure, manifest.json, file contents
+    - Verify LLM orchestration visible in conversation
+    - Success: 3/3 workflows pass, outputs identical to baseline
+
+    AC2: Performance Benchmarking
+    - Measure: Workflow initialization time (target &lt;20s)
+    - Measure: Total execution time (≤+10% regression)
+    - Measure: Token usage (50-70% reduction expected)
+    - Measure: API round-trips (1 call vs 4-6 baseline)
+    - Measure: Path resolution speed (~5ms vs ~20ms)
+    - Success: All metrics meet targets, no regressions
+
+    AC3: Documentation Updates
+    - Update solution-architecture.md (remove execute_workflow, add LLM orchestration)
+    - Create WORKFLOW-MIGRATION-GUIDE.md (~200 lines)
+    - Update tech-spec-epic-9.md (mark stories complete)
+    - Update README.md (add Epic 9 improvements)
+    - Success: All 4 documents updated, markdown linting passed
+
+    AC4: Code Cleanup and Quality
+    - Remove dead code (grep execute_workflow returns 0)
+    - ESLint: 0 errors, ≤5 warnings
+    - TypeScript compilation clean
+    - Update comments referencing old architecture
+    - Test suite cleanup (all tests passing)
+    - Success: Quality metrics met
+
+    AC5: Success Metrics Validation
+    - Validate: LLM orchestrates explicitly (visible in conversation)
+    - Validate: Tool results are simple (no complex nested objects)
+    - Validate: Path resolver simplified (~150 lines)
+    - Validate: execute_workflow removed (grep returns 0)
+    - Validate: Workflows produce identical outputs
+    - Success: All 5 criteria validated with evidence
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/docs/tech-spec-epic-9.md</path>
+        <title>Epic 9 Technical Specification</title>
+        <section>Story Breakdown</section>
+        <snippet>
+          Story 9.6: End-to-End Validation and Documentation
+          Prerequisites: All Epic 9 stories 9.1-9.4 complete
+          AC1: Multi-Bundle Workflow Validation - Run 3 workflows (Alex, Casey, Pixel), compare outputs to baseline
+          AC2: Performance Benchmarking - Measure init time, execution time, token usage
+          AC3: Documentation Updates - solution-architecture.md, WORKFLOW-MIGRATION-GUIDE.md, tech-spec-epic-9.md, README.md
+          AC4: Code Cleanup - Remove dead code, lint, format
+          AC5: Success Metrics Validation - Validate 5 Epic 9 success criteria
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md</path>
+        <title>Workflow Execution Simplification Refactor Spec</title>
+        <section>Executive Summary</section>
+        <snippet>
+          Goal: Refactor to Claude Code-like architecture where LLM orchestrates workflows using simple file operations (read_file, save_output) rather than specialized execute_workflow tool.
+          Removes: execute_workflow tool (640 lines), complex path resolver (471 → 150 lines)
+          Adds: System prompt workflow orchestration instructions (~80 lines)
+          Benefits: Improved LLM behavior, easier debugging, ~580 lines removed
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/solution-architecture.md</path>
+        <title>Solution Architecture Document</title>
+        <section>Epic 9 Architectural Changes (Section 4.2.1)</section>
+        <snippet>
+          OLD APPROACH: execute_workflow tool (640 lines) orchestrated entire workflow execution, complex 10+ field tool results, 5-pass nested variable resolution
+          NEW APPROACH: LLM orchestrates via explicit read_file/save_output calls, simple tool results, path resolver simplified to ~150 lines
+          Rationale: Removes LLM confusion, gives full control/visibility, aligns with Claude Code, reduces codebase by ~580 lines
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/stories/story-9.1.md</path>
+        <title>Story 9.1 - Remove execute_workflow Tool</title>
+        <section>Acceptance Criteria</section>
+        <snippet>
+          Removed executeWorkflow function from lib/tools/fileOperations.ts
+          Removed executeWorkflowTool from toolDefinitions.ts
+          Removed from agenticLoop.ts tool list
+          Only read_file and save_output tools remain
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/stories/story-9.4.md</path>
+        <title>Story 9.4 - Smart Workflow Pre-loading</title>
+        <section>Status</section>
+        <snippet>
+          Status: Complete ✅ (2025-10-12)
+          Created lib/workflows/workflowPreloader.ts - smart pre-loading module
+          preload_workflow tool loads all workflow files in single API call
+          Performance: &lt;100ms for local files (vs ~110s baseline), 50-70% token reduction
+          25 tests total (15 unit + 10 integration), all passing
+        </snippet>
+      </doc>
+    </docs>
+    <code>
+      <file>
+        <path>lib/pathResolver.ts</path>
+        <kind>module</kind>
+        <symbol>resolvePath, validateWritePath</symbol>
+        <lines>~150 (simplified from 471)</lines>
+        <reason>Core path resolution for validation testing - verify line count ~150, security validation maintained</reason>
+      </file>
+      <file>
+        <path>lib/tools/toolDefinitions.ts</path>
+        <kind>module</kind>
+        <symbol>readFileTool, saveOutputTool, preloadWorkflowTool</symbol>
+        <lines>N/A</lines>
+        <reason>Tool definitions for validation - verify execute_workflow removed, only 3 tools remain</reason>
+      </file>
+      <file>
+        <path>lib/workflows/workflowPreloader.ts</path>
+        <kind>module</kind>
+        <symbol>preloadWorkflowFiles, PreloadResult</symbol>
+        <lines>220</lines>
+        <reason>Smart pre-loading implementation - validate performance, file loading patterns</reason>
+      </file>
+      <file>
+        <path>lib/agents/prompts/system-prompt.md</path>
+        <kind>document</kind>
+        <symbol>Running Workflows section</symbol>
+        <lines>59-204 (146 lines total)</lines>
+        <reason>System prompt orchestration instructions - validate workflow execution guidance</reason>
+      </file>
+      <file>
+        <path>lib/agents/agenticLoop.ts</path>
+        <kind>module</kind>
+        <symbol>executeAgent</symbol>
+        <lines>N/A</lines>
+        <reason>Agentic execution loop - validate tools registration, execution pattern</reason>
+      </file>
+    </code>
+    <dependencies>
+      <nodejs>
+        <package name="next" version="14.2.0"/>
+        <package name="react" version="^18"/>
+        <package name="openai" version="^4.104.0"/>
+        <package name="js-yaml" version="^4.1.0"/>
+        <package name="uuid" version="^13.0.0"/>
+        <package name="react-markdown" version="^10.1.0"/>
+        <package name="remark-gfm" version="^4.0.1"/>
+        <package name="framer-motion" version="^10.16.4"/>
+      </nodejs>
+      <testing>
+        <package name="jest" version="^29"/>
+        <package name="@testing-library/react" version="^16.3.0"/>
+        <package name="@testing-library/jest-dom" version="^6.9.1"/>
+        <package name="@types/jest" version="^30.0.0"/>
+      </testing>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    - Epic 9 architectural changes MUST be validated for correctness before marking complete
+    - Workflow outputs MUST match baseline (pre-Epic 9) to ensure no regressions
+    - Performance benchmarks MUST show no more than +10% regression in execution time
+    - Security validation MUST remain intact in simplified path resolver
+    - Documentation MUST accurately reflect new architecture (no stale references to execute_workflow)
+    - Code quality standards: 0 ESLint errors, ≤5 warnings acceptable
+    - All tests must pass before marking story complete
+    - Smart pre-loading (Story 9.4) must achieve 50-70% token reduction as designed
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>preloadWorkflowFiles</name>
+      <kind>function</kind>
+      <signature>async function preloadWorkflowFiles(workflowPath: string, pathContext: PathContext): Promise&lt;PreloadResult&gt;</signature>
+      <path>lib/workflows/workflowPreloader.ts</path>
+      <reason>Core pre-loading function to validate in performance testing</reason>
+    </interface>
+    <interface>
+      <name>resolvePath</name>
+      <kind>function</kind>
+      <signature>function resolvePath(path: string, context: PathContext): string</signature>
+      <path>lib/pathResolver.ts</path>
+      <reason>Simplified path resolver - validate maintains security while reduced to ~150 lines</reason>
+    </interface>
+    <interface>
+      <name>validateWritePath</name>
+      <kind>function</kind>
+      <signature>function validateWritePath(path: string, context: PathContext): void</signature>
+      <path>lib/pathResolver.ts</path>
+      <reason>Security validation - ensure maintained after simplification</reason>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      Testing framework: Jest with React Testing Library
+      Test structure: Unit tests in __tests__ folders co-located with source
+      Integration tests: Separate .integration.test.ts files
+      Coverage target: ≥85% for modified modules
+      Test philosophy: Focus on critical failure scenarios, security validation, business logic
+      Epic 9 specific: Validate workflow execution patterns, path resolution, file operations
+    </standards>
+    <locations>
+      - lib/tools/__tests__/ (file operations, preload workflow tests)
+      - lib/workflows/__tests__/ (workflow preloader unit tests)
+      - lib/agents/__tests__/ (agentic loop, bundle scanner, critical actions)
+      - lib/__tests__/ (path resolver tests)
+    </locations>
+    <ideas>
+      AC1: Multi-Bundle Workflow Validation
+      - Test idea: Create integration test that executes 3 workflows from different bundles
+      - Test idea: Compare output files to baseline using file checksum/content comparison
+      - Test idea: Validate manifest.json structure and session folder naming
+
+      AC2: Performance Benchmarking
+      - Test idea: Measure workflow initialization time using performance.now()
+      - Test idea: Count API calls during workflow execution
+      - Test idea: Calculate token usage from OpenAI API responses
+      - Test idea: Compare metrics to baseline thresholds
+
+      AC3: Documentation Updates
+      - Test idea: Automated check that solution-architecture.md doesn't contain "execute_workflow"
+      - Test idea: Markdown linting validation
+      - Test idea: Link checker for internal document references
+
+      AC4: Code Cleanup
+      - Test idea: ESLint pre-commit hook to enforce 0 errors
+      - Test idea: Grep codebase for "execute_workflow" (should return 0 results)
+      - Test idea: TypeScript compilation check in CI
+
+      AC5: Success Metrics Validation
+      - Test idea: Automated verification that path resolver is ~150 lines (±10%)
+      - Test idea: Tool definition validation (only 3 tools: read_file, save_output, preload_workflow)
+      - Test idea: System prompt section validation (contains "Running Workflows")
+    </ideas>
+  </tests>
+</story-context>
