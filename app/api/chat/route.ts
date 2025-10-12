@@ -353,6 +353,14 @@ export async function POST(request: NextRequest) {
               assistantMessage.tool_calls = assistantMessage.tool_calls.filter((tc: any) => tc.id);
 
               if (assistantMessage.tool_calls.length > 0) {
+                // UX Enhancement: If LLM output content before tool calls (e.g. "Please hold..."),
+                // immediately show status indicator so user knows work is happening
+                if (assistantMessage.content && assistantMessage.content.trim().length > 0) {
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ type: 'status', message: 'Working on your request...' })}\n\n`)
+                  );
+                }
+
                 // Story 9.4: Save assistant message BEFORE tool messages to maintain proper order
                 addMessage(conversation.id, {
                   role: 'assistant',
