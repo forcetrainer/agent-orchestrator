@@ -57,19 +57,22 @@ export interface FunctionCall {
 
 /**
  * Message in a conversation.
- * Represents a single message from user, assistant, or system.
+ * Represents a single message from user, assistant, system, or tool.
+ * Story 9.4: Extended with 'tool' role for function call persistence
  */
 export interface Message {
   /** Unique message identifier (UUID) */
   id: string;
   /** Role of the message sender */
-  role: 'user' | 'assistant' | 'system' | 'error';
+  role: 'user' | 'assistant' | 'system' | 'error' | 'tool';
   /** Message content */
   content: string;
   /** Message timestamp */
-  timestamp: Date;
+  timestamp: Date | undefined;
   /** Optional function calls made in this message */
   functionCalls?: FunctionCall[];
+  /** Tool call ID for tool response messages (Story 9.4) */
+  toolCallId?: string;
 }
 
 /**

@@ -142,16 +142,26 @@ function resolveWorkflowInternalVariables(
     }
   }
 
-  // Helper to resolve a path with internal variables
+  // Helper to resolve a path with internal variables (iterative to handle nested refs)
   const resolveWithInternalVars = (pathStr: string | null): string | null => {
     if (!pathStr) return null;
     let resolved = pathStr;
+    let changed = true;
+    let iterations = 0;
+    const maxIterations = 10; // Prevent infinite loops
 
-    // Replace {installed_path} and similar with their values
-    for (const [varName, varValue] of Object.entries(internalVars)) {
-      const placeholder = `{${varName}}`;
-      if (resolved.includes(placeholder)) {
-        resolved = resolved.replace(placeholder, varValue);
+    // Keep resolving until no more changes (handles nested variable references)
+    while (changed && iterations < maxIterations) {
+      changed = false;
+      iterations++;
+
+      // Replace {installed_path} and similar with their values
+      for (const [varName, varValue] of Object.entries(internalVars)) {
+        const placeholder = `{${varName}}`;
+        if (resolved.includes(placeholder)) {
+          resolved = resolved.replace(placeholder, varValue);
+          changed = true;
+        }
       }
     }
 

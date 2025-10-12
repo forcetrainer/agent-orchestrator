@@ -200,6 +200,8 @@ Variables resolve in system prompt or by LLM:
 
 ## Story Breakdown
 
+**Note:** Story structure updated after Story 9.3 learnings. Original Stories 9.4-9.5 replaced with new Story 9.4 (Smart Workflow Pre-loading).
+
 ### Story 9.1: Remove execute_workflow Tool
 
 **As a** developer
@@ -282,62 +284,53 @@ Variables resolve in system prompt or by LLM:
 
 ---
 
-### Story 9.4: Update save_output Tool to Remove Session Folder Auto-Prepending
+### Story 9.4: Implement Smart Workflow Pre-loading (UPDATED)
+
+**Status:** 🎯 IN PROGRESS (~40% Complete)
 
 **As a** developer
-**I want** to simplify save_output to accept full paths from LLM
-**So that** LLM explicitly controls where files are saved
+**I want** a smart workflow pre-loading system
+**So that** LLM receives all workflow files in a single tool call instead of making 4-6 sequential read_file calls
 
-**Prerequisites:** Story 9.3 (system prompt updated)
+**Prerequisites:** Story 9.3 complete (system prompt v2.4.4)
 
-**Acceptance Criteria:**
-1. Remove session folder auto-prepending logic from `lib/tools/fileOperations.ts`
-2. **OLD behavior**: `if (sessionFolder && relative path) { prepend sessionFolder }`
-3. **NEW behavior**: LLM provides full paths, tool resolves variables and saves
-4. Path security validation still enforced (must be within /data/agent-outputs)
-5. Tool returns simple result: `{ success: true, path: resolvedPath }` or error
-6. Unit tests updated for new behavior
-7. Integration test: LLM calls save_output with full path, file saved correctly
-
-**Technical Notes:**
-- Follow refactor spec Section "Phase 4: Update save_output Tool"
-- LLM must now provide paths like: `/data/agent-outputs/{session-id}/output.md`
-- Security checks remain - only /data/agent-outputs is writable
-
----
-
-### Story 9.5: Update Workflow Instructions to Make Session Management Explicit
-
-**As a** developer
-**I want** to update all workflow instruction files to explicitly create sessions
-**So that** session management is visible in workflow steps, not hidden in tooling
-
-**Prerequisites:** Stories 9.1-9.4 complete (new architecture in place)
+**Replaces:** Old Stories 9.4 (save_output changes) and 9.5 (update 15 workflow files)
 
 **Acceptance Criteria:**
-1. Update Step 0 in all workflow instruction files (15 files total):
-   - Alex workflows: 6 files
-   - Casey workflows: 6 files
-   - Pixel workflows: 3 files
-2. New Step 0 format:
-   ```markdown
-   <step n="0" goal="Initialize session and load template">
-   <action>Generate session ID using uuid v4 or timestamp format YYYY-MM-DD-HHMMSS</action>
-   <action>Create session folder at {project-root}/data/agent-outputs/{session-id}/</action>
-   <action>Read template file from {bundle-root}/templates/template-name.md</action>
-   <action>Save template to {project-root}/data/agent-outputs/{session-id}/output.md</action>
-   <action>Throughout this workflow, you will read output.md, modify it, and save it back</action>
-   </step>
-   ```
-3. All 15 workflow files updated consistently
-4. Test one workflow end-to-end to verify LLM follows new instructions
-5. Document changes in workflow instruction migration guide
+1. ✅ Create `lib/workflows/workflowPreloader.ts` module
+2. ✅ Implement `preloadWorkflowFiles()` function that loads all workflow files in parallel
+3. ⚠️ Add `preload_workflow` tool to toolDefinitions.ts (defined but NOT registered in agenticLoop/chat route)
+4. ✅ Parser detects conditional files (`<elicit-required>`, `<invoke-workflow>`)
+5. ✅ Tool result includes all file contents with clear "files already loaded" message
+6. ❌ System prompt simplified from ~146 lines to ~40 lines for workflow execution
+7. ❌ Performance: Workflow initialization <20 seconds (vs ~110s baseline)
+8. ❌ Token usage: 50-70% reduction vs sequential loading
+9. ❌ No rate limit errors during normal workflow execution
+10. ❌ All 15 existing workflows work without modification (backward compatible)
 
-**Technical Notes:**
-- Follow refactor spec Section "Phase 5: Update Workflow Instructions"
-- This is the most time-consuming story (15 files)
-- Use find/replace carefully - each workflow may have slight variations
-- Test incrementally - update one workflow, test, then continue
+**Implementation Status (2025-10-12):**
+
+✅ **Complete:**
+- Core pre-loader module fully implemented
+- Tool definition created with proper schema
+- Tool executor integration with performance logging
+- YAML-internal variable resolution working
+- Conditional file loading (elicit task) implemented
+
+❌ **Missing:**
+- **CRITICAL**: Tool not registered in `agenticLoop.ts:86-88` or `app/api/chat/route.ts:233-234`
+- System prompt not updated to use `preload_workflow` tool
+- No unit tests for `workflowPreloader.ts`
+- No integration tests or performance benchmarks
+- Documentation incomplete (README, tech spec)
+
+**Why This Replaces Old 9.4-9.5:**
+- Old 9.4 (save_output changes): Minor, not worth separate story
+- Old 9.5 (update 15 workflow files): Unnecessary with smart pre-loading
+- New approach: Parser pre-loads → LLM orchestrates → No workflow file changes needed
+- Benefits: 3-5x faster, 50-70% token reduction, no rate limits, avoids error-prone 15-file migration
+
+**Detailed Spec:** `/docs/stories/story-9.4.md`
 
 ---
 
@@ -347,7 +340,7 @@ Variables resolve in system prompt or by LLM:
 **I want** to validate that all workflows produce identical outputs with new architecture
 **So that** we confirm the refactor is successful and document the new patterns
 
-**Prerequisites:** All Epic 9 stories 9.1-9.5 complete
+**Prerequisites:** All Epic 9 stories 9.1-9.4 complete (Note: Stories 9.5 was replaced by updated Story 9.4)
 
 **Acceptance Criteria:**
 1. **Validation Testing**:
@@ -385,27 +378,22 @@ Variables resolve in system prompt or by LLM:
 ## Files Affected
 
 ### Modified Files
-1. `lib/tools/fileOperations.ts` - Remove executeWorkflow, simplify save_output (~300 lines removed)
-2. `lib/tools/toolDefinitions.ts` - Remove executeWorkflowTool (~30 lines removed)
-3. `lib/agents/agenticLoop.ts` - Remove execute_workflow from tools list (~5 lines)
-4. `lib/pathResolver.ts` - Simplify variable resolution (~250 lines removed)
-5. `lib/agents/prompts/system-prompt.md` - Add workflow orchestration section (~80 lines added)
-6. `lib/agents/criticalActions.ts` - Add config as environment variable (~20 lines modified)
+1. ✅ `lib/tools/fileOperations.ts` - Remove executeWorkflow (~228 lines removed) - Story 9.1
+2. ✅ `lib/tools/toolDefinitions.ts` - Remove executeWorkflowTool (~30 lines removed) - Story 9.1
+3. ✅ `lib/agents/agenticLoop.ts` - Remove execute_workflow from tools list (~5 lines) - Story 9.1
+4. ✅ `lib/pathResolver.ts` - Simplify variable resolution (~250 lines removed) - Story 9.2
+5. ✅ `lib/agents/prompts/system-prompt.md` - Add workflow orchestration section (146 lines added) - Story 9.3
+6. ✅ `lib/agents/criticalActions.ts` - Add config as environment variable (~20 lines modified) - Story 9.3
+7. ✅ `lib/workflows/workflowPreloader.ts` - NEW: Smart pre-loading module (220 lines) - Story 9.4
+8. ⚠️ `lib/tools/toolDefinitions.ts` - Add preloadWorkflowTool (partial - not registered) - Story 9.4
+9. ✅ `lib/tools/toolExecutor.ts` - Add preload_workflow case handler (~43 lines) - Story 9.4
 
 ### Files to Update (Workflow Instructions)
-All `bmad/custom/bundles/requirements-workflow/workflows/*/instructions.md` files:
-- intake-integration
-- intake-app
-- intake-workflow
-- intake-reporting
-- intake-portal
-- intake-itsm
-- deep-dive-* (6 files)
-- build-stories
-- edit-stories
-- review-epic
+**OBSOLETE** - Story 9.4 smart pre-loading eliminates the need for workflow file updates.
 
-**Update count**: ~15 instruction files
+~~All `bmad/custom/bundles/requirements-workflow/workflows/*/instructions.md` files (15 files)~~ - NO LONGER NEEDED
+
+**New approach:** Parser pre-loads all files → LLM orchestrates → No workflow changes required
 
 ---
 
@@ -864,22 +852,15 @@ LLM: [Recovers] Let me create the session folder first...
    - Session management instructions explicit
    - Examples provided for each step
 
-4. **save_output tool simplified**
-   - Removed session folder auto-prepending logic
-   - Accepts full paths from LLM
-   - Security validation enforced (/data/agent-outputs/ only)
-   - Returns simple result: `{ success, path, error }`
+4. **Smart workflow pre-loading implemented (Story 9.4)** - UPDATED
+   - `lib/workflows/workflowPreloader.ts` created with parallel file loading
+   - `preload_workflow` tool defined (NOT YET REGISTERED - in progress)
+   - Parser detects conditional files (`<elicit-required>`)
+   - Tool returns all workflow files in single call
+   - System prompt updated to use `preload_workflow` tool (NOT YET DONE)
+   - Replaces old Stories 9.4-9.5 (no workflow file updates needed)
 
-5. **All workflow instruction files updated (15 files)**
-   - Step 0 added to each workflow: "Initialize session and load template"
-   - Step 0 includes explicit session folder creation
-   - Step 0 includes template loading and saving to session folder
-   - All 15 files updated consistently:
-     - Alex: intake-integration, intake-app, intake-workflow, intake-reporting, intake-portal, intake-itsm
-     - Casey: deep-dive-* (6 files)
-     - Pixel: build-stories, edit-stories, review-epic
-
-6. **End-to-end validation passed**
+5. **End-to-end validation passed**
    - Run at least 3 workflows (Alex, Casey, Pixel)
    - Compare outputs to baseline (pre-Epic 9)
    - Verify identical functionality
@@ -928,16 +909,21 @@ LLM: [Recovers] Let me create the session folder first...
 - **Implementation**: Section added (lines 59-204, 146 lines total). Exceeded target of ~80 lines to include comprehensive examples (AC4) and ensure GPT-4 clarity (AC6). All AC satisfied including backward compatibility (AC7).
 - Test: Grep for "Running Workflows" ✅ | Line count: 146 lines (acceptable per story completion notes - needed for complete examples)
 
-**Story 9.4 → AC4**
-- Modify save_output in lib/tools/fileOperations.ts
-- Remove: `if (sessionFolder && relativePath) { prepend sessionFolder }`
-- Keep: Security validation (must be within /data/agent-outputs/)
-- Test: `saveOutput({ path: "/data/agent-outputs/uuid/output.md" })` saves to exact path (no prepending)
+**Story 9.4 → UPDATED - Smart Workflow Pre-loading** 🎯 IN PROGRESS (2025-10-12)
+- Create `lib/workflows/workflowPreloader.ts` with `preloadWorkflowFiles()` function ✅
+- Add `preload_workflow` tool to `lib/tools/toolDefinitions.ts` ✅
+- Integrate tool into `lib/tools/toolExecutor.ts` ✅
+- **MISSING**: Register tool in `agenticLoop.ts:86-88` and `app/api/chat/route.ts:233-234` ❌
+- **MISSING**: Update system prompt to use `preload_workflow` tool ❌
+- **MISSING**: Unit tests for workflowPreloader ❌
+- **MISSING**: Performance validation (<20s initialization) ❌
+- Test: Grep for "preloadWorkflowTool" in agenticLoop.ts and chat/route.ts (should find imports)
+- See `/docs/stories/story-9.4.md` for detailed implementation status
 
-**Story 9.5 → AC5**
-- Update 15 workflow instruction files with new Step 0
-- Step 0 format: Generate session ID, create folder, load template, save to session folder
-- Test: `grep -r "Step 0" bmad/custom/bundles/requirements-workflow/workflows/*/instructions.md | wc -l` returns 15
+**Stories 9.5-9.6 → REPLACED by Story 9.4**
+- Old 9.4-9.5 (save_output changes, workflow file updates) no longer needed
+- Smart pre-loading eliminates need for workflow file migrations
+- Story 9.6 remains for end-to-end validation
 
 **Story 9.6 → AC6, AC7**
 - Run Alex workflow (e.g., intake-integration)

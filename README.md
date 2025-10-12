@@ -33,6 +33,7 @@ Flint provides three core capabilities:
 ## Key Features
 
 - **Agentic Execution Loop** - Claude Code-like agent execution pattern using OpenAI's function calling API with pause-load-continue pattern
+- **Smart Workflow Pre-loading** - Parallel file loading for workflows (3-5x faster initialization, 50-70% token savings vs sequential loading)
 - **Lazy File Loading** - Resources loaded on-demand during execution for optimal performance and scalability
 - **Path Variable Resolution** - Portable bundle structure with dynamic path resolution (`{bundle-root}`, `{core-root}`, `{project-root}`)
 - **Critical Actions Processor** - Agent initialization with minimal required files

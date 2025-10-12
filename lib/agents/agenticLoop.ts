@@ -82,10 +82,11 @@ import { executeToolCall } from '@/lib/tools/toolExecutor';
  * Gets tool definitions for OpenAI function calling.
  *
  * Story 9.1: Only read_file and save_output tools remain
+ * Story 9.4: Added preload_workflow tool for smart workflow pre-loading
  */
 function getToolDefinitions() {
-  const { readFileTool, saveOutputTool } = require('@/lib/tools/toolDefinitions');
-  return [readFileTool, saveOutputTool];
+  const { readFileTool, saveOutputTool, preloadWorkflowTool } = require('@/lib/tools/toolDefinitions');
+  return [preloadWorkflowTool, readFileTool, saveOutputTool];
 }
 
 /**

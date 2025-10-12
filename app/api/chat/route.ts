@@ -79,6 +79,9 @@ export async function POST(request: NextRequest) {
       );
       conversation.sessionId = sessionId;
       conversation.sessionFolder = sessionFolder; // Story 9.1 AC7: Store session folder
+      console.log(`[/api/chat] Created session: ${sessionId}, sessionFolder: ${sessionFolder}`);
+    } else {
+      console.log(`[/api/chat] Existing conversation - sessionId: ${conversation.sessionId}, sessionFolder: ${conversation.sessionFolder}`);
     }
 
     // Story 6.7: Process file attachments if present
@@ -230,11 +233,13 @@ export async function POST(request: NextRequest) {
           const model = env.OPENAI_MODEL || 'gpt-4';
 
           // Import tool definitions (Story 9.1: Only read_file and save_output remain)
-          const { readFileTool, saveOutputTool } = require('@/lib/tools/toolDefinitions');
-          const tools = [readFileTool, saveOutputTool];
+          // Story 9.4: Added preload_workflow tool for smart workflow pre-loading
+          const { readFileTool, saveOutputTool, preloadWorkflowTool } = require('@/lib/tools/toolDefinitions');
+          const tools = [preloadWorkflowTool, readFileTool, saveOutputTool];
 
           // Path context for tool execution
           // IMPORTANT: Use kebab-case keys to match PathContext interface (lib/pathResolver.ts)
+          console.log(`[/api/chat] Building pathContext - conversation.sessionFolder: ${conversation.sessionFolder}`);
           const pathContext = {
             'bundle-root': agent.bundlePath || effectiveBundleRoot,
             'core-root': `${process.cwd()}/bmad/core`,
@@ -243,6 +248,7 @@ export async function POST(request: NextRequest) {
             toolCallCount: 0,
             'session-folder': conversation.sessionFolder || undefined  // Restore from conversation if exists
           };
+          console.log(`[/api/chat] pathContext session-folder: ${pathContext['session-folder']}`);
 
           // AC-6.8.3: AGENTIC LOOP with streaming
           // Loop continues until LLM returns response without tool calls
@@ -347,6 +353,13 @@ export async function POST(request: NextRequest) {
               assistantMessage.tool_calls = assistantMessage.tool_calls.filter((tc: any) => tc.id);
 
               if (assistantMessage.tool_calls.length > 0) {
+                // Story 9.4: Save assistant message BEFORE tool messages to maintain proper order
+                addMessage(conversation.id, {
+                  role: 'assistant',
+                  content: assistantMessage.content,
+                  functionCalls: assistantMessage.tool_calls,
+                });
+
                 // AC-6.8.6: Emit status events for tool execution
                 // Story 6.9: Context-aware status messages
                 for (const toolCall of assistantMessage.tool_calls) {
@@ -373,6 +386,18 @@ export async function POST(request: NextRequest) {
                     content: JSON.stringify(result),
                   };
                   completeMessages.push(toolMessage);
+
+                  // Story 9.4: Save tool response to conversation to avoid re-loading
+                  addMessage(conversation.id, {
+                    role: 'tool',
+                    content: JSON.stringify(result),
+                    toolCallId: toolCall.id,
+                  });
+                }
+
+                // Increment message count for tool execution iteration
+                if (conversation.sessionId) {
+                  await incrementMessageCount(conversation.sessionId);
                 }
 
                 // Continue loop to resume streaming with tool results
@@ -390,17 +415,18 @@ export async function POST(request: NextRequest) {
             controller.enqueue(encoder.encode('data: [DONE]\n\n'));
             controller.close();
 
-            // Store messages in conversation (preserve existing pattern)
-            // Add assistant message
-            const savedAssistantMsg = addMessage(conversation.id, {
-              role: 'assistant',
-              content: assistantMessage.content || accumulatedContent,
-              functionCalls: assistantMessage.tool_calls?.length > 0 ? assistantMessage.tool_calls : undefined,
-            });
+            // Store final assistant message (if no tool calls, or after all iterations complete)
+            // Only save if not already saved during tool execution
+            if (!assistantMessage.tool_calls || assistantMessage.tool_calls.length === 0) {
+              addMessage(conversation.id, {
+                role: 'assistant',
+                content: assistantMessage.content || accumulatedContent,
+              });
 
-            // Increment message count
-            if (conversation.sessionId) {
-              await incrementMessageCount(conversation.sessionId);
+              // Increment message count
+              if (conversation.sessionId) {
+                await incrementMessageCount(conversation.sessionId);
+              }
             }
 
             return; // Exit successfully
