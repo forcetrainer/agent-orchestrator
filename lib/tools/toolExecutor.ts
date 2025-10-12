@@ -6,9 +6,12 @@
  * - app/api/chat/route.ts (streaming chat API)
  *
  * This avoids code duplication and ensures consistent tool execution behavior.
+ *
+ * Story 9.4: Added preload_workflow tool execution
  */
 
 import { executeReadFile, executeSaveOutput } from './fileOperations';
+import { preloadWorkflowFiles } from '../workflows/workflowPreloader';
 
 /**
  * Execute a single tool call with path resolution.
@@ -28,6 +31,49 @@ export async function executeToolCall(toolCall: any, context: any): Promise<any>
 
   try {
     switch (functionName) {
+      case 'preload_workflow':
+        // Story 9.4: Smart Workflow Pre-loading
+        console.log(`[preload_workflow] 🚀 Pre-loading workflow: ${functionArgs.workflow_path}`);
+        const preloadStart = Date.now();
+        const preloadResult = await preloadWorkflowFiles(functionArgs.workflow_path, context);
+        const preloadDuration = Date.now() - preloadStart;
+        console.log(`[preload_workflow] ✅ Pre-loaded ${preloadResult.filesLoaded.length} files in ${preloadDuration}ms:`);
+        preloadResult.filesLoaded.forEach((f, i) => console.log(`  ${i + 1}. ${f}`));
+
+        // Return formatted result for LLM
+        result = {
+          success: true,
+          files: {
+            workflow_config: {
+              path: functionArgs.workflow_path,
+              content: preloadResult.workflowYaml
+            },
+            config: {
+              path: preloadResult.filesLoaded.find(f => f.includes('config.yaml')) || 'config.yaml',
+              content: preloadResult.configYaml
+            },
+            instructions: {
+              path: preloadResult.filesLoaded.find(f => f.includes('instructions.md')) || 'instructions.md',
+              content: preloadResult.instructions
+            },
+            template: preloadResult.template ? {
+              path: preloadResult.filesLoaded.find(f => f.includes('template')) || 'template',
+              content: preloadResult.template
+            } : null,
+            workflow_engine: {
+              path: '{project-root}/bmad/core/tasks/workflow.md',
+              content: preloadResult.workflowEngine
+            },
+            elicit_task: preloadResult.elicitTask ? {
+              path: '{project-root}/bmad/core/tasks/adv-elicit.md',
+              content: preloadResult.elicitTask
+            } : undefined
+          },
+          filesLoaded: preloadResult.filesLoaded,
+          message: preloadResult.message
+        };
+        break;
+
       case 'read_file':
         const timestamp = new Date().toISOString();
         console.log(`[read_file #${context.toolCallCount || 1}] 📂 Loading: ${functionArgs.file_path} at ${timestamp}`);

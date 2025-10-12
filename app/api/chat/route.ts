@@ -234,13 +234,14 @@ export async function POST(request: NextRequest) {
           const tools = [readFileTool, saveOutputTool];
 
           // Path context for tool execution
+          // IMPORTANT: Use kebab-case keys to match PathContext interface (lib/pathResolver.ts)
           const pathContext = {
-            bundleRoot: agent.bundlePath || effectiveBundleRoot,
-            coreRoot: 'bmad/core',
-            projectRoot: process.cwd(),
+            'bundle-root': agent.bundlePath || effectiveBundleRoot,
+            'core-root': `${process.cwd()}/bmad/core`,
+            'project-root': process.cwd(),
             bundleConfig: criticalContext.config,
             toolCallCount: 0,
-            sessionFolder: conversation.sessionFolder || undefined  // Restore from conversation if exists
+            'session-folder': conversation.sessionFolder || undefined  // Restore from conversation if exists
           };
 
           // AC-6.8.3: AGENTIC LOOP with streaming

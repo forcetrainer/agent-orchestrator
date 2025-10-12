@@ -155,12 +155,14 @@ export async function executeAgent(
 
   // Story 4.9: Build PathContext for tool execution
   // Use agent.bundlePath (from bundleScanner) or fall back to effectiveBundleRoot
+  // IMPORTANT: Use kebab-case keys to match PathContext interface (lib/pathResolver.ts)
   const pathContext = {
-    bundleRoot: agent.bundlePath || effectiveBundleRoot,
-    coreRoot: 'bmad/core',
-    projectRoot: process.cwd(),
+    'bundle-root': agent.bundlePath || effectiveBundleRoot,
+    'core-root': `${process.cwd()}/bmad/core`,
+    'project-root': process.cwd(),
     bundleConfig: criticalContext.config,
-    toolCallCount: 0
+    toolCallCount: 0,
+    'session-folder': undefined // Will be set by session manager if needed
   };
 
   // AC-4.1.5: Initialize iteration counter

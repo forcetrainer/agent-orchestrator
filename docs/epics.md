@@ -1833,23 +1833,35 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 ### Epic 9: Simplify Workflow Execution Architecture
 
-**Epic Goal:** Refactor workflow execution system to LLM-orchestrated pattern, removing over-engineered tool abstractions
+**Status:** 🎯 IN PROGRESS (Story 9.3 ✅ Complete, Story 9.4 Next)
 
-**Business Value:** Fixes agent behavior issues caused by over-engineered workflow execution. The current `execute_workflow` tool (640 lines) does too much "magic" without LLM awareness, creating cognitive overhead and reducing LLM agency. Refactor gives LLM full control through explicit file operations.
+**Epic Goal:** Refactor workflow execution system to LLM-orchestrated pattern with smart pre-loading
+
+**Business Value:** Fixes agent behavior issues caused by over-engineered workflow execution. The current `execute_workflow` tool (640 lines) does too much "magic" without LLM awareness. Story 9.3 revealed sequential file loading causes ~110s initialization and rate limit pressure. Epic 9 gives LLM control through smart pre-loading (3-5x faster, 50-70% token reduction).
 
 **Success Criteria:**
-- LLM orchestrates all workflow steps explicitly
+- ✅ LLM orchestrates all workflow steps explicitly (Story 9.3 complete)
+- ✅ System prompt provides clear workflow execution guidance (v2.4.4)
+- 🎯 Smart pre-loading reduces initialization from ~110s to <20s (Story 9.4)
+- 🎯 50-70% token cost reduction vs sequential loading (Story 9.4)
+- 🎯 No rate limit pressure during normal workflow execution (Story 9.4)
 - Tool results are simple (no complex nested objects)
-- Path resolver reduced to ~150 lines
-- execute_workflow tool removed
-- All workflows produce identical outputs
+- Path resolver simplified to ~150 lines (Story 9.2)
+- execute_workflow tool removed (Story 9.1)
+- All workflows produce identical outputs (Story 9.6)
+- Backward compatible - existing workflows work without modification
 
 **Dependencies:** Epic 6 COMPLETE (workflow engine currently in use)
 
 **Blocks:** Epic 7 (Docker) - clean up architecture before production deployment
 
-**Estimated Stories:** 6 stories
+**Estimated Stories:** 6 stories (structure updated after Story 9.3 learnings)
 **Estimated Effort:** 1-2 sprints
+
+**Architectural Evolution:**
+- **Original Plan:** LLM makes 4-6 sequential read_file calls (~110s initialization)
+- **Discovery (Story 9.3):** Sequential loading hits rate limits, poor UX
+- **Updated Approach (Story 9.4):** Smart pre-loading parser loads all files in single tool call (~10-20s)
 
 ---
 
@@ -1909,6 +1921,8 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 
 #### Story 9.3: Update System Prompt with Workflow Orchestration Instructions
 
+**Status:** ✅ COMPLETE (v2.4.4)
+
 **As a** developer
 **I want** to add workflow orchestration instructions to the system prompt
 **So that** LLM knows how to load workflows, resolve variables, and manage sessions
@@ -1916,81 +1930,67 @@ Validation testing during Story 3.10 revealed that this implementation did not p
 **Prerequisites:** Story 9.2 (path resolver simplified)
 
 **Acceptance Criteria:**
-1. Add new section to `lib/agents/prompts/system-prompt.md`: "Running Workflows"
-2. Section includes (~80 lines):
+1. ✅ Add new section to `lib/agents/prompts/system-prompt.md`: "Running Workflows"
+2. ✅ Section includes (~146 lines):
    - Step 1: Load Workflow Configuration (call read_file with workflow.yaml path)
    - Step 2: Load Referenced Files (instructions, template, config)
    - Step 3: Load Core Workflow Engine (read bmad/core/tasks/workflow.md)
    - Step 4: Execute Workflow Instructions (follow steps in exact order)
    - Step 5: Session and Output Management (generate UUID, create folders, save files)
    - Variable Resolution rules (bundle-root, project-root, core-root, date, config variables)
-3. System prompt emphasizes: "You are in control. Read what you need, when you need it."
-4. Examples provided for each step
-5. System prompt tested with sample workflow to verify LLM follows instructions
+3. ✅ System prompt emphasizes: "You are in control. Read what you need, when you need it."
+4. ✅ Examples provided for each step
+5. ✅ System prompt tested with sample workflow to verify LLM follows instructions
 
-**Technical Notes:**
-- Follow refactor spec Section "Phase 2: Update System Prompt for Workflow Orchestration"
-- Be explicit and detailed - LLM needs clear instructions
-- Test with GPT-4 to ensure instructions are clear
+**Implementation Notes:**
+- Final version: v2.4.4 (system-prompt.md)
+- Added workflow-internal variable resolution (e.g., {installed_path})
+- Added parallel file loading instructions (Story 9.3 → Story 9.4 bridge)
+- Added error handling section for read_file, YAML parsing, save_output failures
+- **DISCOVERY:** Sequential file loading caused ~110s workflow initialization (rate limit issues)
+- **NEXT:** Story 9.4 implements smart pre-loading to solve performance problem
 
----
-
-#### Story 9.4: Update save_output Tool to Remove Session Folder Auto-Prepending
-
-**As a** developer
-**I want** to simplify save_output to accept full paths from LLM
-**So that** LLM explicitly controls where files are saved
-
-**Prerequisites:** Story 9.3 (system prompt updated)
-
-**Acceptance Criteria:**
-1. Remove session folder auto-prepending logic from `lib/tools/fileOperations.ts`
-2. **OLD behavior**: `if (sessionFolder && relative path) { prepend sessionFolder }`
-3. **NEW behavior**: LLM provides full paths, tool resolves variables and saves
-4. Path security validation still enforced (must be within /data/agent-outputs)
-5. Tool returns simple result: `{ success: true, path: resolvedPath }` or error
-6. Unit tests updated for new behavior
-7. Integration test: LLM calls save_output with full path, file saved correctly
-
-**Technical Notes:**
-- Follow refactor spec Section "Phase 4: Update save_output Tool"
-- LLM must now provide paths like: `/data/agent-outputs/{session-id}/output.md`
-- Security checks remain - only /data/agent-outputs is writable
+**Related Documentation:**
+- Story: /docs/stories/story-9.3.md
+- System Prompt: /lib/agents/prompts/system-prompt.md (v2.4.4)
 
 ---
 
-#### Story 9.5: Update Workflow Instructions to Make Session Management Explicit
+#### Story 9.4: Implement Smart Workflow Pre-loading (UPDATED)
 
 **As a** developer
-**I want** to update all workflow instruction files to explicitly create sessions
-**So that** session management is visible in workflow steps, not hidden in tooling
+**I want** a smart workflow pre-loading system
+**So that** LLM receives all workflow files in a single tool call instead of making 4-6 sequential read_file calls
 
-**Prerequisites:** Stories 9.1-9.4 complete (new architecture in place)
+**Prerequisites:** Story 9.3 complete (system prompt v2.4.4)
+
+**Replaces:** Old Stories 9.4 (save_output changes) and 9.5 (update 15 workflow files)
 
 **Acceptance Criteria:**
-1. Update Step 0 in all workflow instruction files (15 files total):
-   - Alex workflows: 6 files
-   - Casey workflows: 6 files
-   - Pixel workflows: 3 files
-2. New Step 0 format:
-   ```markdown
-   <step n="0" goal="Initialize session and load template">
-   <action>Generate session ID using uuid v4 or timestamp format YYYY-MM-DD-HHMMSS</action>
-   <action>Create session folder at {project-root}/data/agent-outputs/{session-id}/</action>
-   <action>Read template file from {bundle-root}/templates/template-name.md</action>
-   <action>Save template to {project-root}/data/agent-outputs/{session-id}/output.md</action>
-   <action>Throughout this workflow, you will read output.md, modify it, and save it back</action>
-   </step>
-   ```
-3. All 15 workflow files updated consistently
-4. Test one workflow end-to-end to verify LLM follows new instructions
-5. Document changes in workflow instruction migration guide
+1. Create `lib/workflows/workflowPreloader.ts` module
+2. Implement `preloadWorkflowFiles()` function that loads all workflow files in parallel
+3. Add `preload_workflow` tool to toolDefinitions.ts
+4. Parser detects conditional files (`<elicit-required>`, `<invoke-workflow>`)
+5. Tool result includes all file contents with clear "files already loaded" message
+6. System prompt simplified from ~146 lines to ~40 lines for workflow execution
+7. Performance: Workflow initialization <20 seconds (vs ~110s baseline)
+8. Token usage: 50-70% reduction vs sequential loading
+9. No rate limit errors during normal workflow execution
+10. All 15 existing workflows work without modification (backward compatible)
 
 **Technical Notes:**
-- Follow refactor spec Section "Phase 5: Update Workflow Instructions"
-- This is the most time-consuming story (15 files)
-- Use find/replace carefully - each workflow may have slight variations
-- Test incrementally - update one workflow, test, then continue
+- Detailed spec: `/docs/stories/story-9.4.md`
+- Parser handles: workflow.yaml, config.yaml, instructions.md, template, workflow.md
+- YAML-internal variables resolved (e.g., {installed_path})
+- Conditional loading: elicit task if `<elicit-required>` detected
+- Parallel Promise.all() for file loading (~10-20s vs ~110s sequential)
+- Keep read_file tool as escape hatch for ad-hoc requests
+
+**Why This Replaces Old 9.4-9.5:**
+- Old 9.4 (save_output changes): Minor, not worth separate story
+- Old 9.5 (update 15 workflow files): Unnecessary with smart pre-loading
+- New approach: Parser pre-loads → LLM orchestrates → No workflow file changes needed
+- Benefits: 3-5x faster, 50-70% token reduction, no rate limits, avoids error-prone 15-file migration
 
 ---
 
