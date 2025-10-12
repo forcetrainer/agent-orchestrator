@@ -1,0 +1,132 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>9</epicId>
+    <storyId>9.3</storyId>
+    <title>Update System Prompt with Workflow Orchestration Instructions</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-9.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>add workflow orchestration instructions to the system prompt</iWant>
+    <soThat>LLM knows how to load workflows, resolve variables, and manage sessions</soThat>
+    <tasks>
+      <task id="1">Analyze current system prompt structure and identify insertion point (AC: 1)</task>
+      <task id="2">Draft "Running Workflows" section Step 1-3 (AC: 2)</task>
+      <task id="3">Draft "Running Workflows" section Step 4-5 (AC: 2)</task>
+      <task id="4">Draft Variable Resolution Rules subsection (AC: 2)</task>
+      <task id="5">Add emphasis statements and agency language (AC: 3)</task>
+      <task id="6">Create complete examples for clarity (AC: 4)</task>
+      <task id="7">Insert section into system-prompt.md and verify formatting (AC: 1, 7)</task>
+      <task id="8">Test system prompt with sample workflow (AC: 5, 6)</task>
+      <task id="9">Verify system prompt clarity and completeness (AC: 6)</task>
+      <task id="10">Final validation and documentation (AC: 5, 6, 7)</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC1">Add new section to lib/agents/prompts/system-prompt.md: "Running Workflows"</criterion>
+    <criterion id="AC2">Section includes (~80 lines): Step 1: Load Workflow Configuration, Step 2: Load Referenced Files, Step 3: Load Core Workflow Engine, Step 4: Execute Workflow Instructions, Step 5: Session and Output Management, Variable Resolution Rules</criterion>
+    <criterion id="AC3">System prompt emphasizes: "You are in control. Read what you need, when you need it."</criterion>
+    <criterion id="AC4">Examples provided for each step (workflow path resolution, config variable extraction, session folder creation)</criterion>
+    <criterion id="AC5">System prompt tested with sample workflow to verify LLM follows instructions</criterion>
+    <criterion id="AC6">Instructions are clear enough for GPT-4 to follow without confusion</criterion>
+    <criterion id="AC7">Backward compatibility: BMAD agent commands (run-workflow attribute) still trigger workflow execution</criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-9.md" title="Tech Spec: Epic 9 - Simplify Workflow Execution Architecture" section="Story 9.3: Update System Prompt with Workflow Orchestration Instructions">
+        <snippet>Defines the complete requirements for adding ~80 lines of workflow orchestration instructions to system prompt. Includes 5 steps: Load Workflow Configuration, Load Referenced Files, Load Core Workflow Engine, Execute Workflow Instructions, Session and Output Management. Also includes variable resolution rules (bundle-root, project-root, core-root, date, config variables).</snippet>
+      </doc>
+      <doc path="docs/REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md" title="Epic: Simplify Workflow Execution Architecture" section="Phase 2: Update System Prompt for Workflow Orchestration">
+        <snippet>Original spec defining system prompt changes. Emphasizes "You are in control. Read what you need, when you need it." Explains why execute_workflow was over-engineered (640 lines) and how system prompt replaces that logic with explicit LLM orchestration.</snippet>
+      </doc>
+      <doc path="docs/execute_workflow_behavior_reference.md" title="execute_workflow Tool Behavior Reference" section="Core Functionality">
+        <snippet>Documents the behavior being replaced by system prompt instructions. Shows 5-pass variable resolution, dynamic file loading, session management patterns that system prompt must now teach LLM to do explicitly.</snippet>
+      </doc>
+      <doc path="docs/solution-architecture.md" title="Solution Architecture Document" section="POST /api/chat - Architectural Simplification (Epic 9)">
+        <snippet>Lines 305-331 describe the LLM-orchestrated workflow execution approach. Shows before/after comparison of execute_workflow (640 lines, complex) vs new approach (LLM reads files explicitly via read_file).</snippet>
+      </doc>
+      <doc path="bmad/core/tasks/workflow.md" title="Workflow Execution Task" section="Core Workflow Engine">
+        <snippet>The core workflow engine rules that LLM must load (Step 3 of system prompt). Defines step ordering, template-output tags, elicitation, execution modes. LLM must read this file before executing any workflow.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact path="lib/agents/prompts/system-prompt.md" kind="file" symbol="system-prompt" lines="1-75" reason="Target file for inserting new 'Running Workflows' section (~80 lines). Current structure has 75 lines with sections: Core Directive, Available Tools, Tool Usage Notes, Environment Variables. Need to insert new section after Available Tools section.">
+        <note>Currently v2.3 - Post Epic 9.1 (execute_workflow removed). Contains placeholders for {{AGENT_NAME}}, {{AGENT_TITLE}}, {{PERSONA_*}}, {{SESSION_FOLDER}}, {{PROJECT_ROOT}}, {{AGENT_PATH}}, {{COMMANDS_SECTION}}.</note>
+      </artifact>
+      <artifact path="lib/pathResolver.ts" kind="module" symbol="resolvePath,validateWritePath,createPathContext" lines="1-269" reason="Simplified path resolver (Story 9.2 complete). Provides resolvePath for {bundle-root}, {core-root}, {project-root}. System prompt variable resolution rules will reference this module's behavior.">
+        <note>Generic single-pass variable resolution. PathContext is extensible key-value interface. Security validation included (validatePathSecurity, validateWritePath). Used by read_file and save_output tools.</note>
+      </artifact>
+      <artifact path="lib/tools/fileOperations.ts" kind="module" symbol="executeReadFile,executeSaveOutput" lines="unknown" reason="Implements read_file and save_output tools that LLM will use based on system prompt instructions. These are the only two file operation tools after execute_workflow removal.">
+        <note>Tools that LLM orchestrates. read_file reads from allowed directories (bundle, core, outputs). save_output writes to /data/agent-outputs/ only. System prompt must teach LLM how to use these for workflow execution.</note>
+      </artifact>
+      <artifact path="bmad/core/tasks/workflow.md" kind="doc" symbol="workflow-engine-rules" lines="1-142" reason="Core workflow execution engine that LLM must load (Step 3 of system prompt). Defines <step>, <template-output>, <elicit-required> tags, execution modes (#yolo), and rules for step ordering.">
+        <note>LLM must read this file before executing any workflow: 'Read {core-root}/tasks/workflow.md for workflow execution rules.' Contains instructions for handling workflow instruction files.</note>
+      </artifact>
+      <artifact path="lib/agents/systemPromptBuilder.ts" kind="module" symbol="buildSystemPrompt" lines="unknown" reason="Module that constructs final system prompt by replacing placeholders in system-prompt.md template with agent metadata. Need to understand how template is processed.">
+        <note>Replaces {{AGENT_NAME}}, {{AGENT_TITLE}}, {{PERSONA_*}}, {{PROJECT_ROOT}}, {{AGENT_PATH}}, {{SESSION_FOLDER}}, {{COMMANDS_SECTION}} with actual values at runtime.</note>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">Next.js framework - no direct dependency for system prompt, but system prompt is loaded by systemPromptBuilder.ts which runs in Next.js API routes</package>
+        <package name="typescript" version="5.x">TypeScript for type safety - system-prompt.md is markdown (no TS), but systemPromptBuilder.ts that processes it is TypeScript</package>
+      </node>
+      <note>System prompt is pure markdown text file. No npm dependencies needed for the prompt itself. Implementation code (systemPromptBuilder.ts, pathResolver.ts, fileOperations.ts) has standard Node.js dependencies (path, fs) and project utilities.</note>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="C1" category="architecture">System prompt insertion must be after "Available Tools" section and before "Environment Variables" section (logical flow: tools→how to use tools→environment).</constraint>
+    <constraint id="C2" category="format">Use markdown format consistent with existing system-prompt.md structure (## headers, ### subheaders, - bullet points, code blocks with triple backticks).</constraint>
+    <constraint id="C3" category="length">Target ~80 lines for "Running Workflows" section (±10 lines acceptable). Be concise but complete. Use examples sparingly (1-2 per major step).</constraint>
+    <constraint id="C4" category="style">Write for GPT-4 clarity: Be explicit and prescriptive ("Do this" not "You could do this"). Use active voice. Number steps clearly (1, 2, 3...). Use bold/CRITICAL for emphasis.</constraint>
+    <constraint id="C5" category="backward-compat">BMAD agent commands with run-workflow attribute must still trigger workflow execution as before. System prompt should reference agent's handler instructions.</constraint>
+    <constraint id="C6" category="variables">Distinguish system-resolved variables ({bundle-root}, {core-root}, {project-root} handled by path resolver) from LLM-resolved variables ({date}, {config_source}:var, {session_id} handled by LLM).</constraint>
+    <constraint id="C7" category="security">Do NOT add instructions that bypass security validation. All write operations must go through save_output which enforces /data/agent-outputs/ restriction.</constraint>
+    <constraint id="C8" category="pattern">Follow Claude Code-like patterns: Simple file operations (read_file, save_output), explicit LLM orchestration, minimal "magic". Reference REFACTOR-SPEC-SIMPLIFY-WORKFLOW-EXECUTION.md for design rationale.</constraint>
+    <constraint id="C9" category="examples">Examples must use realistic paths: {bundle-root}/workflows/intake-integration/workflow.yaml, {project-root}/data/agent-outputs/{session-id}/output.md. Show before/after variable resolution.</constraint>
+    <constraint id="C10" category="version">Update system-prompt.md version from v2.3 to v2.4 (or next version) after adding Running Workflows section. Document change in CHANGELOG.md.</constraint>
+  </constraints>
+  <interfaces>
+    <interface name="read_file" kind="tool" signature="{path: string}" path="lib/tools/fileOperations.ts">
+      <description>Read file contents from allowed directories (bundle, core, outputs). Path may contain {bundle-root}, {core-root}, {project-root} variables resolved by pathResolver.</description>
+      <returns>{success: boolean, content?: string, path?: string, error?: string}</returns>
+      <usage>System prompt Step 1, 2, 3: LLM calls this to load workflow.yaml, instructions.md, template.md, workflow.md, config.yaml</usage>
+    </interface>
+    <interface name="save_output" kind="tool" signature="{path: string, content: string}" path="lib/tools/fileOperations.ts">
+      <description>Save file to output directory (/data/agent-outputs/). Security: path MUST be within /data/agent-outputs/. LLM provides full path including session folder.</description>
+      <returns>{success: boolean, path?: string, error?: string}</returns>
+      <usage>System prompt Step 5: LLM calls this to create session folder (if directory), save output files to session</usage>
+    </interface>
+    <interface name="resolvePath" kind="function" signature="(pathTemplate: string, context: PathContext) => string" path="lib/pathResolver.ts">
+      <description>Resolves {variable-name} in paths using PathContext. Single-pass replacement. Validates security (no path traversal, within allowed dirs).</description>
+      <returns>string (resolved absolute path)</returns>
+      <usage>System prompt variable resolution rules reference this behavior: {bundle-root}, {core-root}, {project-root} resolved by system</usage>
+    </interface>
+    <interface name="PathContext" kind="interface" signature="{[key: string]: string, 'bundle-root': string, 'core-root': string, 'project-root': string}" path="lib/pathResolver.ts">
+      <description>Generic key-value context for variable resolution. Standard variables: bundle-root, core-root, project-root. Extensible.</description>
+      <usage>System prompt explains which variables are in PathContext (system-resolved) vs LLM-generated (date, config vars, session_id)</usage>
+    </interface>
+  </interfaces>
+  <tests>
+    <standards>Project uses Jest for unit testing, React Testing Library for component tests. Testing philosophy from solution-architecture.md: "Minimal, high-value testing focused on critical failure scenarios." DO NOT test: Simple CRUD, pass-through functions, React rendering, CSS classes, type exports. DO TEST: Edge cases, error handling, business logic, security vulnerabilities, critical failures.</standards>
+    <locations>
+      <location>lib/agents/__tests__/ - Agent logic tests (agenticLoop, systemPromptBuilder, criticalActions)</location>
+      <location>lib/__tests__/ - Path resolver tests (pathResolver.test.ts, pathResolver.security.test.ts, pathResolver.integration.test.ts)</location>
+      <location>lib/tools/__tests__/ - Tool tests (fileOperations.test.ts)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC5,AC6">Manual test with sample workflow: Load agent with updated system prompt, run command "/run-workflow intake-integration" (or simple test workflow). Verify LLM behavior: ✓ Calls read_file for workflow.yaml, ✓ Parses YAML and identifies instructions/template, ✓ Calls read_file for instructions.md and template.md, ✓ Calls read_file for bmad/core/tasks/workflow.md, ✓ Generates session ID, ✓ Creates session folder path correctly, ✓ Calls save_output with full explicit paths. Document test results in completion notes.</idea>
+      <idea ac="AC6">GPT-4 clarity test: Review system prompt section for ambiguity. Check: Are steps numbered clearly? Are examples concrete? Is language prescriptive ("Do this" not "You could do this")? Are variable types distinguished clearly? Are CRITICAL points emphasized? If LLM fails manual test (AC5), refine instructions for clarity and re-test.</idea>
+      <idea ac="AC7">Backward compatibility test: Verify BMAD agent commands with run-workflow attribute still work. Test: Load agent definition with <c cmd="*develop" run-workflow="path/to/workflow.yaml">, execute command, verify workflow runs as expected. System prompt should reference agent's handler instructions.</idea>
+      <idea ac="AC2">Line count validation: After inserting section, run `wc -l lib/agents/prompts/system-prompt.md`. Expected: ~155 lines total (75 baseline + 80 new section). Acceptable range: 145-165 lines. Document actual line count in completion notes.</idea>
+      <idea ac="AC4">Example validation: Verify all examples in system prompt use realistic paths from actual project structure. Test examples by substituting actual values: {bundle-root} → /app/bmad/custom/bundles/requirements-workflow, {project-root} → /app, {session-id} → 2025-10-12-143022. Ensure resolved paths are valid.</idea>
+    </ideas>
+  </tests>
+</story-context>

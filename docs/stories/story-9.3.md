@@ -357,7 +357,7 @@ When you encounter variables in paths:
 
 ### Context Reference
 
-<!-- Path(s) to story context XML/JSON will be added here by context workflow -->
+- `/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/story-context-9.9.3.xml` (Generated: 2025-10-12)
 
 ### Agent Model Used
 
