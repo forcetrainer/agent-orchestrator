@@ -255,13 +255,23 @@ export async function POST(request: NextRequest) {
           const MAX_ITERATIONS = 50;
           let iterations = 0;
           let accumulatedContent = '';
+          let lastToolCall: string | null = null; // Track last tool for context-aware status
 
           while (iterations < MAX_ITERATIONS) {
             iterations++;
 
-            // Send "Agent is thinking..." status at start of each iteration
+            // Context-aware "thinking" status based on last tool call
+            let thinkingMessage = 'Agent is thinking...';
+            if (lastToolCall === 'preload_workflow') {
+              thinkingMessage = 'Preparing workflow...';
+            } else if (lastToolCall === 'read_file') {
+              thinkingMessage = 'Analyzing document...';
+            } else if (lastToolCall === 'save_output') {
+              thinkingMessage = 'Finalizing...';
+            }
+
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: 'status', message: 'Agent is thinking...' })}\n\n`)
+              encoder.encode(`data: ${JSON.stringify({ type: 'status', message: thinkingMessage })}\n\n`)
             );
 
             // AC-6.8.2: Call OpenAI with streaming enabled
@@ -381,6 +391,9 @@ export async function POST(request: NextRequest) {
                   // Execute tool (existing logic from agenticLoop.ts)
                   pathContext.toolCallCount++;
                   const result = await executeToolCall(toolCall, pathContext);
+
+                  // Track last tool call for context-aware "thinking" messages
+                  lastToolCall = toolCall.function.name;
 
                   // Clear status after tool execution (Story 6.9: AC #8)
                   controller.enqueue(
