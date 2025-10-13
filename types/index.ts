@@ -91,12 +91,15 @@ export interface CachedContext {
 /**
  * Conversation containing multiple messages.
  * Tracks conversation state with timestamps.
+ * Story 10.2: Added browser ID for cookie-based session tracking
  */
 export interface Conversation {
   /** Unique conversation identifier (UUID) */
   id: string;
   /** Agent ID associated with this conversation */
   agentId: string;
+  /** Browser identifier for Epic 10 browser tracking (Story 10.2) */
+  browserId?: string;
   /** Array of messages in chronological order */
   messages: Message[];
   /** Conversation creation timestamp */

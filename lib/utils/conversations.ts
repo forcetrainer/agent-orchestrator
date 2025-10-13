@@ -50,6 +50,7 @@ function deserializeMessage(serialized: SerializedMessage): Message {
 /**
  * Converts Conversation to PersistedConversation for disk storage.
  * AC-10.1-5: All Date objects converted to ISO 8601 strings
+ * AC-10.2-4: Browser ID populated from conversation.browserId (Story 10.2)
  */
 function toPersistedConversation(conversation: Conversation): PersistedConversation {
   const firstUserMessage = conversation.messages.find(m => m.role === 'user');
@@ -62,7 +63,7 @@ function toPersistedConversation(conversation: Conversation): PersistedConversat
 
   return {
     id: conversation.id,
-    browserId: null, // Story 10.2 will populate this
+    browserId: conversation.browserId || null, // Story 10.2: Use actual browser ID
     agentId: conversation.agentId,
     agentTitle: '', // Can be populated from agent metadata if available
     agentBundle: '', // Can be populated from agent metadata if available
@@ -82,11 +83,13 @@ function toPersistedConversation(conversation: Conversation): PersistedConversat
 /**
  * Converts PersistedConversation to Conversation for runtime use.
  * AC-10.1-5: All ISO strings converted back to Date objects
+ * AC-10.2-4: Browser ID restored from persisted data (Story 10.2)
  */
 function fromPersistedConversation(persisted: PersistedConversation): Conversation {
   return {
     id: persisted.id,
     agentId: persisted.agentId,
+    browserId: persisted.browserId || undefined, // Story 10.2: Restore browser ID
     messages: persisted.messages.map(deserializeMessage),
     createdAt: new Date(persisted.createdAt),
     updatedAt: new Date(persisted.updatedAt),
@@ -295,14 +298,17 @@ export async function buildConversationIndex(): Promise<void> {
 /**
  * Retrieves an existing conversation by ID or creates a new one.
  * AC-10.1-3: Read-through cache (in-memory Map) implemented for performance
+ * AC-10.2-4: Browser ID associated with conversation (Story 10.2)
  *
  * @param conversationId - Optional conversation ID to retrieve
  * @param agentId - Agent ID for the conversation
+ * @param browserId - Browser ID for the conversation (Story 10.2)
  * @returns Existing or newly created Conversation
  */
 export function getConversation(
   conversationId: string | undefined,
-  agentId: string
+  agentId: string,
+  browserId?: string
 ): Conversation {
   // If conversationId provided and exists in cache, return it
   if (conversationId && conversations.has(conversationId)) {
@@ -325,6 +331,7 @@ export function getConversation(
   const newConversation: Conversation = {
     id: randomUUID(),
     agentId,
+    browserId, // Story 10.2: Set browser ID on creation
     messages: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -335,6 +342,7 @@ export function getConversation(
   log('INFO', 'conversation:create', {
     conversationId: newConversation.id,
     agentId,
+    browserId, // Story 10.2: Log browser ID
   });
 
   return newConversation;
@@ -343,14 +351,17 @@ export function getConversation(
 /**
  * Async version of getConversation with full read-through cache support.
  * AC-10.1-3: Read-through cache implementation
+ * AC-10.2-4: Browser ID associated with conversation (Story 10.2)
  *
  * @param conversationId - Conversation ID to retrieve
  * @param agentId - Agent ID for the conversation
+ * @param browserId - Browser ID for the conversation (Story 10.2)
  * @returns Existing conversation from cache/disk, or newly created one
  */
 export async function getConversationAsync(
   conversationId: string | undefined,
-  agentId: string
+  agentId: string,
+  browserId?: string
 ): Promise<Conversation> {
   // Check in-memory cache first
   if (conversationId && conversations.has(conversationId)) {
@@ -381,6 +392,7 @@ export async function getConversationAsync(
   const newConversation: Conversation = {
     id: conversationId || randomUUID(),
     agentId,
+    browserId, // Story 10.2: Set browser ID on creation
     messages: [],
     createdAt: new Date(),
     updatedAt: new Date(),
@@ -391,6 +403,7 @@ export async function getConversationAsync(
   log('INFO', 'conversation:create', {
     conversationId: newConversation.id,
     agentId,
+    browserId, // Story 10.2: Log browser ID
   });
 
   return newConversation;

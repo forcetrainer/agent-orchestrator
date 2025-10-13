@@ -24,6 +24,7 @@ import { buildSystemPrompt } from '@/lib/agents/systemPromptBuilder';
 import { processCriticalActions } from '@/lib/agents/criticalActions';
 import { mapToolCallToStatus } from '@/lib/openai/status-mapper'; // Story 6.9
 import { executeToolCall } from '@/lib/tools/toolExecutor'; // Shared tool executor
+import { getOrCreateBrowserId } from '@/lib/utils/browserIdentity'; // Story 10.2
 
 /**
  * POST /api/chat
@@ -49,6 +50,9 @@ import { executeToolCall } from '@/lib/tools/toolExecutor'; // Shared tool execu
  */
 export async function POST(request: NextRequest) {
   try {
+    // Story 10.2: Get or create browser ID early in request handling
+    const browserId = getOrCreateBrowserId();
+
     // Parse request body
     const body: ChatRequest = await request.json();
 
@@ -64,8 +68,8 @@ export async function POST(request: NextRequest) {
       throw new NotFoundError(`Agent not found: ${body.agentId}`);
     }
 
-    // Get or create conversation
-    const conversation = getConversation(body.conversationId, body.agentId);
+    // Story 10.2: Get or create conversation with browser ID
+    const conversation = getConversation(body.conversationId, body.agentId, browserId);
 
     // Story 6.3: Create session manifest on first message
     // Story 9.1 AC7: Session management moved to conversation initialization

@@ -1,12 +1,16 @@
 /**
- * Test suite for conversation persistence (Story 10.1)
- * Tests AC-10.1-1 through AC-10.1-6:
+ * Test suite for conversation persistence (Story 10.1 + Story 10.2)
+ *
+ * Story 10.1 - AC-10.1-1 through AC-10.1-6:
  * - Persistence to disk on every message
  * - Metadata indexing on startup
  * - Read-through cache implementation
  * - Atomic writes with temp files
  * - ISO 8601 date serialization
  * - Debounced writes
+ *
+ * Story 10.2 - AC-10.2-4:
+ * - Browser ID association with conversations
  */
 
 import { promises as fs } from 'fs';
@@ -451,6 +455,136 @@ describe('Conversation Persistence (Story 10.1)', () => {
 
       expect(persisted.userSummary).toHaveLength(35);
       expect(persisted.userSummary).toBe('This is a very long user message th');
+    });
+  });
+
+  describe('Story 10.2: Browser ID Integration', () => {
+    describe('AC-10.2-4: Conversations associated with browser ID', () => {
+      it('should set browserId when creating new conversation', () => {
+        const testBrowserId = 'a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d';
+        const conversation = getConversation(undefined, 'test-agent', testBrowserId);
+
+        expect(conversation.browserId).toBe(testBrowserId);
+      });
+
+      it('should persist browserId to conversation.json', async () => {
+        const testBrowserId = 'test-browser-id-123';
+        const conversation = getConversation(undefined, 'test-agent', testBrowserId);
+
+        addMessage(conversation.id, { role: 'user', content: 'Test message' });
+        await flushConversation(conversation.id);
+
+        // Read from disk
+        const filePath = path.join(TEST_OUTPUT_PATH, conversation.id, 'conversation.json');
+        const data = await fs.readFile(filePath, 'utf-8');
+        const persisted: PersistedConversation = JSON.parse(data);
+
+        expect(persisted.browserId).toBe(testBrowserId);
+      });
+
+      it('should restore browserId when loading from disk', async () => {
+        const testBrowserId = 'restored-browser-id';
+        const conversation = getConversation(undefined, 'test-agent', testBrowserId);
+
+        addMessage(conversation.id, { role: 'user', content: 'Test' });
+        await flushConversation(conversation.id);
+
+        // Clear cache
+        clearAllConversations();
+
+        // Load from disk
+        const loaded = await getConversationAsync(conversation.id, 'test-agent');
+
+        expect(loaded.browserId).toBe(testBrowserId);
+      });
+
+      it('should handle null browserId for legacy conversations', async () => {
+        const conversation = getConversation(undefined, 'test-agent');
+
+        addMessage(conversation.id, { role: 'user', content: 'Legacy conversation' });
+        await flushConversation(conversation.id);
+
+        // Read persisted data
+        const filePath = path.join(TEST_OUTPUT_PATH, conversation.id, 'conversation.json');
+        const data = await fs.readFile(filePath, 'utf-8');
+        const persisted: PersistedConversation = JSON.parse(data);
+
+        // Should be null if no browserId provided
+        expect(persisted.browserId).toBeNull();
+      });
+
+      it('should support async conversation creation with browserId', async () => {
+        const testBrowserId = 'async-browser-id';
+        const conversation = await getConversationAsync(undefined, 'test-agent', testBrowserId);
+
+        expect(conversation.browserId).toBe(testBrowserId);
+      });
+
+      it('should maintain browserId across multiple messages', async () => {
+        const testBrowserId = 'persistent-browser-id';
+        const conversation = getConversation(undefined, 'test-agent', testBrowserId);
+
+        addMessage(conversation.id, { role: 'user', content: 'Message 1' });
+        addMessage(conversation.id, { role: 'assistant', content: 'Message 2' });
+        addMessage(conversation.id, { role: 'user', content: 'Message 3' });
+
+        await flushConversation(conversation.id);
+
+        // Read from disk
+        const filePath = path.join(TEST_OUTPUT_PATH, conversation.id, 'conversation.json');
+        const data = await fs.readFile(filePath, 'utf-8');
+        const persisted: PersistedConversation = JSON.parse(data);
+
+        expect(persisted.browserId).toBe(testBrowserId);
+        expect(persisted.messages).toHaveLength(3);
+      });
+
+      it('should index browserId in metadata', async () => {
+        const testBrowserId = 'indexed-browser-id';
+        const conversation = getConversation(undefined, 'test-agent', testBrowserId);
+
+        addMessage(conversation.id, { role: 'user', content: 'Test' });
+        await flushConversation(conversation.id);
+
+        // Clear cache and rebuild index
+        clearAllConversations();
+        await buildConversationIndex();
+
+        // Check metadata
+        const metadata = getConversationMetadata(conversation.id);
+        expect(metadata?.browserId).toBe(testBrowserId);
+      });
+
+      it('should allow filtering conversations by browserId (future use case)', async () => {
+        const browserId1 = 'browser-1';
+        const browserId2 = 'browser-2';
+
+        const conv1 = getConversation(undefined, 'agent-1', browserId1);
+        const conv2 = getConversation(undefined, 'agent-2', browserId1);
+        const conv3 = getConversation(undefined, 'agent-1', browserId2);
+
+        addMessage(conv1.id, { role: 'user', content: 'Conv 1' });
+        addMessage(conv2.id, { role: 'user', content: 'Conv 2' });
+        addMessage(conv3.id, { role: 'user', content: 'Conv 3' });
+
+        await waitForDebounce();
+
+        // Clear and rebuild index
+        clearAllConversations();
+        await buildConversationIndex();
+
+        const allMetadata = getAllConversationMetadata();
+
+        // Filter by browserId
+        const browser1Convs = allMetadata.filter(m => m.browserId === browserId1);
+        const browser2Convs = allMetadata.filter(m => m.browserId === browserId2);
+
+        expect(browser1Convs).toHaveLength(2);
+        expect(browser2Convs).toHaveLength(1);
+        expect(browser1Convs.map(m => m.id)).toEqual(
+          expect.arrayContaining([conv1.id, conv2.id])
+        );
+      });
     });
   });
 });

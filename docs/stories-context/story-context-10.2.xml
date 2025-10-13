@@ -1,0 +1,398 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/10.2" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>10.2</storyId>
+    <title>Browser Identity &amp; Session Tracking</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.2.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>my browser identified without logging in</iWant>
+    <soThat>my conversations are available when I return</soThat>
+    <tasks>
+      <task id="1" status="pending">
+        <description>Create browserIdentity.ts module</description>
+        <subtasks>
+          <subtask>Implement generateBrowserId() using crypto.randomUUID()</subtask>
+          <subtask>Implement getBrowserId(request) to read cookie from Next.js request</subtask>
+          <subtask>Implement setBrowserId(response, browserId) to set cookie with correct attributes</subtask>
+          <subtask>Configure cookie attributes: httpOnly=true, secure=production, sameSite=Strict, maxAge=31536000</subtask>
+        </subtasks>
+      </task>
+      <task id="2" status="pending">
+        <description>Integrate browser ID into chat API</description>
+        <subtasks>
+          <subtask>Update app/api/chat/route.ts → call getBrowserId() or generate new ID</subtask>
+          <subtask>Pass browserId to getOrCreateConversation() function</subtask>
+          <subtask>Set cookie in response using setBrowserId()</subtask>
+        </subtasks>
+      </task>
+      <task id="3" status="pending">
+        <description>Update conversations.ts for browser ID</description>
+        <subtasks>
+          <subtask>Update getOrCreateConversation() signature to accept browserId parameter</subtask>
+          <subtask>Set browserId field when creating new conversations (replace null)</subtask>
+          <subtask>Update toPersistedConversation() to use actual browserId instead of null</subtask>
+        </subtasks>
+      </task>
+      <task id="4" status="pending">
+        <description>Add server initialization hook (Story 10.1 follow-up)</description>
+        <subtasks>
+          <subtask>Create instrumentation.ts at project root for Next.js 14 startup hook</subtask>
+          <subtask>Call initializeConversationPersistence() from instrumentation.register()</subtask>
+          <subtask>Add logging to verify initialization runs on server start</subtask>
+          <subtask>Update next.config.js to enable instrumentation (if needed)</subtask>
+        </subtasks>
+      </task>
+      <task id="5" status="pending">
+        <description>Testing</description>
+        <subtasks>
+          <subtask>Unit tests for browserIdentity module (generate, get, set)</subtask>
+          <subtask>Integration test: First visit generates browser ID and sets cookie</subtask>
+          <subtask>Integration test: Returning visit retrieves existing browser ID from cookie</subtask>
+          <subtask>Integration test: New conversations linked to browser ID</subtask>
+          <subtask>Test cookie attributes (httpOnly, secure in prod, sameSite)</subtask>
+          <subtask>Test cookie expiration (verify maxAge = 1 year in seconds)</subtask>
+          <subtask>Test cookie deletion scenario (new browser ID generated)</subtask>
+        </subtasks>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-10.2-1">
+      <description>Unique browser ID (UUID) generated on first visit</description>
+      <verification>First visit → inspect cookie → valid UUID v4 format</verification>
+    </criterion>
+    <criterion id="AC-10.2-2">
+      <description>Browser ID stored in HTTP-only cookie (agent_orchestrator_browser_id)</description>
+      <verification>Browser DevTools → Application → Cookies → verify cookie name and httpOnly flag</verification>
+    </criterion>
+    <criterion id="AC-10.2-3">
+      <description>Cookie expiration: 1 year</description>
+      <verification>Inspect cookie → maxAge = 31536000 seconds</verification>
+    </criterion>
+    <criterion id="AC-10.2-4">
+      <description>Each conversation associated with browser ID</description>
+      <verification>Create conversation → check conversation.json → browserId field populated</verification>
+    </criterion>
+    <criterion id="AC-10.2-5">
+      <description>Cookie deletion = data loss (acceptable, documented)</description>
+      <verification>Delete cookie → refresh → new browser ID generated, previous conversations not accessible</verification>
+    </criterion>
+    <criterion id="AC-10.2-6">
+      <description>No PII stored (GDPR-friendly)</description>
+      <verification>Browser ID is opaque UUID, no user information in cookie or conversation files</verification>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/docs/epic-10.md</path>
+        <title>Epic 10: Conversation Persistence &amp; Multi-Session Management</title>
+        <section>Story 10.2 Definition (Lines 157-182)</section>
+        <snippet>
+As a user, I want my browser identified without logging in, so that my conversations are available when I return.
+
+Acceptance Criteria:
+1. Generate unique browser ID (UUID) on first visit
+2. Store browser ID in HTTP-only cookie (agent_orchestrator_browser_id)
+3. Cookie expiration: 1 year
+4. Associate each conversation with browser ID
+5. Cookie deletion = data loss (acceptable, documented)
+6. No PII stored (GDPR-friendly)
+
+Technical Notes:
+- Use Next.js cookies API (cookies() from next/headers)
+- Secure flag enabled in production (HTTPS)
+- SameSite=Strict for CSRF protection
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Conversation Persistence</title>
+        <section>Browser Identity Module (Lines 312-323)</section>
+        <snippet>
+Browser Identity Module Interfaces:
+- generateBrowserId(): string (Returns UUID v4)
+- getBrowserId(request: NextRequest): string | null
+- setBrowserId(response: NextResponse, browserId: string): void
+
+Cookie Schema:
+{
+  name: "agent_orchestrator_browser_id",
+  value: string (UUID v4),
+  httpOnly: true,
+  secure: true (production),
+  sameSite: "Strict",
+  maxAge: 31536000 (1 year in seconds),
+  path: "/"
+}
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Security Controls</title>
+        <section>Cookie Security (Lines 461-480)</section>
+        <snippet>
+Cookie Security Attributes:
+- httpOnly: true - Prevents JavaScript access, mitigates XSS attacks
+- secure: true (prod) - HTTPS-only transmission, prevents MITM attacks
+- sameSite: 'strict' - Prevents CSRF attacks
+- maxAge: 31536000 - 1 year expiration
+
+GDPR Compliance:
+- Browser ID is opaque UUID with no personal information
+- No tracking across sites (first-party cookie only)
+- Cookie deletion = complete data removal
+- No third-party cookies or tracking scripts
+        </snippet>
+      </doc>
+      <doc>
+        <path>/docs/stories/story-10.1.md</path>
+        <title>Story 10.1: Server-Side Conversation Persistence</title>
+        <section>Senior Developer Review Action Items</section>
+        <snippet>
+Action Item AI-1 (High Priority):
+Missing server initialization call for initializeConversationPersistence()
+- Create instrumentation.ts for Next.js 14 startup hook
+- Call initializeConversationPersistence() on server startup
+- Verify initialization in server logs
+
+Action Item AI-2 (Medium Priority):
+Hardcoded user: 'Bryan' should be extracted to config
+- Story 10.2 responsibility to resolve
+        </snippet>
+      </doc>
+    </docs>
+
+    <code>
+      <artifact>
+        <path>lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>getConversation, getOrCreateConversation</symbol>
+        <lines>303-341</lines>
+        <reason>Must be updated to accept browserId parameter. Currently creates conversations without browser tracking.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/conversations.ts</path>
+        <kind>function</kind>
+        <symbol>toPersistedConversation</symbol>
+        <lines>54-80</lines>
+        <reason>Currently sets browserId: null (line 65). Story 10.2 must update to use actual browser ID.</reason>
+      </artifact>
+      <artifact>
+        <path>app/api/chat/route.ts</path>
+        <kind>route</kind>
+        <symbol>POST</symbol>
+        <lines>50-68</lines>
+        <reason>Chat API entry point. Must integrate browser ID cookie management here.</reason>
+      </artifact>
+      <artifact>
+        <path>types/index.ts</path>
+        <kind>interface</kind>
+        <symbol>PersistedConversation</symbol>
+        <lines>140-184</lines>
+        <reason>Defines browserId field (line 145). Type already prepared for browser tracking.</reason>
+      </artifact>
+      <artifact>
+        <path>lib/utils/conversations.ts</path>
+        <kind>function</kind>
+        <symbol>initializeConversationPersistence</symbol>
+        <lines>563-573</lines>
+        <reason>Server initialization function that Story 10.1 created. Must be called on startup (Story 10.2 Task 4).</reason>
+      </artifact>
+    </code>
+
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">
+          <description>Next.js framework - provides cookies() API for cookie management</description>
+        </package>
+        <package name="openai" version="^4.104.0">
+          <description>OpenAI SDK for chat completions</description>
+        </package>
+        <package name="uuid" version="^13.0.0">
+          <description>UUID generation library (Note: using native crypto.randomUUID() instead)</description>
+        </package>
+        <package name="jest" version="^30.2.0">
+          <description>Testing framework for unit and integration tests</description>
+        </package>
+        <package name="@testing-library/react" version="^16.3.0">
+          <description>React testing utilities</description>
+        </package>
+        <package name="typescript" version="^5">
+          <description>TypeScript for type safety</description>
+        </package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">
+      <description>Must use Next.js 14 cookies() API from 'next/headers' for cookie management (not manual response headers)</description>
+      <source>Epic 10 Technical Notes, Next.js 14 best practices</source>
+    </constraint>
+    <constraint type="security">
+      <description>HTTP-only cookie prevents XSS attacks - JavaScript cannot access browser ID</description>
+      <source>Tech Spec Epic 10, Lines 461-480</source>
+    </constraint>
+    <constraint type="security">
+      <description>SameSite=Strict prevents CSRF attacks - cookie only sent with same-site requests</description>
+      <source>Tech Spec Epic 10, Lines 461-480</source>
+    </constraint>
+    <constraint type="security">
+      <description>Secure flag required in production - ensures HTTPS-only transmission</description>
+      <source>Tech Spec Epic 10, Lines 461-480</source>
+    </constraint>
+    <constraint type="privacy">
+      <description>Browser ID must be opaque UUID with no PII - GDPR compliance requirement</description>
+      <source>Epic 10 AC-10.2-6, Tech Spec Epic 10</source>
+    </constraint>
+    <constraint type="data">
+      <description>Cookie expiration exactly 31536000 seconds (1 year) - business requirement</description>
+      <source>Epic 10 AC-10.2-3</source>
+    </constraint>
+    <constraint type="architecture">
+      <description>conversationId === sessionId (1:1 relationship) - established by Story 10.0</description>
+      <source>Story 10.0, Unified Architecture</source>
+    </constraint>
+    <constraint type="performance">
+      <description>Browser ID generation using crypto.randomUUID() (~0.1ms) - no network calls</description>
+      <source>Story 10.2 Dev Notes, Performance Considerations</source>
+    </constraint>
+    <constraint type="dependency">
+      <description>Depends on Story 10.1 persistence layer - browserId field already in PersistedConversation type</description>
+      <source>Story 10.1 foundation</source>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>cookies()</name>
+      <kind>Next.js API</kind>
+      <signature>cookies(): ReadonlyRequestCookies</signature>
+      <path>next/headers</path>
+      <description>Next.js 14 server-side cookies API. Returns cookie store for reading/writing cookies in Server Components and API Routes.</description>
+    </interface>
+    <interface>
+      <name>ReadonlyRequestCookies.get()</name>
+      <kind>method</kind>
+      <signature>get(name: string): { name: string; value: string } | undefined</signature>
+      <path>next/headers</path>
+      <description>Retrieves a cookie by name. Returns undefined if not found.</description>
+    </interface>
+    <interface>
+      <name>ReadonlyRequestCookies.set()</name>
+      <kind>method</kind>
+      <signature>set(options: { name: string; value: string; httpOnly?: boolean; secure?: boolean; sameSite?: 'strict' | 'lax' | 'none'; maxAge?: number; path?: string }): void</signature>
+      <path>next/headers</path>
+      <description>Sets a cookie with specified attributes. Used to create or update browser ID cookie.</description>
+    </interface>
+    <interface>
+      <name>crypto.randomUUID()</name>
+      <kind>native</kind>
+      <signature>randomUUID(): string</signature>
+      <path>Node.js crypto module</path>
+      <description>Generates a random UUID v4 string. Native Node.js function, no external dependency needed.</description>
+    </interface>
+    <interface>
+      <name>getConversation()</name>
+      <kind>function</kind>
+      <signature>getConversation(conversationId: string | undefined, agentId: string): Conversation</signature>
+      <path>lib/utils/conversations.ts:303-341</path>
+      <description>MUST UPDATE: Add browserId parameter. Current signature does not accept browser ID.</description>
+    </interface>
+    <interface>
+      <name>initializeConversationPersistence()</name>
+      <kind>function</kind>
+      <signature>initializeConversationPersistence(): Promise&lt;void&gt;</signature>
+      <path>lib/utils/conversations.ts:563-573</path>
+      <description>Server initialization function from Story 10.1. Must be called on startup via instrumentation.ts.</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <description>
+Project uses Jest 30.2.0 with @testing-library/react 16.3.0 for testing. Test files located in lib/__tests__/ with .test.ts extension. Integration tests use real file system operations with cleanup in beforeEach/afterEach. Security tests emphasize validation of cookie attributes (httpOnly, secure, sameSite). Performance tests verify cookie overhead is negligible (&lt;1ms per request).
+
+Testing Pattern:
+- Unit tests: Mock Next.js cookies() API
+- Integration tests: Test full request/response cycle with cookie setting
+- Security tests: Verify cookie attributes prevent XSS/CSRF attacks
+- Performance tests: Measure browser ID generation time (~0.1ms)
+      </description>
+    </standards>
+
+    <locations>
+      <location>lib/__tests__/browserIdentity.test.ts (new file)</location>
+      <location>lib/__tests__/conversations.persistence.test.ts (existing, may need updates)</location>
+      <location>app/api/chat/__tests__/route.test.ts (new file for integration tests)</location>
+    </locations>
+
+    <ideas>
+      <test ac="AC-10.2-1">
+        <description>Unit test: generateBrowserId() returns valid UUID v4 format</description>
+        <approach>Call generateBrowserId() and verify against UUID v4 regex pattern</approach>
+      </test>
+      <test ac="AC-10.2-2">
+        <description>Unit test: getBrowserId() retrieves cookie value from Next.js cookies store</description>
+        <approach>Mock cookies().get() to return test UUID, verify getBrowserId() returns same value</approach>
+      </test>
+      <test ac="AC-10.2-2">
+        <description>Unit test: setBrowserId() sets cookie with correct attributes</description>
+        <approach>Mock cookies().set(), call setBrowserId(), verify set() called with httpOnly, secure, sameSite, maxAge</approach>
+      </test>
+      <test ac="AC-10.2-3">
+        <description>Unit test: Cookie maxAge exactly 31536000 seconds (1 year)</description>
+        <approach>Verify setBrowserId() calls cookies().set() with maxAge: 31536000</approach>
+      </test>
+      <test ac="AC-10.2-4">
+        <description>Integration test: POST /api/chat creates conversation with browserId field</description>
+        <approach>Send POST request, read conversation.json from disk, verify browserId is UUID v4</approach>
+      </test>
+      <test ac="AC-10.2-4">
+        <description>Integration test: getOrCreateConversation() accepts and stores browserId parameter</description>
+        <approach>Call getOrCreateConversation() with test browserId, verify conversation object contains browserId</approach>
+      </test>
+      <test ac="AC-10.2-5">
+        <description>Integration test: Missing cookie generates new browser ID</description>
+        <approach>Send request without cookie, verify Set-Cookie header in response, verify new UUID generated</approach>
+      </test>
+      <test ac="AC-10.2-5">
+        <description>Integration test: Existing cookie returns same browser ID</description>
+        <approach>Send request with existing cookie, verify no new Set-Cookie header, same browserId reused</approach>
+      </test>
+      <test ac="AC-10.2-6">
+        <description>Security test: Cookie is HTTP-only (prevents XSS)</description>
+        <approach>Inspect Set-Cookie header, verify HttpOnly flag present</approach>
+      </test>
+      <test ac="AC-10.2-6">
+        <description>Security test: Cookie is Secure in production (prevents MITM)</description>
+        <approach>Set NODE_ENV=production, verify Secure flag present in Set-Cookie</approach>
+      </test>
+      <test ac="AC-10.2-6">
+        <description>Security test: Cookie is SameSite=Strict (prevents CSRF)</description>
+        <approach>Verify SameSite=Strict in Set-Cookie header</approach>
+      </test>
+      <test ac="AC-10.2-6">
+        <description>Privacy test: Browser ID contains no PII</description>
+        <approach>Generate multiple browser IDs, verify all match UUID v4 format (random), no user info</approach>
+      </test>
+      <test ac="Story 10.1 AI-1">
+        <description>Integration test: Server startup calls initializeConversationPersistence()</description>
+        <approach>Mock initializeConversationPersistence(), trigger instrumentation.register(), verify function called</approach>
+      </test>
+      <test ac="Story 10.1 AI-1">
+        <description>Integration test: Server logs show persistence initialization</description>
+        <approach>Start server, check logs for "Conversation persistence initialized" message</approach>
+      </test>
+    </ideas>
+  </tests>
+</story-context>
