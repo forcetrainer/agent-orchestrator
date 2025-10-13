@@ -1,0 +1,284 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>10.4</storyId>
+    <title>Conversation Sidebar UI</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.4.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>a sidebar showing my past conversations organized by agent</iWant>
+    <soThat>I can easily browse and switch between conversations</soThat>
+    <tasks>
+      <task id="1" description="Create ConversationSidebar component" acs="1,6">
+        <subtask id="1.1">Create components/ConversationSidebar.tsx component file</subtask>
+        <subtask id="1.2">Fetch conversations from GET /api/conversations on mount</subtask>
+        <subtask id="1.3">Implement loading state (skeleton loader or spinner)</subtask>
+        <subtask id="1.4">Implement error state (display error message if API fails)</subtask>
+        <subtask id="1.5">Render agent-grouped conversation list using groupedByAgent response field</subtask>
+        <subtask id="1.6">Make sidebar collapsible on mobile (responsive design)</subtask>
+        <subtask id="1.7">Add fixed positioning (left edge, full height)</subtask>
+        <subtask id="1.8">Apply design system styling (slate backgrounds, borders)</subtask>
+        <subtask id="1.9">Add smooth transitions for expand/collapse animations</subtask>
+      </task>
+      <task id="2" description="Create AgentConversationGroup component" acs="6">
+        <subtask id="2.1">Create components/AgentConversationGroup.tsx component file</subtask>
+        <subtask id="2.2">Accept props: agentId, agentName, agentIcon, conversations[], expanded state</subtask>
+        <subtask id="2.3">Implement agent header with icon, name, conversation count</subtask>
+        <subtask id="2.4">Add expand/collapse toggle button (chevron icon)</subtask>
+        <subtask id="2.5">Implement expand/collapse state management (useState)</subtask>
+        <subtask id="2.6">Render list of ConversationListItem components when expanded</subtask>
+        <subtask id="2.7">Apply design system styling (thick left border for agent header)</subtask>
+        <subtask id="2.8">Add smooth animation for expand/collapse (max-height transition)</subtask>
+      </task>
+      <task id="3" description="Create ConversationListItem component" acs="2,3,4,5,8">
+        <subtask id="3.1">Create components/ConversationListItem.tsx component file</subtask>
+        <subtask id="3.2">Accept props: ConversationMetadata, active state, onClick, onDelete</subtask>
+        <subtask id="3.3">Render last message preview (userSummary, truncate to 40 chars)</subtask>
+        <subtask id="3.4">Render relative timestamp using date-fns formatDistanceToNow()</subtask>
+        <subtask id="3.5">Highlight active conversation (bg-blue-50, border-cyan-500)</subtask>
+        <subtask id="3.6">Implement hover state (bg-slate-100, cursor pointer)</subtask>
+        <subtask id="3.7">Add delete button (trash icon, right side)</subtask>
+        <subtask id="3.8">Show delete button on hover or always visible (UX decision)</subtask>
+        <subtask id="3.9">Handle click event (call onClick with conversationId)</subtask>
+        <subtask id="3.10">Apply design system styling (rounded corners, padding, text colors)</subtask>
+      </task>
+      <task id="4" description="Create NewChatButton and AgentPickerModal components" acs="7">
+        <subtask id="4.1">Create components/NewChatButton.tsx component file</subtask>
+        <subtask id="4.2">Design prominent button (Slack-style: + New Chat or Compose icon + text)</subtask>
+        <subtask id="4.3">Position at top of sidebar (sticky or fixed at top)</subtask>
+        <subtask id="4.4">Apply design system styling (primary blue button, full width with margins)</subtask>
+        <subtask id="4.5">Handle click to open agent picker modal</subtask>
+        <subtask id="4.6">Create components/AgentPickerModal.tsx component file</subtask>
+        <subtask id="4.7">Use Headless UI Dialog or Listbox for modal</subtask>
+        <subtask id="4.8">Fetch available agents from /api/agents endpoint</subtask>
+        <subtask id="4.9">Display agent list with icons, names, descriptions</subtask>
+        <subtask id="4.10">Add search/filter functionality (optional, nice-to-have)</subtask>
+        <subtask id="4.11">Handle agent selection (close modal, create new conversation, switch to it)</subtask>
+        <subtask id="4.12">Apply design system styling (modal backdrop, rounded corners, shadows)</subtask>
+        <subtask id="4.13">Add keyboard navigation (arrow keys, Enter to select, Escape to close)</subtask>
+      </task>
+      <task id="5" description="Create DeleteConfirmationModal component" acs="8">
+        <subtask id="5.1">Create components/DeleteConfirmationModal.tsx component file</subtask>
+        <subtask id="5.2">Use Headless UI Dialog component for modal</subtask>
+        <subtask id="5.3">Accept props: isOpen, onClose, onConfirm, conversationTitle</subtask>
+        <subtask id="5.4">Render modal backdrop (semi-transparent overlay)</subtask>
+        <subtask id="5.5">Render modal content (title, message, buttons)</subtask>
+        <subtask id="5.6">Add Cancel and Delete buttons</subtask>
+        <subtask id="5.7">Handle Escape key to close modal</subtask>
+        <subtask id="5.8">Handle click outside to close modal (optional, UX decision)</subtask>
+        <subtask id="5.9">Call DELETE /api/conversations/:id on confirm</subtask>
+        <subtask id="5.10">Show loading state during deletion</subtask>
+        <subtask id="5.11">Handle error (show error message, close modal)</subtask>
+        <subtask id="5.12">Apply design system styling (destructive button = red)</subtask>
+      </task>
+      <task id="6" description="Remove old UI components" acs="All">
+        <subtask id="6.1">Remove components/FileViewerPanel.tsx component file</subtask>
+        <subtask id="6.2">Remove agent picker/selector from top navigation bar</subtask>
+        <subtask id="6.3">Remove file viewer toggle button from navigation/top bar</subtask>
+        <subtask id="6.4">Remove file viewer state management (isFileViewerOpen, etc.)</subtask>
+        <subtask id="6.5">Remove agent selector state management (selectedAgent, etc.)</subtask>
+        <subtask id="6.6">Remove related imports from parent components</subtask>
+        <subtask id="6.7">Remove file viewer related API routes if no longer needed (verify usage)</subtask>
+        <subtask id="6.8">Clean up any file viewer and agent selector related CSS/styles</subtask>
+        <subtask id="6.9">Update top navigation to be minimal (just app title/logo)</subtask>
+      </task>
+      <task id="7" description="Integrate sidebar into main layout" acs="All">
+        <subtask id="7.1">Update app/page.tsx to include ConversationSidebar with NewChatButton</subtask>
+        <subtask id="7.2">Adjust layout: sidebar (20-25% width), chat panel (75-80% width)</subtask>
+        <subtask id="7.3">Make sidebar width responsive (full width on mobile, fixed width on desktop)</subtask>
+        <subtask id="7.4">Add sidebar toggle button for mobile (hamburger menu)</subtask>
+        <subtask id="7.5">Implement sidebar slide-in/out animation for mobile</subtask>
+        <subtask id="7.6">Pass active conversationId to sidebar for highlighting</subtask>
+        <subtask id="7.7">Handle conversation click (switch active conversation in parent state)</subtask>
+        <subtask id="7.8">Handle new chat flow (open modal, select agent, create conversation)</subtask>
+        <subtask id="7.9">Handle conversation deletion (remove from sidebar, switch to another or empty state)</subtask>
+        <subtask id="7.10">Ensure layout doesn't break with long conversation titles or many conversations</subtask>
+      </task>
+      <task id="8" description="Implement relative timestamps" acs="3">
+        <subtask id="8.1">Install date-fns library if not already installed</subtask>
+        <subtask id="8.2">Create utility function formatRelativeTime(dateString) in lib/utils/</subtask>
+        <subtask id="8.3">Use formatDistanceToNow() from date-fns for relative formatting</subtask>
+        <subtask id="8.4">Handle edge cases: just now (&lt; 1 min), X minutes ago, X hours ago, X days ago</subtask>
+        <subtask id="8.5">Add option to show full timestamp on hover (tooltip)</subtask>
+        <subtask id="8.6">Test with various timestamp scenarios (recent, hours ago, days ago, months ago)</subtask>
+      </task>
+      <task id="9" description="Add conversation switching logic" acs="5">
+        <subtask id="9.1">Update parent component state to track activeConversationId</subtask>
+        <subtask id="9.2">Pass onConversationClick handler to ConversationListItem</subtask>
+        <subtask id="9.3">Fetch full conversation via GET /api/conversations/:id/messages on click</subtask>
+        <subtask id="9.4">Replace current conversation state with loaded conversation</subtask>
+        <subtask id="9.5">Update chat panel to display loaded messages</subtask>
+        <subtask id="9.6">Scroll chat panel to bottom after loading</subtask>
+        <subtask id="9.7">Show loading indicator during conversation load</subtask>
+        <subtask id="9.8">Handle error if conversation fails to load (show error message)</subtask>
+        <subtask id="9.9">Update URL query param or route to reflect active conversation (optional)</subtask>
+      </task>
+      <task id="10" description="Styling and design system alignment" acs="All">
+        <subtask id="10.1">Apply design system colors (deep blue, cyan accents, slate grays)</subtask>
+        <subtask id="10.2">Use signature thick left borders (4px blue-800 for agent headers)</subtask>
+        <subtask id="10.3">Use 8px border radius for conversation items</subtask>
+        <subtask id="10.4">Apply proper spacing (gap-4 between items, p-4 padding)</subtask>
+        <subtask id="10.5">Use Inter font family for text</subtask>
+        <subtask id="10.6">Apply proper text sizes (text-sm for metadata, text-base for titles)</subtask>
+        <subtask id="10.7">Ensure hover/active states use cyan accents</subtask>
+        <subtask id="10.8">Add focus rings for keyboard navigation (ring-2 ring-cyan-500)</subtask>
+        <subtask id="10.9">Test motion-reduce support (disable animations if preferred-reduced-motion)</subtask>
+        <subtask id="10.10">Verify WCAG AA contrast ratios for all text</subtask>
+        <subtask id="10.11">Style New Chat button prominently (Slack-style, blue-800 background)</subtask>
+      </task>
+      <task id="11" description="Testing" acs="All">
+        <subtask id="11.1">Manual test: Verify old file viewer removed from UI</subtask>
+        <subtask id="11.2">Manual test: Verify top agent picker removed from UI</subtask>
+        <subtask id="11.3">Manual test: Verify New Chat button visible at top of sidebar</subtask>
+        <subtask id="11.4">Manual test: Click New Chat, verify agent picker modal opens</subtask>
+        <subtask id="11.5">Manual test: Select agent from modal, verify new conversation created</subtask>
+        <subtask id="11.6">Manual test: Test empty state (no conversations) - New Chat button prominent</subtask>
+        <subtask id="11.7">Manual test: Render sidebar with multiple conversations</subtask>
+        <subtask id="11.8">Manual test: Verify conversations grouped by agent</subtask>
+        <subtask id="11.9">Manual test: Click agent header, verify expand/collapse</subtask>
+        <subtask id="11.10">Manual test: Click conversation, verify full history loads</subtask>
+        <subtask id="11.11">Manual test: Verify active conversation highlighted</subtask>
+        <subtask id="11.12">Manual test: Click delete, verify confirmation modal shown</subtask>
+        <subtask id="11.13">Manual test: Confirm delete, verify conversation removed and API called</subtask>
+        <subtask id="11.14">Manual test: Cancel delete, verify modal closed without deletion</subtask>
+        <subtask id="11.15">Manual test: Verify relative timestamps render correctly</subtask>
+        <subtask id="11.16">Manual test: Test responsive design on mobile/tablet/desktop</subtask>
+        <subtask id="11.17">Manual test: Test keyboard navigation (Tab, Enter, Escape, arrow keys in modal)</subtask>
+        <subtask id="11.18">Manual test: Test sidebar with 50+ conversations (performance)</subtask>
+      </task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-10.4-1">
+      <description>Left sidebar component shows agent-grouped conversations</description>
+      <verification>Render sidebar, verify conversations grouped by agentId</verification>
+    </criterion>
+    <criterion id="AC-10.4-2">
+      <description>Show last message preview (truncated to 40 chars)</description>
+      <verification>Verify userSummary field displayed, truncated appropriately</verification>
+    </criterion>
+    <criterion id="AC-10.4-3">
+      <description>Show last updated timestamp (relative: "2 hours ago")</description>
+      <verification>Verify relative timestamp renders (e.g., "2 hours ago", "just now")</verification>
+    </criterion>
+    <criterion id="AC-10.4-4">
+      <description>Highlight active conversation</description>
+      <verification>Active conversation visually distinct (background color/border)</verification>
+    </criterion>
+    <criterion id="AC-10.4-5">
+      <description>Click conversation → load full history</description>
+      <verification>Click conversation, verify full message history loads</verification>
+    </criterion>
+    <criterion id="AC-10.4-6">
+      <description>Collapsible agent sections (expand/collapse)</description>
+      <verification>Click agent header, verify conversation list expands/collapses</verification>
+    </criterion>
+    <criterion id="AC-10.4-7">
+      <description>Global "New Chat" button at top of sidebar with agent picker modal</description>
+      <verification>Prominent "New Chat" button at top of sidebar</verification>
+      <verification>Click opens agent picker modal/dropdown</verification>
+      <verification>Select agent creates new conversation</verification>
+      <verification>Top navigation agent picker removed</verification>
+    </criterion>
+    <criterion id="AC-10.4-8">
+      <description>Delete button per conversation (with confirmation modal)</description>
+      <verification>Delete button visible, confirmation modal shown, deletion executes</verification>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc path="docs/tech-spec-epic-10.md" title="Technical Specification: Epic 10" section="ConversationMetadata Type Definition">
+        <snippet>Lines 143-170: Defines ConversationMetadata interface with id, agentId, agentName, lastMessage, messageCount, timestamps. Also defines ConversationListResponse with conversations array and groupedByAgent Record</snippet>
+      </doc>
+      <doc path="docs/tech-spec-epic-10.md" title="Technical Specification: Epic 10" section="Conversation Sidebar UI Specification">
+        <snippet>Lines 780-790: Story 10.4 acceptance criteria - sidebar shows agent-grouped conversations, last message preview (40 chars), relative timestamp, active conversation highlighting, expand/collapse, new conversation button, delete button with confirmation</snippet>
+      </doc>
+      <doc path="docs/design-system.md" title="Agent Orchestrator Design System" section="Signature Elements">
+        <snippet>Lines 73-128: Three signature elements - (1) Thick left borders 4-6px (cyan-500 for headings, blue-800 for containers), (2) Cyan accent system for interactive elements, (3) Geometric border radius 8px/12px. Creates distinctive visual identity</snippet>
+      </doc>
+      <doc path="docs/design-system.md" title="Agent Orchestrator Design System" section="Color Palette">
+        <snippet>Lines 131-213: Primary deep blue (blue-800 #1E40AF), accent cyan (cyan-500 #06B6D4), warm slate grays, semantic colors. All meet WCAG AA contrast ratios. Sidebar uses slate-50 background, agent headers slate-900 text, active conversation bg-blue-50 border-cyan-500</snippet>
+      </doc>
+      <doc path="docs/design-system.md" title="Agent Orchestrator Design System" section="Component Patterns">
+        <snippet>Lines 415-523: Button patterns (primary/secondary/ghost), input fields, message bubbles, panels/cards. Standard padding px-4 py-3, gap-4 between items, gap-6 between sections. Hover states use cyan accents, focus rings ring-2 ring-cyan-500</snippet>
+      </doc>
+      <doc path="docs/epic-10.md" title="Epic 10: Conversation Persistence" section="Story 10.4 Definition">
+        <snippet>Lines 214-244: Conversation sidebar UI with agent grouping (Slack-style), last message preview, relative timestamps, expand/collapse, conversation switching, delete with confirmation. Builds on Stories 10.1-10.3 (persistence layer and APIs complete)</snippet>
+      </doc>
+    </docs>
+    <code>
+      <code path="app/api/conversations/route.ts" kind="API Route" symbol="GET /api/conversations" lines="31-86" reason="Existing API endpoint that returns ConversationMetadata[] with groupedByAgent field. Sidebar will call this endpoint on mount to fetch conversation list. Returns sorted (by updatedAt) and grouped conversations"></code>
+      <code path="lib/utils/conversations.ts" kind="Module" symbol="loadConversationsForBrowser()" lines="506-556" reason="Core function to load all conversations for a browser ID. Filters by browserId for security. Returns PersistedConversation[] array that API route transforms to ConversationMetadata"></code>
+      <code path="lib/utils/conversations.ts" kind="Module" symbol="deleteConversation()" lines="630-690" reason="Deletes conversation from disk and cache with browser ID verification. Sidebar delete button will call DELETE /api/conversations/:id which invokes this function"></code>
+      <code path="components/chat/useStreamingChat.ts" kind="Hook" symbol="useStreamingChat()" lines="102-518" reason="Existing chat hook that manages streaming state and sendMessage function. Sidebar will trigger conversation switches that update the conversationId passed to this hook. Integration point for conversation loading"></code>
+      <code path="app/api/conversations/[id]/messages/route.ts" kind="API Route" symbol="GET /api/conversations/:id/messages" lines="1-50" reason="API endpoint to fetch full conversation with message history. Called when user clicks conversation in sidebar to load full history (AC-10.4-5). Returns ConversationDetailResponse"></code>
+      <code path="app/api/conversations/[id]/route.ts" kind="API Route" symbol="DELETE /api/conversations/:id" lines="1-50" reason="API endpoint to delete conversation. Called when user confirms deletion in DeleteConfirmationModal. Verifies browser ID ownership before deletion"></code>
+    </code>
+    <dependencies>
+      <node>
+        <dependency name="next" version="14.2.0">Framework for React SSR and API routes. Existing dependency</dependency>
+        <dependency name="react" version="^18">UI framework for sidebar components. Existing dependency</dependency>
+        <dependency name="react-dom" version="^18">React DOM rendering. Existing dependency</dependency>
+        <dependency name="date-fns" version="^3.0.0">Relative timestamp formatting (formatDistanceToNow). NEEDS TO BE INSTALLED for Task 8</dependency>
+        <dependency name="framer-motion" version="^10.16.4">Optional animations for sidebar expand/collapse. Already installed, optional use</dependency>
+        <dependency name="@headlessui/react" version="^2.0.0">Accessible Dialog component for modals. NEEDS TO BE INSTALLED for DeleteConfirmationModal and AgentPickerModal</dependency>
+        <dependency name="@heroicons/react" version="^2.0.0">Icon library for ChevronDown, TrashIcon, etc. NEEDS TO BE INSTALLED for Task 2, 3, 4</dependency>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint type="architecture">Must use existing /api/conversations endpoint - do not create new API routes for conversation list. API already returns groupedByAgent field ready for sidebar consumption</constraint>
+    <constraint type="architecture">Must use existing persistence layer (lib/utils/conversations.ts) - do not modify persistence logic. All conversation CRUD operations already implemented in Stories 10.1-10.3</constraint>
+    <constraint type="design">Must follow design system signature elements: 4px blue-800 left border for agent headers, cyan-500 accents for active states, 8px border radius for items, slate-50 sidebar background</constraint>
+    <constraint type="design">Must use design system colors: bg-slate-50 sidebar, bg-blue-50 active conversation, border-cyan-500 active border, slate-900 text, slate-600 secondary text</constraint>
+    <constraint type="ux">New Chat button must be global and prominent (Slack-style) at top of sidebar, not per-agent buttons. Opens modal for agent selection</constraint>
+    <constraint type="ux">Must remove old file viewer panel and top agent picker as part of this story. Sidebar replaces both legacy components</constraint>
+    <constraint type="ux">Last message preview must truncate to 40 chars (with ellipsis). Do not exceed this length to maintain consistent sidebar layout</constraint>
+    <constraint type="ux">Relative timestamps must use date-fns formatDistanceToNow() for consistency. Format: "just now" (< 1 min), "X minutes ago", "X hours ago", "X days ago"</constraint>
+    <constraint type="performance">Sidebar must load within 300ms for ≤50 conversations. Use React.memo on ConversationListItem to prevent unnecessary re-renders</constraint>
+    <constraint type="accessibility">All interactive elements must have visible focus rings (ring-2 ring-cyan-500). Keyboard navigation required: Tab, Enter, Escape, arrow keys in modal</constraint>
+    <constraint type="testing">Must include manual testing checklist for all 8 acceptance criteria before marking story complete. Test empty state, many conversations (50+), mobile responsive, keyboard navigation</constraint>
+  </constraints>
+
+  <interfaces>
+    <interface name="ConversationMetadata" kind="TypeScript Interface" signature="interface ConversationMetadata { id: string; agentId: string; agentName: string; agentTitle: string; agentIcon?: string; lastMessage: string; messageCount: number; createdAt: string; updatedAt: string; }" path="types/api.ts" reason="API response type from GET /api/conversations. Sidebar consumes this type for rendering conversation list items"></interface>
+    <interface name="ConversationListResponse" kind="TypeScript Interface" signature="interface ConversationListResponse { conversations: ConversationMetadata[]; groupedByAgent: Record&lt;string, ConversationMetadata[]&gt;; }" path="types/api.ts" reason="API response from GET /api/conversations. Provides both flat conversations array and pre-grouped object for agent sections"></interface>
+    <interface name="useStreamingChat" kind="React Hook" signature="function useStreamingChat(): { isStreaming: boolean; streamingContent: string; status: string | undefined; sendMessage: (message: string, agentId: string, conversationId: string | undefined, attachments?) => Promise&lt;{success: boolean; conversationId?: string; error?: string; finalContent?: string}&gt;; cancelStream: () => void; }" path="components/chat/useStreamingChat.ts" reason="Existing chat hook. Parent component (app/page.tsx) will pass conversationId from sidebar click to sendMessage function to switch conversations"></interface>
+    <interface name="GET /api/conversations" kind="REST API" signature="GET /api/conversations → ConversationListResponse" path="app/api/conversations/route.ts" reason="Fetch conversation list on sidebar mount. Already implemented and tested in Story 10.3. Returns sorted and grouped conversations"></interface>
+    <interface name="GET /api/conversations/:id/messages" kind="REST API" signature="GET /api/conversations/:id/messages → ConversationDetailResponse" path="app/api/conversations/[id]/messages/route.ts" reason="Load full conversation when user clicks conversation in sidebar (AC-10.4-5). Returns full message history and files"></interface>
+    <interface name="DELETE /api/conversations/:id" kind="REST API" signature="DELETE /api/conversations/:id → 204 No Content | 404 Not Found | 403 Forbidden" path="app/api/conversations/[id]/route.ts" reason="Delete conversation when user confirms in modal (AC-10.4-8). Verifies browser ID ownership before deletion"></interface>
+    <interface name="formatRelativeTime" kind="Utility Function" signature="function formatRelativeTime(dateString: string): string" path="lib/utils/formatRelativeTime.ts" reason="New utility function to create using date-fns formatDistanceToNow(). Formats ISO date string to relative time for display (AC-10.4-3)"></interface>
+  </interfaces>
+
+  <tests>
+    <standards>Project uses Jest for unit tests and React Testing Library for component tests. Test files colocated in __tests__ directories. Manual testing documented in story task lists. Integration tests verify API endpoints. Test coverage target: 80% for new components</standards>
+    <locations>
+      <location>components/__tests__/ConversationSidebar.test.tsx</location>
+      <location>components/__tests__/AgentConversationGroup.test.tsx</location>
+      <location>components/__tests__/ConversationListItem.test.tsx</location>
+      <location>components/__tests__/NewChatButton.test.tsx</location>
+      <location>components/__tests__/AgentPickerModal.test.tsx</location>
+      <location>components/__tests__/DeleteConfirmationModal.test.tsx</location>
+      <location>lib/utils/__tests__/formatRelativeTime.test.ts</location>
+    </locations>
+    <ideas>
+      <test ac="AC-10.4-1" idea="Unit test AgentConversationGroup: Render with mock conversations, verify conversations grouped by agentId, verify agent header displays name and count"></test>
+      <test ac="AC-10.4-2" idea="Unit test ConversationListItem: Render with mock ConversationMetadata, verify lastMessage truncated to 40 chars with ellipsis"></test>
+      <test ac="AC-10.4-3" idea="Unit test formatRelativeTime: Test various timestamps (1 min ago, 2 hours ago, just now, 3 days ago), verify output matches expected format"></test>
+      <test ac="AC-10.4-4" idea="Visual test ConversationListItem: Render with active=true, verify bg-blue-50 and border-cyan-500 applied, render with active=false, verify default styling"></test>
+      <test ac="AC-10.4-5" idea="Integration test: Mock click on ConversationListItem, verify GET /api/conversations/:id/messages called with correct ID, verify parent callback invoked"></test>
+      <test ac="AC-10.4-6" idea="Unit test AgentConversationGroup: Click agent header, verify expanded state toggles, verify conversation list visibility changes"></test>
+      <test ac="AC-10.4-7" idea="Unit test NewChatButton: Verify button renders prominently at top, click button, verify modal open callback invoked. Unit test AgentPickerModal: Render with mock agents, select agent, verify callback with agentId"></test>
+      <test ac="AC-10.4-8" idea="Unit test DeleteConfirmationModal: Render with mock props, click Delete button, verify onConfirm callback invoked and DELETE /api/conversations/:id called. Click Cancel, verify modal closes without API call"></test>
+      <test ac="All" idea="Manual test checklist (Task 11): Empty state, multiple conversations, agent grouping, expand/collapse, conversation switching, delete flow, responsive design, keyboard navigation, 50+ conversations performance"></test>
+    </ideas>
+  </tests>
+</story-context>

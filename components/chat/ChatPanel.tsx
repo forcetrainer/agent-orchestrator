@@ -1,41 +1,49 @@
 'use client';
 
-import { useState, useRef } from 'react';
+// components/chat/ChatPanel.tsx
+// Story 10.4: Refactored for conversation sidebar navigation
+// Removed AgentSelector - agent selection now handled by ConversationSidebar
+
+import { useState, useRef, useEffect } from 'react';
 import { MessageList } from './MessageList';
-import { MessageInput } from './MessageInput';
 import { InputField } from './InputField';
-import { AgentSelector } from './AgentSelector';
 import { Message } from '@/lib/types';
-import { mapErrorToUserMessage } from '@/lib/errorMapping';
 import { AgentSummary } from '@/types/api';
 import { useStreamingChat } from './useStreamingChat';
 
 /**
  * ChatPanel Component
  *
- * Main chat container with agent selector, message history, and input
- * Full-screen flex layout following architecture Section 7.1
+ * Main chat container with message history and input.
+ * Displays active conversation or prompts user to start a new chat.
  *
- * AC-1.1, AC-1.2, AC-1.3, AC-1.4: Chat interface layout
- * AC-2.1, AC-2.2, AC-2.3, AC-2.4: Message display and state management
- * AC-4.5, AC-4.6: Agent selection integration
- * AC-5.4, AC-5.5, AC-5.8: Message send functionality (Story 3.5)
- * Story 6.8: Streaming response display (AC-6.8.1, AC-6.8.6, AC-6.8.26)
+ * Story 10.4: Refactored for conversation sidebar UI
+ * - Removed top AgentSelector (agent selection now in sidebar via "New Chat")
+ * - Accepts activeConversationId prop for conversation switching
+ * - Accepts selectedAgentId prop from parent
+ * - Calls onConversationStart when new conversation begins
  *
- * UX Enhancement: Centers input when no messages (like ChatGPT/Claude.ai),
- * expands to full layout when conversation starts
+ * Props:
+ * - activeConversationId: Current active conversation (from sidebar click)
+ * - selectedAgentId: Selected agent ID (from sidebar "New Chat" or conversation load)
+ * - onConversationStart: Callback when new conversation is created (returns conversationId)
  */
-export function ChatPanel() {
-  // Agent selection state - Story 3.4 Task 4.2
-  // Story 4.6: Now stores full agent object with bundlePath
-  const [selectedAgentId, setSelectedAgentId] = useState<string | undefined>(undefined);
-  const [selectedAgent, setSelectedAgent] = useState<AgentSummary | undefined>(undefined);
 
-  // Story 3.5 Task 2.1: Add messages state array
-  // AC-5.4: User message immediately appears in chat history
+interface ChatPanelProps {
+  activeConversationId?: string;
+  selectedAgentId?: string;
+  onConversationStart?: (conversationId: string) => void;
+}
+
+export function ChatPanel({
+  activeConversationId,
+  selectedAgentId,
+  onConversationStart,
+}: ChatPanelProps) {
+  // Message state
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // Story 6.8: Use streaming chat hook
+  // Streaming chat hook
   const {
     isStreaming,
     streamingContent,
@@ -44,42 +52,127 @@ export function ChatPanel() {
     cancelStream,
   } = useStreamingChat();
 
-  // Story 3.5 Task 2.2: Add isLoading state (for initialization, separate from streaming)
-  // AC-5.5: Input is disabled while waiting for agent response
+  // Loading states
   const [isLoading, setIsLoading] = useState<boolean>(false);
-
-  // Story 4.7: Loading message state for different loading contexts
   const [loadingMessage, setLoadingMessage] = useState<string | undefined>(undefined);
 
   // Conversation ID for maintaining conversation state across messages
-  const [conversationId, setConversationId] = useState<string | undefined>(undefined);
+  const [conversationId, setConversationId] = useState<string | undefined>();
 
-  // Story 3.7 Task 3.1: Ref for input field auto-focus after reset
+  // Input field ref for auto-focus
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Handler for agent selection - Story 3.4 Task 4.3
-  // Story 3.10 Task 2: Integrate Initialization into Chat Flow
-  // Story 4.6 Task 2.6: Now receives full agent object with bundlePath
-  // AC-10.4: Agent greeting/welcome message displays automatically before user input
-  // AC-10.6: Initialization completes before user can send first message
-  // AC-10.7: Loading indicator shows during initialization process
-  const handleAgentSelect = async (agent: AgentSummary) => {
-    setSelectedAgentId(agent.id);
-    setSelectedAgent(agent);
+  // Track which agent is currently loaded
+  const [loadedAgentId, setLoadedAgentId] = useState<string | undefined>();
 
-    // Task 2.5: Clear any previous conversation when new agent selected
-    setMessages([]);
-    setConversationId(undefined);
+  /**
+   * Effect: Load conversation when activeConversationId changes
+   * AC-10.4-5: Click conversation → load full history
+   */
+  useEffect(() => {
+    if (activeConversationId && activeConversationId !== conversationId) {
+      loadConversation(activeConversationId);
+    }
+    // When activeConversationId is cleared (user clicked "New Chat"), reset the conversation state
+    else if (!activeConversationId && conversationId) {
+      console.log('[ChatPanel] Clearing conversation state for new chat');
+      setConversationId(undefined);
+      setLoadedAgentId(undefined);
+      setMessages([]);
+    }
+  }, [activeConversationId, conversationId]);
 
-    // Task 2.2: Show loading state during initialization (AC-10.7)
+  /**
+   * Effect: Initialize agent when selectedAgentId changes
+   * This happens when user clicks "New Chat" and selects an agent
+   */
+  useEffect(() => {
+    console.log('[ChatPanel] useEffect triggered - selectedAgentId:', selectedAgentId, 'loadedAgentId:', loadedAgentId, 'activeConversationId:', activeConversationId);
+    // Initialize agent when:
+    // 1. We have a selectedAgentId
+    // 2. No active conversation (new chat scenario)
+    // 3. Either no loaded agent yet OR different agent selected
+    if (selectedAgentId && !activeConversationId) {
+      if (!loadedAgentId || selectedAgentId !== loadedAgentId) {
+        console.log('[ChatPanel] Calling initializeAgent with:', selectedAgentId);
+        initializeAgent(selectedAgentId);
+      }
+    }
+  }, [selectedAgentId, loadedAgentId, activeConversationId]);
+
+  /**
+   * Load full conversation history from API
+   * AC-10.4-5: Click conversation → load full history
+   */
+  async function loadConversation(convId: string) {
+    try {
+      setIsLoading(true);
+      setLoadingMessage('Loading conversation...');
+
+      const response = await fetch(`/api/conversations/${convId}/messages`);
+      if (!response.ok) {
+        throw new Error(`Failed to load conversation: ${response.statusText}`);
+      }
+
+      const conversation = await response.json();
+
+      // Convert API messages to Message type
+      // Filter out messages with empty content (status messages, function calls without content)
+      const loadedMessages: Message[] = conversation.messages
+        .filter((msg: any) => msg.content && msg.content.trim().length > 0)
+        .map((msg: any) => ({
+          id: msg.id,
+          role: msg.role,
+          content: msg.content,
+          timestamp: new Date(msg.timestamp),
+          functionCalls: msg.functionCalls,
+          toolCallId: msg.toolCallId,
+        }));
+
+      setMessages(loadedMessages);
+      setConversationId(convId);
+      setLoadedAgentId(conversation.agentId);
+    } catch (error) {
+      console.error('Failed to load conversation:', error);
+      const errorMessage: Message = {
+        id: `error-${Date.now()}`,
+        role: 'error',
+        content: 'Failed to load conversation. Please try again.',
+        timestamp: new Date(),
+      };
+      setMessages([errorMessage]);
+    } finally {
+      setIsLoading(false);
+      setLoadingMessage(undefined);
+    }
+  }
+
+  /**
+   * Initialize agent when starting new conversation
+   * Fetches agent greeting/welcome message
+   */
+  async function initializeAgent(agentId: string) {
     setIsLoading(true);
-    setLoadingMessage("Agent is loading");
-
-    console.log('[ChatPanel] Agent selected, initializing:', agent.id, 'isLoading:', true, 'messages:', messages.length);
+    setLoadingMessage('Agent is loading');
+    setMessages([]); // Clear messages for new conversation
+    setConversationId(undefined); // Reset conversation ID
 
     try {
-      // Task 2.1: Call initialization API
-      // Story 4.6 Task 2.6: Pass bundlePath and filePath for bundle-based loading
+      // Fetch agent details to get bundlePath and filePath
+      const agentsResponse = await fetch('/api/agents');
+      if (!agentsResponse.ok) {
+        throw new Error('Failed to fetch agent list');
+      }
+
+      const agentsData = await agentsResponse.json();
+      // API returns { success: true, data: AgentMetadata[] }
+      const agent = agentsData.data?.find((a: AgentSummary) => a.id === agentId);
+
+      if (!agent) {
+        throw new Error('Agent not found');
+      }
+
+      // Call initialization API
       const response = await fetch('/api/agent/initialize', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -91,26 +184,22 @@ export function ChatPanel() {
       });
 
       if (!response.ok) {
-        // Task 4 (Error Handling): Display initialization errors gracefully
-        console.error('[ChatPanel] Agent initialization failed:', response.status);
-
         const errorData = await response.json().catch(() => ({}));
         const errorMessage: Message = {
           id: `error-${Date.now()}`,
           role: 'error',
-          content: errorData.error || 'Failed to initialize agent. Please try selecting the agent again.',
+          content:
+            errorData.error ||
+            'Failed to initialize agent. Please try selecting the agent again.',
           timestamp: new Date(),
         };
         setMessages([errorMessage]);
-        setIsLoading(false);
         return;
       }
 
       const data = await response.json();
 
-      // Task 2.3: Display LLM's initialization response as first message (system role)
-      // AC-10.4: Agent greeting/welcome message displays automatically
-      // AC-10.5: Agent command list displays if defined in agent instructions
+      // Display agent greeting if provided and create conversation with it
       if (data.success && data.data?.greeting) {
         const greetingMessage: Message = {
           id: `system-${Date.now()}`,
@@ -119,66 +208,72 @@ export function ChatPanel() {
           timestamp: new Date(),
         };
         setMessages([greetingMessage]);
-      }
-    } catch (error) {
-      // Task 4 (Error Handling): Handle network errors during initialization
-      console.error('[ChatPanel] Error initializing agent:', error);
 
+        // Create conversation immediately by sending greeting as first message
+        // This ensures the conversation appears in the sidebar right away
+        try {
+          console.log('[ChatPanel] Creating conversation with greeting message');
+          const result = await sendStreamingMessage(
+            data.data.greeting,
+            agentId,
+            undefined, // No conversationId yet - will create new one
+            undefined  // No attachments
+          );
+
+          if (result.success && result.conversationId) {
+            console.log('[ChatPanel] Conversation created on init:', result.conversationId);
+            setConversationId(result.conversationId);
+
+            // Add the assistant response to messages
+            if (result.finalContent) {
+              const assistantMessage: Message = {
+                id: `assistant-${Date.now()}`,
+                role: 'assistant',
+                content: result.finalContent,
+                timestamp: new Date(),
+              };
+              setMessages([greetingMessage, assistantMessage]);
+            }
+
+            // Notify parent to refresh sidebar
+            if (onConversationStart) {
+              onConversationStart(result.conversationId);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to create conversation on init:', error);
+          // Non-fatal - user can still send messages and conversation will be created then
+        }
+      }
+
+      setLoadedAgentId(agentId);
+    } catch (error) {
+      console.error('Error initializing agent:', error);
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
-        content: 'Connection failed while initializing agent. Please try selecting the agent again.',
+        content:
+          'Connection failed while initializing agent. Please try selecting the agent again.',
         timestamp: new Date(),
       };
       setMessages([errorMessage]);
     } finally {
-      // Task 2.4: Block user input until initialization completes (AC-10.6)
-      // Release loading state after initialization completes or fails
       setIsLoading(false);
       setLoadingMessage(undefined);
     }
-  };
+  }
 
-  // Story 3.7 Task 2.1: Create handleNewConversation function
-  // AC-7.2: Clicking button clears chat history
-  // AC-7.3: Agent context resets (doesn't remember previous messages)
-  // AC-7.4: Input field remains focused and ready for new message
-  const handleNewConversation = () => {
-    // Task 2.2: Clear messages array
-    setMessages([]);
-
-    // Task 2.3: Reset conversationId to undefined (fresh conversation)
-    setConversationId(undefined);
-
-    // Task 2.4: Clear any error states (handled by clearing messages array)
-
-    // Task 2.5: Reset isLoading to false if active
-    setIsLoading(false);
-
-    // Task 3.2: Focus input field after reset
-    // AC-7.4: Input field remains focused and ready for new message
-    setTimeout(() => {
-      inputRef.current?.focus();
-    }, 0);
-
-    console.log('[ChatPanel] New conversation started');
-  };
-
-  // Story 3.5 Task 2.3-2.9: Create handleSendMessage function
-  // Story 3.8 Task 2: Implement error handling in ChatPanel API calls
-  // Story 6.7: Now accepts attachments parameter for file reference attachments
-  // Story 6.8: Use streaming for responses
-  // AC-5.4: User message immediately appears
-  // AC-5.8: Agent response appears when received
-  // AC-6.8.1: Response streams token-by-token
-  // AC-8.1: API errors display as error messages in chat
-  // AC-8.6: User can still send new messages after error
-  // AC-8.7: Errors don't crash the interface
-  const handleSendMessage = async (messageContent: string, attachments?: Array<{ filepath: string; filename: string }>) => {
+  /**
+   * Handle sending message
+   * AC-10.4-5: Send message in active conversation
+   */
+  async function handleSendMessage(
+    messageContent: string,
+    attachments?: Array<{ filepath: string; filename: string }>
+  ) {
     // Validation: Require agent selection
-    if (!selectedAgentId) {
+    if (!loadedAgentId) {
       console.error('[ChatPanel] No agent selected');
-      // Add error message to chat
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
@@ -189,8 +284,7 @@ export function ChatPanel() {
       return;
     }
 
-    // Task 2.4: Add user message to messages array immediately (optimistic update)
-    // AC-5.4: User message immediately appears in chat history
+    // Add user message to messages array immediately (optimistic update)
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       role: 'user',
@@ -199,12 +293,16 @@ export function ChatPanel() {
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Story 6.8: Call streaming hook
-    const result = await sendStreamingMessage(messageContent, selectedAgentId, conversationId, attachments);
+    // Call streaming hook
+    const result = await sendStreamingMessage(
+      messageContent,
+      loadedAgentId,
+      conversationId,
+      attachments
+    );
 
     if (result.success) {
-      // AC-6.8.29: Add assistant message to history after streaming completes
-      // Use finalContent from result (accumulated during streaming)
+      // Add assistant message to history after streaming completes
       const assistantMessage: Message = {
         id: `assistant-${Date.now()}`,
         role: 'assistant',
@@ -216,9 +314,14 @@ export function ChatPanel() {
       // Store conversationId for subsequent messages
       if (result.conversationId) {
         setConversationId(result.conversationId);
+
+        // Notify parent if this is a new conversation
+        if (!conversationId && onConversationStart) {
+          onConversationStart(result.conversationId);
+        }
       }
     } else {
-      // AC-8.1: API errors display as error messages in chat
+      // Display error message
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         role: 'error',
@@ -227,28 +330,67 @@ export function ChatPanel() {
       };
       setMessages((prev) => [...prev, errorMessage]);
     }
-  };
+  }
+
+  // Empty state: No agent selected and no active conversation loading
+  if (!selectedAgentId && !activeConversationId && messages.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-slate-600">
+            <svg
+              className="mx-auto h-16 w-16 text-slate-400 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+              />
+            </svg>
+            <p className="text-lg font-medium mb-2">No conversation selected</p>
+            <p className="text-sm">
+              Click <span className="font-semibold">&quot;New Chat&quot;</span> in the sidebar to start a new conversation
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Loading state: Agent initialization in progress
+  if (isLoading && messages.length === 0) {
+    return (
+      <div className="flex flex-col h-full bg-slate-50">
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            {/* Animated loading spinner with BMAD branding colors */}
+            <div className="relative mx-auto w-20 h-20 mb-6">
+              <div className="absolute inset-0 border-4 border-blue-800 border-t-transparent rounded-full animate-spin"></div>
+              <div className="absolute inset-2 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+            </div>
+            <p className="text-lg font-semibold text-slate-900 mb-2">
+              {loadingMessage || 'Initializing agent...'}
+            </p>
+            <p className="text-sm text-slate-600">
+              Please wait while we prepare your conversation
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Centered layout before first message (ChatGPT/Claude.ai style)
-  // Story 3.5 Task 3.1-3.5: Integrate InputField component
-  // Story 4.7: Show full layout during initialization to display loading indicator (AC-4.7.6)
-  // Story 6.1: File viewer now handled by MainLayout wrapper
-  // Story 6.8: Disable input during streaming
   if (messages.length === 0 && !isLoading && !isStreaming) {
     return (
-      <div className="flex flex-col h-screen bg-slate-50">
-        <AgentSelector
-          selectedAgentId={selectedAgentId}
-          onAgentSelect={handleAgentSelect}
-          onNewConversation={handleNewConversation}
-        />
+      <div className="flex flex-col h-full bg-slate-50">
         <div className="flex-1 flex items-center justify-center">
           <div className="w-full max-w-3xl px-6">
-            {/* Task 3.1: Render InputField component */}
-            {/* Task 3.2: Pass handleSendMessage as onSend callback */}
-            {/* Task 3.3: Pass isLoading as disabled prop */}
-            {/* Story 6.8: Also disable during streaming */}
-            {/* Story 6.9: Pass isStreaming and cancelStream for send button UI */}
             <InputField
               onSend={handleSendMessage}
               disabled={isLoading}
@@ -262,22 +404,9 @@ export function ChatPanel() {
     );
   }
 
-  // Full layout after conversation starts - Story 3.2 Task 1.4
-  // AC-5.1: Clicking send button submits message
-  // AC-5.5: Input is disabled while waiting for agent response
-  // Story 6.1: File viewer now handled by MainLayout wrapper
-  // Story 6.8: Pass streaming state to MessageList
+  // Full layout after conversation starts
   return (
-    <div className="flex flex-col h-screen">
-      <AgentSelector
-        selectedAgentId={selectedAgentId}
-        onAgentSelect={handleAgentSelect}
-        onNewConversation={handleNewConversation}
-      />
-      {/* Task 3.5: Verify messages state updates trigger MessageList re-render */}
-      {/* Story 3.6 Task 2.2: Pass isLoading prop to MessageList */}
-      {/* Story 4.7: Pass loadingMessage to show context-specific loading text */}
-      {/* Story 6.8: Pass streaming state for progressive display */}
+    <div className="flex flex-col h-full">
       <MessageList
         messages={messages}
         isLoading={isLoading}
@@ -286,12 +415,6 @@ export function ChatPanel() {
         isStreaming={isStreaming}
       />
 
-      {/* Task 3.1: Import and render InputField component at bottom of ChatPanel */}
-      {/* Task 3.2: Pass handleSendMessage as onSend callback prop */}
-      {/* Task 3.3: Pass isLoading as disabled prop to InputField */}
-      {/* Task 3.4: Ensure InputField appears at bottom of chat layout */}
-      {/* Story 6.8 AC-6.8.26: Disable input during streaming */}
-      {/* Story 6.9: Pass isStreaming and cancelStream for send button UI */}
       <InputField
         onSend={handleSendMessage}
         disabled={isLoading}
