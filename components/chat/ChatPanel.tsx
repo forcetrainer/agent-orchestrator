@@ -199,7 +199,7 @@ export function ChatPanel({
 
       const data = await response.json();
 
-      // Display agent greeting if provided and create conversation with it
+      // Display agent greeting if provided (ephemeral - not persisted until user sends first message)
       if (data.success && data.data?.greeting) {
         const greetingMessage: Message = {
           id: `system-${Date.now()}`,
@@ -208,42 +208,6 @@ export function ChatPanel({
           timestamp: new Date(),
         };
         setMessages([greetingMessage]);
-
-        // Create conversation immediately by sending greeting as first message
-        // This ensures the conversation appears in the sidebar right away
-        try {
-          console.log('[ChatPanel] Creating conversation with greeting message');
-          const result = await sendStreamingMessage(
-            data.data.greeting,
-            agentId,
-            undefined, // No conversationId yet - will create new one
-            undefined  // No attachments
-          );
-
-          if (result.success && result.conversationId) {
-            console.log('[ChatPanel] Conversation created on init:', result.conversationId);
-            setConversationId(result.conversationId);
-
-            // Add the assistant response to messages
-            if (result.finalContent) {
-              const assistantMessage: Message = {
-                id: `assistant-${Date.now()}`,
-                role: 'assistant',
-                content: result.finalContent,
-                timestamp: new Date(),
-              };
-              setMessages([greetingMessage, assistantMessage]);
-            }
-
-            // Notify parent to refresh sidebar
-            if (onConversationStart) {
-              onConversationStart(result.conversationId);
-            }
-          }
-        } catch (error) {
-          console.error('Failed to create conversation on init:', error);
-          // Non-fatal - user can still send messages and conversation will be created then
-        }
       }
 
       setLoadedAgentId(agentId);
