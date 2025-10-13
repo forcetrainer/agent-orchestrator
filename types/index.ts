@@ -112,6 +112,78 @@ export interface Conversation {
 }
 
 /**
+ * Serialized message for persistence (Story 10.0)
+ * Uses ISO 8601 date strings instead of Date objects for JSON serialization
+ */
+export interface SerializedMessage {
+  /** Unique message identifier (UUID) */
+  id: string;
+  /** Role of the message sender */
+  role: 'user' | 'assistant' | 'system' | 'error' | 'tool';
+  /** Message content */
+  content: string;
+  /** Message timestamp in ISO 8601 format */
+  timestamp: string;
+  /** Optional function calls made in this message */
+  functionCalls?: FunctionCall[];
+  /** Tool call ID for tool response messages */
+  toolCallId?: string;
+}
+
+/**
+ * Unified conversation type for Epic 10 persistence (Story 10.0)
+ * Merges Conversation (messages) + SessionManifest (metadata)
+ *
+ * Key principle: conversationId === sessionId (1:1 relationship)
+ * All conversation artifacts stored in data/conversations/{id}/
+ */
+export interface PersistedConversation {
+  // Identity (conversationId === sessionId)
+  /** Unique conversation/session identifier (UUID) */
+  id: string;
+  /** Browser identifier for Epic 10 browser tracking (Story 10.2) */
+  browserId: string | null;
+
+  // Agent context
+  /** Agent ID associated with this conversation */
+  agentId: string;
+  /** Agent title/role */
+  agentTitle: string;
+  /** Agent bundle name (e.g., 'chat', 'workflow') */
+  agentBundle: string;
+
+  // Message history (Epic 10 persistence)
+  /** Array of serialized messages with ISO date strings */
+  messages: SerializedMessage[];
+
+  // Metadata (from SessionManifest)
+  /** First user message preview (truncated to 35 chars) */
+  userSummary: string;
+  /** Total number of messages in the conversation */
+  messageCount: number;
+  /** Cached UI display name: "{smartTimestamp} - {summary}" */
+  displayName: string;
+  /** Cached smart timestamp for UI sorting/grouping */
+  displayTimestamp: string;
+
+  // Folder reference
+  /** Relative folder path: "conversations/{id}" */
+  folderPath: string;
+
+  // Timestamps (ISO 8601 strings for safe serialization)
+  /** Conversation creation timestamp */
+  createdAt: string;
+  /** Last update timestamp */
+  updatedAt: string;
+
+  // Execution metadata
+  /** Execution status */
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  /** User who initiated conversation */
+  user: string;
+}
+
+/**
  * File reference attachment for drag-drop functionality.
  * Story 6.6: Represents a file that has been attached to a message.
  */

@@ -95,7 +95,7 @@ export interface OutputRecord {
 export async function findSessions(
   filter: SessionFilter = {}
 ): Promise<SessionManifest[]> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
 
   try {
     // Read all session directories
@@ -175,7 +175,7 @@ export async function registerOutput(
   sessionId: string,
   output: OutputRecord
 ): Promise<boolean> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
   const manifestPath = join(agentOutputsFolder, sessionId, 'manifest.json');
 
   try {
@@ -218,7 +218,7 @@ export async function finalizeSession(
   sessionId: string,
   status: 'completed' | 'failed' | 'cancelled'
 ): Promise<boolean> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
   const manifestPath = join(agentOutputsFolder, sessionId, 'manifest.json');
 
   try {

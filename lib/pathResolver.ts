@@ -89,13 +89,14 @@ export function createPathContext(bundleName: string): PathContext {
 }
 
 /**
- * Validates that write operations are restricted to agent output directories only
+ * Validates that write operations are restricted to conversation directories only
  *
- * Story 5.0: Path validator blocks writes outside /data/agent-outputs
+ * Story 10.0: Path validator updated to allow writes to /data/conversations/
+ * Story 5.0: Original path validator blocked writes outside /data/agent-outputs
  *
  * @param resolvedPath - Absolute path after variable resolution
  * @param context - PathContext with project-root
- * @throws Error if write path is not within /data/agent-outputs
+ * @throws Error if write path is not within /data/conversations
  */
 export function validateWritePath(
   resolvedPath: string,
@@ -103,20 +104,37 @@ export function validateWritePath(
 ): void {
   const normalizedPath = resolve(normalize(resolvedPath));
   const projectRoot = context['project-root'];
+  const conversationsPath = resolve(projectRoot, 'data/conversations');
   const agentOutputsPath = resolve(projectRoot, 'data/agent-outputs');
 
-  // Check if path is within /data/agent-outputs/
-  const isInAgentOutputs =
+  // Story 10.0: Allow writes to /data/conversations/
+  const isInConversations =
+    normalizedPath.startsWith(conversationsPath + sep) ||
+    normalizedPath === conversationsPath;
+
+  // Story 10.0: Block writes to deprecated /data/agent-outputs/ path
+  const isInDeprecatedPath =
     normalizedPath.startsWith(agentOutputsPath + sep) ||
     normalizedPath === agentOutputsPath;
 
-  if (!isInAgentOutputs) {
-    console.error('[PathValidator Security] Write blocked - path outside agent outputs directory:', {
+  if (isInDeprecatedPath) {
+    console.error('[PathValidator Security] Write blocked - deprecated path:', {
       requested: normalizedPath,
-      allowed: agentOutputsPath,
+      deprecated: agentOutputsPath,
+      useInstead: conversationsPath,
     });
     throw new Error(
-      'Security violation: Write operations are only allowed within /data/agent-outputs/ directory'
+      'Security violation: data/agent-outputs/ is deprecated. Use data/conversations/ instead.'
+    );
+  }
+
+  if (!isInConversations) {
+    console.error('[PathValidator Security] Write blocked - path outside conversations directory:', {
+      requested: normalizedPath,
+      allowed: conversationsPath,
+    });
+    throw new Error(
+      'Security violation: Write operations are only allowed within /data/conversations/ directory'
     );
   }
 

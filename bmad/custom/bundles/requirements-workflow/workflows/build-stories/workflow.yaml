@@ -14,8 +14,7 @@ date: system-generated
 
 # Session variables (auto-populated by workflow engine - Story 5.0)
 session_id: ""
-session_folder: "{project-root}/data/agent-outputs/{{session_id}}"
-manifest_file: "{session_folder}/manifest.json"
+manifest_file: "{session-folder}/manifest.json"
 
 # Module path and component files
 installed_path: "{bundle-root}/workflows/build-stories"
@@ -33,5 +32,5 @@ epic_name: ""
 story_number: ""
 
 # Output configuration - New structure
-default_output_file: "{session_folder}/output.md"
+default_output_file: "{session-folder}/output.md"
 epic_summary_file: "{sn_projects_folder}/{{project_slug}}-{{date}}/3-stories/epic-{{project_slug}}-{{date}}.md"

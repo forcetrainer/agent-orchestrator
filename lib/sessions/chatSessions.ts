@@ -36,8 +36,8 @@ export async function createChatSession(
   });
 
   const sessionId = randomUUID();
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
-  const sessionFolder = join(agentOutputsFolder, sessionId);
+  const conversationsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
+  const sessionFolder = join(conversationsFolder, sessionId);
 
   // Create session directory
   await mkdir(sessionFolder, { recursive: true });
@@ -88,8 +88,8 @@ export async function createChatSession(
  * @returns true if successful, false if session not found
  */
 export async function incrementMessageCount(sessionId: string): Promise<boolean> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
-  const manifestPath = join(agentOutputsFolder, sessionId, 'manifest.json');
+  const conversationsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
+  const manifestPath = join(conversationsFolder, sessionId, 'manifest.json');
 
   try {
     // Read current manifest
@@ -122,8 +122,8 @@ export async function incrementMessageCount(sessionId: string): Promise<boolean>
  * @returns true if successful, false if session not found
  */
 export async function finalizeChatSession(sessionId: string): Promise<boolean> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
-  const manifestPath = join(agentOutputsFolder, sessionId, 'manifest.json');
+  const conversationsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
+  const manifestPath = join(conversationsFolder, sessionId, 'manifest.json');
 
   try {
     // Read current manifest
@@ -163,15 +163,15 @@ export async function finalizeChatSession(sessionId: string): Promise<boolean> {
  * @returns Number of sessions cleaned up
  */
 export async function cleanupAbandonedSessions(userName: string): Promise<number> {
-  const agentOutputsFolder = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+  const conversationsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
   let cleanedCount = 0;
   const oneHourAgo = Date.now() - (60 * 60 * 1000);
 
   try {
-    const sessionDirs = await readdir(agentOutputsFolder);
+    const sessionDirs = await readdir(conversationsFolder);
 
     for (const sessionId of sessionDirs) {
-      const sessionFolder = join(agentOutputsFolder, sessionId);
+      const sessionFolder = join(conversationsFolder, sessionId);
       const manifestPath = join(sessionFolder, 'manifest.json');
 
       try {

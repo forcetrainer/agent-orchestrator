@@ -1,10 +1,11 @@
 /**
  * Path Resolver Security Tests
  *
+ * Story 10.0: Updated for conversations directory migration
  * Story 5.1: Comprehensive security validation for write path restrictions
  *
- * Tests that validateWritePath ONLY allows writes to /data/agent-outputs
- * and blocks ALL other paths including source code directories.
+ * Tests that validateWritePath ONLY allows writes to /data/conversations
+ * and blocks ALL other paths including deprecated /data/agent-outputs.
  */
 
 import { validateWritePath, createPathContext } from '@/lib/pathResolver';
@@ -18,19 +19,24 @@ describe('validateWritePath - Story 5.1 Security', () => {
     context = createPathContext('test-bundle');
   });
 
-  describe('✅ Allowed Writes (ONLY /data/agent-outputs)', () => {
-    it('should allow write to /data/agent-outputs root', () => {
-      const agentOutputsPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
-      expect(() => validateWritePath(agentOutputsPath, context)).not.toThrow();
+  describe('✅ Allowed Writes (ONLY /data/conversations) - Story 10.0', () => {
+    it('should allow write to /data/conversations root', () => {
+      const conversationsPath = resolve(env.PROJECT_ROOT, 'data/conversations');
+      expect(() => validateWritePath(conversationsPath, context)).not.toThrow();
     });
 
-    it('should allow write to /data/agent-outputs/session-123/file.txt', () => {
-      const sessionPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/session-123/file.txt');
+    it('should allow write to /data/conversations/session-123/file.txt', () => {
+      const sessionPath = resolve(env.PROJECT_ROOT, 'data/conversations/session-123/file.txt');
       expect(() => validateWritePath(sessionPath, context)).not.toThrow();
     });
 
-    it('should allow write to /data/agent-outputs/nested/deep/path/output.json', () => {
-      const nestedPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/nested/deep/path/output.json');
+    it('should allow write to /data/conversations/abc-123/conversation.json', () => {
+      const conversationPath = resolve(env.PROJECT_ROOT, 'data/conversations/abc-123/conversation.json');
+      expect(() => validateWritePath(conversationPath, context)).not.toThrow();
+    });
+
+    it('should allow write to /data/conversations/nested/deep/path/output.json', () => {
+      const nestedPath = resolve(env.PROJECT_ROOT, 'data/conversations/nested/deep/path/output.json');
       expect(() => validateWritePath(nestedPath, context)).not.toThrow();
     });
   });
@@ -68,8 +74,8 @@ describe('validateWritePath - Story 5.1 Security', () => {
   });
 
   describe('❌ Blocked Writes (Path Traversal)', () => {
-    it('should block path traversal from agent-outputs to project root', () => {
-      const traversalPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/../../../etc/passwd');
+    it('should block path traversal from conversations to project root', () => {
+      const traversalPath = resolve(env.PROJECT_ROOT, 'data/conversations/../../../etc/passwd');
       expect(() => validateWritePath(traversalPath, context)).toThrow('Security violation');
     });
 
@@ -84,18 +90,30 @@ describe('validateWritePath - Story 5.1 Security', () => {
     });
 
     it('should block relative path traversal ../../lib/exploit.ts', () => {
-      const relativePath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/../../lib/exploit.ts');
+      const relativePath = resolve(env.PROJECT_ROOT, 'data/conversations/../../lib/exploit.ts');
       expect(() => validateWritePath(relativePath, context)).toThrow('Security violation');
     });
   });
 
+  describe('❌ Blocked Writes (Deprecated agent-outputs path) - Story 10.0', () => {
+    it('should block write to deprecated /data/agent-outputs root', () => {
+      const agentOutputsPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs');
+      expect(() => validateWritePath(agentOutputsPath, context)).toThrow('deprecated');
+    });
+
+    it('should block write to deprecated /data/agent-outputs/session-123/file.txt', () => {
+      const sessionPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/session-123/file.txt');
+      expect(() => validateWritePath(sessionPath, context)).toThrow('deprecated');
+    });
+  });
+
   describe('❌ Blocked Writes (Other Data Directories)', () => {
-    it('should block write to /data root (not agent-outputs)', () => {
+    it('should block write to /data root (not conversations)', () => {
       const dataPath = resolve(env.PROJECT_ROOT, 'data/sensitive.json');
       expect(() => validateWritePath(dataPath, context)).toThrow('Security violation');
     });
 
-    it('should block write to /data/logs (sibling of agent-outputs)', () => {
+    it('should block write to /data/logs (sibling of conversations)', () => {
       const logsPath = resolve(env.PROJECT_ROOT, 'data/logs/system.log');
       expect(() => validateWritePath(logsPath, context)).toThrow('Security violation');
     });
@@ -146,19 +164,24 @@ describe('validateWritePath - Story 5.1 Security', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should block write to agent-outputs lookalike: /data/agent-outputs-fake', () => {
-      const fakePath = resolve(env.PROJECT_ROOT, 'data/agent-outputs-fake/file.txt');
+    it('should block write to conversations lookalike: /data/conversations-fake', () => {
+      const fakePath = resolve(env.PROJECT_ROOT, 'data/conversations-fake/file.txt');
       expect(() => validateWritePath(fakePath, context)).toThrow('Security violation');
     });
 
-    it('should block write with similar prefix: /data/agent-out/file.txt', () => {
-      const similarPath = resolve(env.PROJECT_ROOT, 'data/agent-out/file.txt');
+    it('should block write with similar prefix: /data/convers/file.txt', () => {
+      const similarPath = resolve(env.PROJECT_ROOT, 'data/convers/file.txt');
       expect(() => validateWritePath(similarPath, context)).toThrow('Security violation');
     });
 
-    it('should allow write to properly formed session path with special chars', () => {
-      const sessionPath = resolve(env.PROJECT_ROOT, 'data/agent-outputs/session-abc-123_test/output.json');
+    it('should allow write to properly formed conversation path with special chars', () => {
+      const sessionPath = resolve(env.PROJECT_ROOT, 'data/conversations/session-abc-123_test/output.json');
       expect(() => validateWritePath(sessionPath, context)).not.toThrow();
+    });
+
+    it('should allow write to conversation.json in session folder', () => {
+      const conversationJsonPath = resolve(env.PROJECT_ROOT, 'data/conversations/abc-123-def/conversation.json');
+      expect(() => validateWritePath(conversationJsonPath, context)).not.toThrow();
     });
   });
 });

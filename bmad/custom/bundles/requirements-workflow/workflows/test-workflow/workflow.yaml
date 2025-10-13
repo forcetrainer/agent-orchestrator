@@ -9,8 +9,7 @@ user_name: "{config_source}:user_name"
 
 # Session variables (auto-populated by workflow engine - Story 5.0)
 session_id: ""
-session_folder: "{project-root}/data/agent-outputs/{{session_id}}"
-manifest_file: "{session_folder}/manifest.json"
+manifest_file: "{session-folder}/manifest.json"
 
 # Module path and component files
 installed_path: "{bundle-root}/workflows/test-workflow"

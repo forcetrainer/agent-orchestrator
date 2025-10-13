@@ -14,8 +14,7 @@ date: system-generated
 
 # Session variables (auto-populated by workflow engine - Story 5.0)
 session_id: ""
-session_folder: "{project-root}/data/agent-outputs/{{session_id}}"
-manifest_file: "{session_folder}/manifest.json"
+manifest_file: "{session-folder}/manifest.json"
 
 # Module path and component files
 installed_path: "{bundle-root}/workflows/intake-itsm"
@@ -30,4 +29,4 @@ request_type: "itsm"
 project_slug: ""
 
 # Output configuration - New structure
-default_output_file: "{session_folder}/output.md"
+default_output_file: "{session-folder}/output.md"

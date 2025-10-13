@@ -19,12 +19,12 @@ import { createPathContext } from '@/lib/pathResolver';
  *
  * Features:
  * - Auto-creates parent directories if needed (mkdir recursive)
- * - Restricted to /data/agent-outputs ONLY (all other paths rejected)
+ * - Restricted to /data/conversations ONLY (all other paths rejected) - Story 10.0
  * - Path validation prevents directory traversal
  *
  * @param relativePath - Relative path to file (e.g., "results/output.json")
  * @param content - File content to write (UTF-8 string)
- * @throws Error if attempting to write outside /data/agent-outputs or disk full
+ * @throws Error if attempting to write outside /data/conversations or disk full
  */
 export async function writeFileContent(
   relativePath: string,
@@ -41,7 +41,7 @@ export async function writeFileContent(
       ? relativePath
       : `${env.OUTPUT_PATH}/${relativePath}`;
 
-    // Validate write path (Story 5.1: ONLY allows /data/agent-outputs, blocks everything else)
+    // Validate write path (Story 10.0: ONLY allows /data/conversations, blocks everything else)
     validateWritePath(fullPath, context);
 
     // Auto-create parent directories if needed
