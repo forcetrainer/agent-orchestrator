@@ -70,31 +70,87 @@ This creates a **poor user experience** for complex agent workflows that may tak
 
 ## Story Breakdown
 
+### Story 10.0: Directory Unification & Architecture Foundation
+
+**As a** developer
+**I want** to consolidate session folders and conversation persistence into a unified structure
+**So that** all conversation artifacts (messages, outputs, files) are stored together in one location
+
+**Prerequisites:** None (foundational refactor)
+
+**Acceptance Criteria:**
+1. Rename `data/agent-outputs/` → `data/conversations/` directory
+2. Update `conversationId === sessionId` (1:1 relationship enforcement)
+3. Merge `Conversation` and `SessionManifest` types into unified `PersistedConversation` type
+4. Update path validation in `lib/pathResolver.ts` to allow `data/conversations/` writes
+5. Update `env.OUTPUT_PATH` to point to new conversations directory
+6. Create migration script for existing session folders
+7. All existing sessions migrated without data loss
+
+**Technical Notes:**
+- **Unified Model**: Each conversation folder contains both `conversation.json` (messages + metadata) and agent output files
+- **Backward Compatibility**: Migration script converts `manifest.json` → `conversation.json` format
+- **Security Update**: Path validation must allow writes to `data/conversations/` instead of `data/agent-outputs/`
+- **Type Consolidation**: Eliminates duplication between conversation tracking and session tracking
+
+**Architecture Decision:**
+```
+BEFORE (Fragmented):
+data/
+├── agent-outputs/{sessionId}/     ← Session outputs
+│   └── manifest.json
+└── conversations/{convId}.json    ← Conversation messages (proposed)
+
+AFTER (Unified):
+data/
+└── conversations/{conversationId}/  ← Everything together
+    ├── conversation.json            ← Messages + metadata (merged manifest)
+    ├── output-file-1.txt            ← Agent outputs
+    └── output-file-2.json
+```
+
+**Files Affected:**
+- `lib/utils/env.ts` - Update OUTPUT_PATH constant
+- `lib/pathResolver.ts` - Update validateWritePath() security rules
+- `types/index.ts` - Add unified PersistedConversation type
+- `lib/sessions/chatSessions.ts` - Update folder creation paths
+- `scripts/migrate-sessions.js` - New migration script
+
+**Migration Path:**
+1. Create `data/conversations/` directory
+2. Copy all folders from `data/agent-outputs/` → `data/conversations/`
+3. Run migration script to convert manifests
+4. Verify all sessions accessible
+5. Remove old `data/agent-outputs/` directory
+
+---
+
 ### Story 10.1: Server-Side Conversation Persistence
 
 **As a** user
 **I want** my conversations saved to disk
 **So that** they survive server restarts and I can return later
 
-**Prerequisites:** None (foundational story)
+**Prerequisites:** Story 10.0 (directory unification)
 
 **Acceptance Criteria:**
-1. Create `data/conversations/` directory for persisted conversations
-2. Save conversation to `{conversationId}.json` file on every message
-3. Load conversations from disk on server startup
-4. Maintain backward compatibility with existing in-memory Map
-5. Handle concurrent writes safely (atomic writes)
-6. Serialize/deserialize dates correctly (ISO strings)
+1. Save full conversation to `conversations/{conversationId}/conversation.json` on every message
+2. Load conversations from disk on server startup
+3. Maintain read-through cache (in-memory Map) for performance
+4. Handle concurrent writes safely (atomic writes with temp files)
+5. Serialize/deserialize dates correctly (ISO strings)
+6. Debounce writes (500ms) to reduce disk I/O overhead
 
 **Technical Notes:**
 - Extend `Conversation` type to include `browserId` field
-- Use atomic writes (write to temp file, then rename)
-- Debounce writes (500ms) to avoid excessive disk I/O
+- Use atomic writes (write to temp file, then rename) to prevent corruption
+- Debounce writes (500ms) to avoid excessive disk I/O during rapid message exchanges
+- **Unified Storage**: `conversation.json` stored in same folder as agent outputs
 
 **Files Affected:**
-- `lib/utils/conversations.ts` - Add persistence layer
-- `types/index.ts` - Add `browserId` to Conversation type
-- `data/conversations/` - New directory for conversation files
+- `lib/utils/conversations.ts` - Add persistence layer with disk I/O
+- `types/index.ts` - Add `browserId` and folder metadata to Conversation type
+- `lib/sessions/chatSessions.ts` - Update to write conversation.json alongside manifest
 
 ---
 
@@ -304,16 +360,48 @@ export interface ConversationMetadata {
 
 ### File Structure
 
+**Unified Architecture (Post Story 10.0):**
+
 ```
 data/
-├── agent-outputs/          # Existing session folders
-│   ├── {sessionId-1}/
-│   └── {sessionId-2}/
-├── conversations/          # NEW: Persisted conversations
-│   ├── {conversationId-1}.json
-│   └── {conversationId-2}.json
-└── browser-index.json      # NEW: Browser → Conversations mapping
+└── conversations/                          # All conversations (renamed from agent-outputs)
+    ├── {conversationId-1}/                 # Each conversation is a folder
+    │   ├── conversation.json               # Messages + metadata (merged manifest)
+    │   ├── output-001-architecture.md      # Agent-generated files
+    │   ├── output-002-diagram.png
+    │   └── attachments/                    # User uploads (future)
+    │       └── document.pdf
+    └── {conversationId-2}/
+        ├── conversation.json
+        └── output-001-result.json
 ```
+
+**conversation.json Structure:**
+```json
+{
+  "id": "uuid",
+  "browserId": "browser-uuid",
+  "agentId": "winston-architect",
+  "agentTitle": "System Architect",
+  "messages": [
+    { "id": "msg-uuid", "role": "user", "content": "...", "timestamp": "ISO-8601" },
+    { "id": "msg-uuid", "role": "assistant", "content": "...", "timestamp": "ISO-8601" }
+  ],
+  "userSummary": "First message preview",
+  "messageCount": 12,
+  "createdAt": "ISO-8601",
+  "updatedAt": "ISO-8601",
+  "folderPath": "conversations/uuid",
+  "status": "running"
+}
+```
+
+**Key Design Principles:**
+- `conversationId === sessionId` (1:1 mapping, no separate tracking)
+- Single folder contains everything related to a conversation
+- `conversation.json` replaces both in-memory conversation + `manifest.json`
+- Agent outputs written directly to conversation folder
+- File viewer automatically shows conversation folder contents
 
 ### API Endpoints
 
@@ -415,9 +503,10 @@ DELETE /api/conversations/:id          → Delete conversation + session folder
 
 ## Estimated Effort
 
-**Total Stories:** 7 stories
+**Total Stories:** 8 stories (added Story 10.0)
 
 **Estimated Timeline (Solo Developer):** 3-4 weeks
+- Story 10.0 (Directory Unification): 1-2 days **[NEW - CRITICAL FOUNDATION]**
 - Story 10.1 (Persistence): 3-4 days
 - Story 10.2 (Browser Identity): 1-2 days
 - Story 10.3 (API Endpoints): 2-3 days
@@ -430,6 +519,7 @@ DELETE /api/conversations/:id          → Delete conversation + session folder
 - File I/O requires careful error handling
 - Concurrent writes need proper locking
 - UI complexity (sidebar, switching, state management)
+- **Architecture unification reduces overall complexity** by eliminating dual storage systems
 
 ---
 
