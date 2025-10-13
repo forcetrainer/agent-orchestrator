@@ -73,9 +73,11 @@ export async function POST(request: NextRequest) {
 
     // Story 6.3: Create session manifest on first message
     // Story 9.1 AC7: Session management moved to conversation initialization
+    // Story 10.0: conversationId === sessionId (1:1 relationship)
     const isFirstMessage = conversation.messages.length === 0;
     if (isFirstMessage) {
       const { sessionId, sessionFolder } = await createChatSession(
+        conversation.id, // Story 10.0: Pass conversationId as sessionId
         agent.id,
         agent.title,
         body.message,

@@ -1,0 +1,373 @@
+<story-context id="bmad/bmm/workflows/4-implementation/story-context/template" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>10.3</storyId>
+    <title>Conversation List API</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.3.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>developer</asA>
+    <iWant>API endpoints to retrieve and manage conversations</iWant>
+    <soThat>the frontend can display conversation history</soThat>
+    <tasks>
+      <task id="1" ac="1,2,3,4">Create conversation list API endpoint</task>
+      <task id="2" ac="1,6">Create conversation messages API endpoint</task>
+      <task id="3" ac="5,6">Create conversation delete API endpoint</task>
+      <task id="4" ac="All">Add conversation management functions to conversations.ts</task>
+      <task id="5" ac="2,4">Add API response type definitions</task>
+      <task id="6" ac="All">Testing</task>
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <criterion id="AC-10.3-1">
+      <description>GET /api/conversations returns all conversations for current browser</description>
+      <verification>API request with browser cookie → returns ConversationListResponse</verification>
+    </criterion>
+    <criterion id="AC-10.3-2">
+      <description>Response includes metadata: conversationId, agentId, agentName, lastMessage, timestamp, messageCount</description>
+      <verification>Response schema validation, verify all fields present</verification>
+    </criterion>
+    <criterion id="AC-10.3-3">
+      <description>Conversations sorted by updatedAt (most recent first)</description>
+      <verification>API response inspection → verify descending timestamp order</verification>
+    </criterion>
+    <criterion id="AC-10.3-4">
+      <description>Conversations grouped by agentId for frontend consumption</description>
+      <verification>Response includes groupedByAgent object with agent keys</verification>
+    </criterion>
+    <criterion id="AC-10.3-5">
+      <description>DELETE /api/conversations/:id deletes conversation and session folder</description>
+      <verification>Delete API call → verify folder removed from disk</verification>
+    </criterion>
+    <criterion id="AC-10.3-6">
+      <description>Browser ID verified before returning data (403 if mismatch, 404 if not found)</description>
+      <verification>Send request with mismatched browser ID → receive 403 or 404 error</verification>
+    </criterion>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/epic-10.md</path>
+        <title>Epic 10: Conversation Persistence &amp; Multi-Session Management</title>
+        <section>Story 10.3 Definition</section>
+        <snippet>Lines 185-212: Story 10.3 requirements including API endpoints, metadata response format, sorting, grouping, deletion with browser ID verification</snippet>
+        <relevance>Primary source for story acceptance criteria and business requirements</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Epic 10</title>
+        <section>API Endpoints Specification</section>
+        <snippet>Lines 197-287: Complete API endpoint specifications including request/response formats, authentication, error handling for GET /api/conversations, GET /api/conversations/:id/messages, DELETE /api/conversations/:id</snippet>
+        <relevance>Authoritative API contract definition with full request/response schemas</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Epic 10</title>
+        <section>Data Models and Contracts</section>
+        <snippet>Lines 96-170: API response type definitions including ConversationMetadata, ConversationListResponse, ConversationDetailResponse, FileMetadata interfaces</snippet>
+        <relevance>Type system contracts for API responses</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Epic 10</title>
+        <section>Security Requirements</section>
+        <snippet>Lines 460-523: Browser ID verification requirements, path validation, authorization model, threat mitigation strategies</snippet>
+        <relevance>Security constraints for API implementation</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Epic 10</title>
+        <section>Performance Requirements</section>
+        <snippet>Lines 419-458: Performance targets including &lt;300ms for conversation list, &lt;500ms for messages endpoint, optimization strategies</snippet>
+        <relevance>Performance targets and optimization guidance</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Epic 10</title>
+        <section>Workflows and Sequencing</section>
+        <snippet>Lines 342-402: Workflow 2 (Load Conversation List), Workflow 5 (Delete Conversation) with step-by-step sequencing</snippet>
+        <relevance>Implementation flow guidance for API endpoints</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.2.md</path>
+        <title>Story 10.2: Browser Identity &amp; Session Tracking</title>
+        <section>Complete Story</section>
+        <snippet>Lines 1-763: Browser identity implementation with getOrCreateBrowserId() function, cookie management, browser ID verification patterns</snippet>
+        <relevance>Foundation for browser ID retrieval and verification in API endpoints</relevance>
+      </doc>
+      <doc>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.1.md</path>
+        <title>Story 10.1: Server-Side Conversation Persistence</title>
+        <section>Persistence Implementation</section>
+        <snippet>Persistence layer with read-through cache, atomic writes, debounced persistence, conversation loading functions</snippet>
+        <relevance>Foundation persistence functions that API endpoints will call</relevance>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>getConversationAsync</symbol>
+        <lines>361-410</lines>
+        <reason>Read-through cache function for loading conversations from cache or disk - will be called by messages API endpoint</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>deleteConversation</symbol>
+        <lines>499-528</lines>
+        <reason>Existing delete function that removes conversation from cache and disk - needs extension for browser ID verification</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>getConversationMetadata</symbol>
+        <lines>483-487</lines>
+        <reason>Retrieves lightweight metadata for single conversation - pattern for metadata extraction</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>getAllConversationMetadata</symbol>
+        <lines>494-496</lines>
+        <reason>Returns all conversation metadata from index - basis for conversation list API but needs browser ID filtering</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>conversationMetadata</symbol>
+        <lines>12</lines>
+        <reason>In-memory metadata index (Map) - used for fast conversation listing without loading full messages</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/browserIdentity.ts</path>
+        <kind>module</kind>
+        <symbol>getOrCreateBrowserId</symbol>
+        <lines>Story 10.2</lines>
+        <reason>Retrieves browser ID from cookie - required for all API endpoints to verify ownership</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/app/api/chat/route.ts</path>
+        <kind>api-route</kind>
+        <symbol>POST handler</symbol>
+        <lines>existing</lines>
+        <reason>Example of Next.js API route pattern with browser ID integration - reference for new API routes</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/index.ts</path>
+        <kind>types</kind>
+        <symbol>PersistedConversation</symbol>
+        <lines>143-187</lines>
+        <reason>Full conversation type with all metadata fields - source for mapping to ConversationMetadata</reason>
+      </artifact>
+      <artifact>
+        <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/index.ts</path>
+        <kind>types</kind>
+        <symbol>Conversation</symbol>
+        <lines>96-115</lines>
+        <reason>Runtime conversation type with browserId field - used in API logic</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="next" version="14.2.0">Next.js framework for API routes</package>
+        <package name="uuid" version="^13.0.0">UUID generation for conversation IDs</package>
+      </node>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="security-1" priority="critical">
+      <description>Browser ID Verification Required</description>
+      <detail>Every API endpoint MUST verify that conversation.browserId matches the browser ID from cookie before returning data. Return 403 Forbidden if mismatch, 404 Not Found if conversation doesn't exist. Never leak existence of conversations to unauthorized browsers.</detail>
+      <source>tech-spec-epic-10.md lines 460-523, epic-10.md line 199</source>
+    </constraint>
+    <constraint id="security-2" priority="critical">
+      <description>Path Traversal Protection</description>
+      <detail>Conversation IDs are UUIDs (no user-controlled paths). File listing uses fs.readdir with validated folder paths. All paths resolved relative to env.OUTPUT_PATH (no escaping allowed).</detail>
+      <source>tech-spec-epic-10.md lines 482-494</source>
+    </constraint>
+    <constraint id="performance-1" priority="high">
+      <description>Lightweight Metadata Response</description>
+      <detail>GET /api/conversations MUST exclude full message arrays from response. Only return metadata: ID, agent, last message preview, counts, timestamps. Reduces payload by ~90% compared to full conversations. Target latency: &lt;300ms.</detail>
+      <source>tech-spec-epic-10.md lines 425, story-10.3.md performance section</source>
+    </constraint>
+    <constraint id="performance-2" priority="high">
+      <description>Read-Through Cache Utilization</description>
+      <detail>Use existing read-through cache (conversations Map) for fast lookups. Load from disk only on cache miss. Lazy load full conversations only when messages endpoint called. Leverage metadata index (conversationMetadata Map) for list endpoint.</detail>
+      <source>lib/utils/conversations.ts lines 8-12, tech-spec-epic-10.md lines 436-440</source>
+    </constraint>
+    <constraint id="api-1" priority="high">
+      <description>Next.js API Route Conventions</description>
+      <detail>Use NextRequest and NextResponse from next/server. Route parameters accessed via { params } prop. Return appropriate HTTP status codes (200, 204, 400, 403, 404, 500). Use async/await for all file operations.</detail>
+      <source>app/api/chat/route.ts pattern, Next.js 14 documentation</source>
+    </constraint>
+    <constraint id="api-2" priority="high">
+      <description>Error Handling Standards</description>
+      <detail>Avoid leaking sensitive information in error messages. Use generic "Conversation not found" instead of revealing existence. Log detailed errors server-side, return generic messages to client. Handle missing browser ID with 400 Bad Request.</detail>
+      <source>tech-spec-epic-10.md lines 228-287</source>
+    </constraint>
+    <constraint id="data-1" priority="high">
+      <description>Conversation Sorting</description>
+      <detail>Conversations MUST be sorted by updatedAt descending (most recent first) before returning to frontend. Use JavaScript Date parsing and comparison: new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime().</detail>
+      <source>epic-10.md line 196, AC-10.3-3</source>
+    </constraint>
+    <constraint id="data-2" priority="high">
+      <description>Agent Grouping</description>
+      <detail>Response MUST include groupedByAgent object where keys are agentId strings and values are arrays of ConversationMetadata for that agent. Use reduce() to build grouped structure. Frontend expects this structure for sidebar rendering.</detail>
+      <source>epic-10.md line 197, AC-10.3-4, story-10.3.md grouping pattern</source>
+    </constraint>
+    <constraint id="testing-1" priority="medium">
+      <description>Comprehensive Testing Required</description>
+      <detail>Must include unit tests for new functions (loadConversationsForBrowser, deleteConversation) and integration tests for all 3 API endpoints. Test security (browser ID mismatch → 403/404), sorting, grouping, deletion cascade. Minimum 14 test subtasks defined in story.</detail>
+      <source>story-10.3.md tasks section, tech-spec-epic-10.md test strategy</source>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>getOrCreateBrowserId</name>
+      <kind>function</kind>
+      <signature>function getOrCreateBrowserId(): string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/browserIdentity.ts</path>
+      <description>Retrieves browser ID from HTTP-only cookie or generates new one. Returns UUID v4 string. Required for all API endpoints to identify browser.</description>
+    </interface>
+    <interface>
+      <name>getConversationAsync</name>
+      <kind>function</kind>
+      <signature>async function getConversationAsync(conversationId: string | undefined, agentId: string, browserId?: string): Promise&lt;Conversation&gt;</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+      <description>Loads conversation from cache or disk (read-through cache). Returns full Conversation with messages. Used by messages API endpoint.</description>
+    </interface>
+    <interface>
+      <name>deleteConversation</name>
+      <kind>function</kind>
+      <signature>async function deleteConversation(conversationId: string): Promise&lt;void&gt;</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/conversations.ts</path>
+      <description>Existing function that deletes conversation from cache and disk. NEEDS EXTENSION: Add browserId parameter for ownership verification.</description>
+    </interface>
+    <interface>
+      <name>env.OUTPUT_PATH</name>
+      <kind>constant</kind>
+      <signature>const OUTPUT_PATH: string</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/lib/utils/env.ts</path>
+      <description>Base path for conversations directory (data/conversations/). Used for file system operations.</description>
+    </interface>
+    <interface>
+      <name>PersistedConversation</name>
+      <kind>type</kind>
+      <signature>interface PersistedConversation { id, browserId, agentId, agentTitle, agentBundle, messages, userSummary, messageCount, displayName, displayTimestamp, folderPath, createdAt, updatedAt, status, user }</signature>
+      <path>/Users/bryan.inagaki/Documents/development/agent-orchestrator/types/index.ts</path>
+      <description>Full conversation type with metadata. Source for mapping to ConversationMetadata response type.</description>
+    </interface>
+    <interface>
+      <name>ConversationMetadata</name>
+      <kind>type</kind>
+      <signature>interface ConversationMetadata { id, agentId, agentName, agentTitle, agentIcon?, lastMessage, messageCount, createdAt, updatedAt }</signature>
+      <path>types/api.ts (NEW)</path>
+      <description>NEW TYPE to create: Lightweight conversation metadata for list endpoint response (excludes messages array).</description>
+    </interface>
+    <interface>
+      <name>ConversationListResponse</name>
+      <kind>type</kind>
+      <signature>interface ConversationListResponse { conversations: ConversationMetadata[], groupedByAgent: Record&lt;string, ConversationMetadata[]&gt; }</signature>
+      <path>types/api.ts (NEW)</path>
+      <description>NEW TYPE to create: Response format for GET /api/conversations endpoint with flat list and grouped structure.</description>
+    </interface>
+    <interface>
+      <name>ConversationDetailResponse</name>
+      <kind>type</kind>
+      <signature>interface ConversationDetailResponse extends PersistedConversation { files: FileMetadata[] }</signature>
+      <path>types/api.ts (NEW)</path>
+      <description>NEW TYPE to create: Response format for GET /api/conversations/:id/messages with full conversation and file list.</description>
+    </interface>
+    <interface>
+      <name>FileMetadata</name>
+      <kind>type</kind>
+      <signature>interface FileMetadata { name: string, path: string, size: number, mimeType: string }</signature>
+      <path>types/api.ts (NEW)</path>
+      <description>NEW TYPE to create: File metadata for conversation folder files (agent outputs).</description>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      The project uses Jest for unit testing and integration testing. Tests are located in lib/__tests__/ directories alongside the modules they test. API route tests use supertest or direct Next.js request mocking. Test coverage target: 80% overall. Security tests are mandatory for all API endpoints (browser ID verification, authorization failures). Integration tests should cover full request-response cycles including file system operations.
+    </standards>
+    <locations>
+      <location>lib/__tests__/conversations.test.ts</location>
+      <location>lib/__tests__/conversations.persistence.test.ts</location>
+      <location>app/api/conversations/__tests__/route.test.ts (NEW)</location>
+      <location>app/api/conversations/[id]/__tests__/route.test.ts (NEW)</location>
+      <location>app/api/conversations/[id]/messages/__tests__/route.test.ts (NEW)</location>
+    </locations>
+    <ideas>
+      <idea ac="AC-10.3-1">
+        <description>Unit test: loadConversationsForBrowser() loads all conversations for valid browser ID</description>
+        <approach>Create test conversations with different browser IDs, call function, verify only conversations for specified browser returned</approach>
+      </idea>
+      <idea ac="AC-10.3-1">
+        <description>Unit test: loadConversationsForBrowser() filters out conversations from other browsers</description>
+        <approach>Create conversations with browser-123 and browser-456, call with browser-123, verify browser-456 conversations excluded</approach>
+      </idea>
+      <idea ac="AC-10.3-1">
+        <description>Unit test: loadConversationsForBrowser() returns empty array if no conversations found</description>
+        <approach>Call with nonexistent browser ID, verify empty array returned (not error)</approach>
+      </idea>
+      <idea ac="AC-10.3-1">
+        <description>Integration test: GET /api/conversations returns 200 with valid browser cookie</description>
+        <approach>Send API request with valid browser ID cookie, verify 200 status, ConversationListResponse schema</approach>
+      </idea>
+      <idea ac="AC-10.3-1">
+        <description>Integration test: GET /api/conversations returns 400 when browser ID cookie missing</description>
+        <approach>Send API request without cookie, verify 400 Bad Request response</approach>
+      </idea>
+      <idea ac="AC-10.3-2">
+        <description>Integration test: GET /api/conversations response includes all required metadata fields</description>
+        <approach>Create conversation, call API, verify response has id, agentId, agentName, lastMessage, messageCount, timestamps</approach>
+      </idea>
+      <idea ac="AC-10.3-3">
+        <description>Integration test: GET /api/conversations returns conversations sorted by updatedAt descending</description>
+        <approach>Create 3 conversations with different updatedAt timestamps, call API, verify response array sorted newest-first</approach>
+      </idea>
+      <idea ac="AC-10.3-4">
+        <description>Integration test: GET /api/conversations groups conversations by agentId correctly</description>
+        <approach>Create conversations for 2 different agents, call API, verify groupedByAgent object has correct agent keys and grouped arrays</approach>
+      </idea>
+      <idea ac="AC-10.3-5">
+        <description>Unit test: deleteConversation() deletes conversation and folder when browser ID matches</description>
+        <approach>Create conversation, call deleteConversation with matching browser ID, verify folder removed from disk and cache</approach>
+      </idea>
+      <idea ac="AC-10.3-5">
+        <description>Unit test: deleteConversation() returns false when browser ID does not match</description>
+        <approach>Create conversation with browser-123, call deleteConversation with browser-456, verify returns false and folder not deleted</approach>
+      </idea>
+      <idea ac="AC-10.3-5">
+        <description>Integration test: DELETE /api/conversations/:id returns 204 and deletes folder</description>
+        <approach>Create conversation, send DELETE request with valid browser ID, verify 204 status and folder removed</approach>
+      </idea>
+      <idea ac="AC-10.3-5">
+        <description>Integration test: DELETE /api/conversations/:id removes conversation from cache</description>
+        <approach>Delete conversation via API, attempt to retrieve from cache, verify no longer present</approach>
+      </idea>
+      <idea ac="AC-10.3-6">
+        <description>Integration test: GET /api/conversations/:id/messages returns 403 when browser ID does not match</description>
+        <approach>Create conversation with browser-123, send request with browser-456 cookie, verify 403 Forbidden</approach>
+      </idea>
+      <idea ac="AC-10.3-6">
+        <description>Integration test: GET /api/conversations/:id/messages returns 404 when conversation not found</description>
+        <approach>Send request with nonexistent conversation ID, verify 404 Not Found (don't leak existence)</approach>
+      </idea>
+      <idea ac="AC-10.3-6">
+        <description>Integration test: DELETE /api/conversations/:id returns 404 when conversation doesn't belong to browser</description>
+        <approach>Send DELETE with mismatched browser ID, verify 404 or 403 response (security - don't leak existence)</approach>
+      </idea>
+    </ideas>
+  </tests>
+</story-context>

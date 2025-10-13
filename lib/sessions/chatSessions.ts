@@ -17,7 +17,9 @@ import { env } from '@/lib/utils/env';
  * Create a new chat session manifest
  *
  * Story 6.3 AC-5, AC-7: Create session with userSummary and displayName
+ * Story 10.0: conversationId === sessionId (1:1 relationship enforced)
  *
+ * @param conversationId - Conversation/session ID (same value per Story 10.0)
  * @param agentId - Agent identifier
  * @param agentTitle - Agent display title
  * @param firstUserMessage - First user message in conversation
@@ -25,6 +27,7 @@ import { env } from '@/lib/utils/env';
  * @returns Session ID and folder path
  */
 export async function createChatSession(
+  conversationId: string,
   agentId: string,
   agentTitle: string,
   firstUserMessage: string,
@@ -35,7 +38,8 @@ export async function createChatSession(
     console.error('[createChatSession] Failed to cleanup abandoned sessions:', error);
   });
 
-  const sessionId = randomUUID();
+  // Story 10.0: Use provided conversationId instead of generating new UUID
+  const sessionId = conversationId;
   const conversationsFolder = resolve(env.PROJECT_ROOT, 'data/conversations');
   const sessionFolder = join(conversationsFolder, sessionId);
 
