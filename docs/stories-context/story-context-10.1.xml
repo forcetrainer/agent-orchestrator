@@ -1,0 +1,253 @@
+<story-context id="story-10.1" v="1.0">
+  <metadata>
+    <epicId>10</epicId>
+    <storyId>10.1</storyId>
+    <title>Server-Side Conversation Persistence</title>
+    <status>Draft</status>
+    <generatedAt>2025-10-12</generatedAt>
+    <generator>BMAD Story Context Workflow</generator>
+    <sourceStoryPath>/Users/bryan.inagaki/Documents/development/agent-orchestrator/docs/stories/story-10.1.md</sourceStoryPath>
+  </metadata>
+
+  <story>
+    <asA>user</asA>
+    <iWant>my conversations saved to disk</iWant>
+    <soThat>they survive server restarts and I can return later</soThat>
+    <tasks>
+      - Task 1: Extend conversations.ts with persistence layer (AC: 1, 2, 3)
+      - Task 2: Implement debounced write mechanism (AC: 6)
+      - Task 3: Implement atomic file operations (AC: 4)
+      - Task 4: Convert between Conversation and PersistedConversation types (AC: 5)
+      - Task 5: Update existing conversation functions to use persistence (AC: 1, 2)
+      - Task 6: Testing (AC: All)
+    </tasks>
+  </story>
+
+  <acceptanceCriteria>
+    <ac id="10.1-1" priority="critical">
+      <text>Conversations saved to conversations/{id}/conversation.json on every message</text>
+      <verification>Send message → check file exists and contains message</verification>
+    </ac>
+    <ac id="10.1-2" priority="critical">
+      <text>Conversation metadata indexed on server startup (lazy load full conversations on access)</text>
+      <verification>Restart server → conversation list shows metadata, full messages loaded only when conversation opened</verification>
+    </ac>
+    <ac id="10.1-3" priority="high">
+      <text>Read-through cache (in-memory Map) implemented for performance</text>
+      <verification>First access loads from disk, subsequent accesses use cache</verification>
+    </ac>
+    <ac id="10.1-4" priority="critical">
+      <text>Atomic writes with temp files prevent corruption</text>
+      <verification>Simulate crash during write → conversation.json intact</verification>
+    </ac>
+    <ac id="10.1-5" priority="high">
+      <text>Dates serialized as ISO 8601 strings</text>
+      <verification>Inspect conversation.json → all timestamps are ISO strings</verification>
+    </ac>
+    <ac id="10.1-6" priority="medium">
+      <text>Debounced writes (500ms) reduce disk I/O</text>
+      <verification>Send 3 rapid messages → only 1 write after 500ms</verification>
+    </ac>
+  </acceptanceCriteria>
+
+  <artifacts>
+    <docs>
+      <doc>
+        <path>/docs/epic-10.md</path>
+        <title>Epic 10: Conversation Persistence &amp; Multi-Session Management</title>
+        <section>Story 10.1 Definition</section>
+        <snippet>As a user, I want my conversations saved to disk so that they survive server restarts and I can return later. Prerequisites: Story 10.0 (directory unification). Technical Notes: Extend Conversation type, atomic writes, debounce writes (500ms), unified storage.</snippet>
+      </doc>
+      <doc>
+        <path>/docs/tech-spec-epic-10.md</path>
+        <title>Technical Specification: Conversation Persistence &amp; Multi-Session Management</title>
+        <section>Detailed Design - Persistence Layer</section>
+        <snippet>Persistence layer extends lib/utils/conversations.ts with disk I/O (atomic writes, debouncing, read-through cache). Data Models: PersistedConversation interface with ISO 8601 strings, browserId field. Performance: Debounced writes (500ms), read-through cache, atomic operations.</snippet>
+      </doc>
+      <doc>
+        <path>/docs/stories/story-10.0.md</path>
+        <title>Story 10.0: Directory Unification &amp; Architecture Foundation</title>
+        <section>Architecture Foundation</section>
+        <snippet>COMPLETE - Unified directory structure at data/conversations/, PersistedConversation type defined (types/index.ts:140-184), path validation allows writes to conversations/ folder, conversationId === sessionId (1:1 relationship enforced).</snippet>
+      </doc>
+      <doc>
+        <path>/docs/solution-architecture.md</path>
+        <title>Solution Architecture</title>
+        <section>File System Architecture</section>
+        <snippet>File-based storage eliminates database complexity. Session folders at data/conversations/{id}/ contain manifest.json and agent outputs. Path validation enforces security (lib/pathResolver.ts).</snippet>
+      </doc>
+      <doc>
+        <path>/docs/PRD.md</path>
+        <title>Product Requirements Document</title>
+        <section>Epic 10 - Conversation Persistence</section>
+        <snippet>Users cannot pause and resume long-running workflows. Each server restart creates new session folders. Epic 10 implements server-side persistence with browser-based user identification.</snippet>
+      </doc>
+    </docs>
+    <code>
+      <artifact>
+        <path>/lib/utils/conversations.ts</path>
+        <kind>module</kind>
+        <symbol>getConversation, addMessage, getConversationHistory, clearAllConversations</symbol>
+        <lines>1-107</lines>
+        <reason>Current in-memory conversation storage implementation. Story 10.1 extends this with disk persistence layer.</reason>
+      </artifact>
+      <artifact>
+        <path>/types/index.ts</path>
+        <kind>type-definitions</kind>
+        <symbol>Conversation, Message, PersistedConversation, SerializedMessage</symbol>
+        <lines>92-184</lines>
+        <reason>Type definitions for runtime (Conversation, Message) and persisted (PersistedConversation, SerializedMessage) conversation formats. Conversion between these types is core to Story 10.1.</reason>
+      </artifact>
+      <artifact>
+        <path>/lib/utils/env.ts</path>
+        <kind>module</kind>
+        <symbol>env.OUTPUT_PATH</symbol>
+        <lines>66-68</lines>
+        <reason>OUTPUT_PATH constant points to data/conversations/ (updated in Story 10.0). Used for conversation file paths.</reason>
+      </artifact>
+      <artifact>
+        <path>/lib/utils/logger.ts</path>
+        <kind>module</kind>
+        <symbol>log</symbol>
+        <lines>1-50</lines>
+        <reason>Logging function for conversation operations (create, load, persist events).</reason>
+      </artifact>
+      <artifact>
+        <path>/lib/pathResolver.ts</path>
+        <kind>module</kind>
+        <symbol>validateWritePath</symbol>
+        <lines>100-158</lines>
+        <reason>Security layer ensuring writes only to data/conversations/ (updated in Story 10.0). Prevents path traversal attacks.</reason>
+      </artifact>
+    </code>
+    <dependencies>
+      <node>
+        <package name="uuid" version="^13.0.0">UUID generation for conversation IDs</package>
+        <package name="next" version="14.2.0">Next.js framework (fs/promises available)</package>
+        <package name="typescript" version="^5">TypeScript for type safety</package>
+      </node>
+      <builtin>
+        <module name="fs/promises">Async file operations (writeFile, readFile, rename, readdir, unlink)</module>
+        <module name="path">Path manipulation (join, resolve)</module>
+        <module name="crypto">UUID generation (randomUUID)</module>
+      </builtin>
+    </dependencies>
+  </artifacts>
+
+  <constraints>
+    <constraint id="lazy-loading" priority="critical">
+      <text>Server startup MUST only index conversation metadata (id, agentId, userSummary, timestamps). Full message arrays loaded lazily when conversation accessed.</text>
+      <rationale>Performance - Loading 100+ conversations with full message history at startup would cause unacceptable delay. Lazy loading keeps startup under 100ms.</rationale>
+    </constraint>
+    <constraint id="atomic-writes" priority="critical">
+      <text>All file writes MUST use write-to-temp-then-rename pattern to prevent corruption on crash/power loss.</text>
+      <rationale>Data integrity - Partial writes corrupt conversation.json. fs.rename() is atomic on POSIX filesystems.</rationale>
+    </constraint>
+    <constraint id="debounced-writes" priority="high">
+      <text>Writes MUST be debounced per-conversation with 500ms delay to reduce disk I/O.</text>
+      <rationale>Performance - Rapid message exchanges would cause 100+ writes/min. Debouncing reduces to ~10 writes/min with acceptable 500ms data loss window on crash.</rationale>
+    </constraint>
+    <constraint id="iso-dates" priority="high">
+      <text>All Date objects MUST be serialized as ISO 8601 strings for JSON storage. No Date object serialization.</text>
+      <rationale>JSON compatibility - Date objects don't serialize correctly to JSON. ISO 8601 strings are safe and standard.</rationale>
+    </constraint>
+    <constraint id="read-through-cache" priority="high">
+      <text>In-memory Map cache required. Check cache first, load from disk on miss, populate cache after load.</text>
+      <rationale>Performance - Disk I/O is ~10-20ms per conversation. In-memory access is &lt;1ms.</rationale>
+    </constraint>
+    <constraint id="no-ui-changes" priority="informational">
+      <text>Story 10.1 has NO user-facing UI changes. Testing via file system inspection and server restart verification.</text>
+      <rationale>Phased rollout - Persistence is backend-only. Conversation sidebar UI comes in Story 10.4.</rationale>
+    </constraint>
+    <constraint id="browser-id-null" priority="medium">
+      <text>browserId field will be null in Story 10.1. Browser tracking implemented in Story 10.2.</text>
+      <rationale>Story sequencing - Browser identity cookie system is separate concern handled in next story.</rationale>
+    </constraint>
+  </constraints>
+
+  <interfaces>
+    <interface>
+      <name>getConversation</name>
+      <kind>function</kind>
+      <signature>function getConversation(conversationId: string | undefined, agentId: string): Conversation</signature>
+      <path>/lib/utils/conversations.ts:15-46</path>
+      <usage>Retrieves existing conversation or creates new one. MUST be extended to lazy-load from disk if not in cache.</usage>
+    </interface>
+    <interface>
+      <name>addMessage</name>
+      <kind>function</kind>
+      <signature>function addMessage(conversationId: string, message: Omit&lt;Message, 'id' | 'timestamp'&gt;): Message</signature>
+      <path>/lib/utils/conversations.ts:56-85</path>
+      <usage>Adds message to conversation and updates timestamp. MUST trigger debounced persistence after adding message.</usage>
+    </interface>
+    <interface>
+      <name>PersistedConversation</name>
+      <kind>interface</kind>
+      <signature>interface PersistedConversation { id, browserId, agentId, agentTitle, agentBundle, messages, userSummary, messageCount, displayName, displayTimestamp, folderPath, createdAt, updatedAt, status, user }</signature>
+      <path>/types/index.ts:140-184</path>
+      <usage>Unified conversation type for disk storage. All dates as ISO 8601 strings. Maps to conversation.json file format.</usage>
+    </interface>
+    <interface>
+      <name>SerializedMessage</name>
+      <kind>interface</kind>
+      <signature>interface SerializedMessage { id, role, content, timestamp: string, functionCalls?, toolCallId? }</signature>
+      <path>/types/index.ts:118-131</path>
+      <usage>Message format for persistence. timestamp is ISO 8601 string (not Date object).</usage>
+    </interface>
+    <interface>
+      <name>validateWritePath</name>
+      <kind>function</kind>
+      <signature>function validateWritePath(path: string, context: PathContext): void</signature>
+      <path>/lib/pathResolver.ts:100-158</path>
+      <usage>Security validation for all file writes. Ensures writes only to data/conversations/. Throws SecurityError if path invalid.</usage>
+    </interface>
+    <interface>
+      <name>log</name>
+      <kind>function</kind>
+      <signature>function log(level: 'INFO' | 'ERROR' | 'DEBUG', event: string, metadata: Record&lt;string, any&gt;): void</signature>
+      <path>/lib/utils/logger.ts</path>
+      <usage>Structured logging for conversation operations. Use for: conversation:create, conversation:load, conversation:persist, conversation:error events.</usage>
+    </interface>
+  </interfaces>
+
+  <tests>
+    <standards>
+      <text>Jest test framework with TypeScript (ts-jest). Tests in lib/__tests__/ directories. Use @testing-library for React components. Mock fs/promises for file operations. Use fake timers for debounce testing. Security tests critical for path validation (30/30 passing in Story 10.0).</text>
+    </standards>
+    <locations>
+      <location>lib/__tests__/conversations.persistence.test.ts (NEW - create for Story 10.1)</location>
+      <location>lib/utils/__tests__/validation.test.ts (existing pattern)</location>
+      <location>lib/__tests__/pathResolver.security.test.ts (existing - 30 tests passing)</location>
+    </locations>
+    <ideas>
+      <testIdea ac="10.1-1">
+        <description>Test conversation persists to disk on addMessage</description>
+        <approach>Mock fs.writeFile and fs.rename. Call addMessage(). Verify conversation.json written with correct structure and message content.</approach>
+      </testIdea>
+      <testIdea ac="10.1-2">
+        <description>Test metadata indexing on startup (no full message loading)</description>
+        <approach>Create test conversation.json files with large message arrays. Call buildConversationIndex(). Measure execution time (&lt;100ms). Verify metadata returned but messages not loaded into memory.</approach>
+      </testIdea>
+      <testIdea ac="10.1-3">
+        <description>Test read-through cache behavior</description>
+        <approach>Mock loadConversationFromDisk(). First getConversation() call should load from disk. Second call should hit cache (no disk access). Verify via mock call counts.</approach>
+      </testIdea>
+      <testIdea ac="10.1-4">
+        <description>Test atomic writes prevent corruption</description>
+        <approach>Mock fs.rename to throw error mid-operation. Verify temp file cleaned up and original conversation.json unchanged. Mock crash during writeFile. Verify temp file exists, original intact.</approach>
+      </testIdea>
+      <testIdea ac="10.1-5">
+        <description>Test ISO 8601 date serialization</description>
+        <approach>Create conversation with Date objects. Persist to disk. Read raw JSON. Verify all timestamp fields are ISO 8601 strings (YYYY-MM-DDTHH:mm:ss.sssZ format).</approach>
+      </testIdea>
+      <testIdea ac="10.1-6">
+        <description>Test debounced writes reduce I/O</description>
+        <approach>Use jest.useFakeTimers(). Call addMessage() 3 times rapidly. Advance timers by 400ms. Verify no writes. Advance by 100ms more (500ms total). Verify single write occurred.</approach>
+      </testIdea>
+      <testIdea ac="all">
+        <description>Integration test: Server restart recovery</description>
+        <approach>Create conversation, add 5 messages, persist. Clear in-memory cache. Call buildConversationIndex(). Call getConversation(). Verify all 5 messages restored from disk.</approach>
+      </testIdea>
+    </ideas>
+  </tests>
+</story-context>
