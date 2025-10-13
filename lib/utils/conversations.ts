@@ -496,12 +496,173 @@ export function getAllConversationMetadata(): Omit<PersistedConversation, 'messa
 }
 
 /**
+ * Load all conversations for a specific browser.
+ * AC-10.3-1: Filters by browserId for security
+ * Story 10.3: Conversation List API
+ *
+ * @param browserId - Browser ID to filter conversations
+ * @returns Array of PersistedConversation for the specified browser
+ */
+export async function loadConversationsForBrowser(
+  browserId: string
+): Promise<PersistedConversation[]> {
+  const results: PersistedConversation[] = [];
+
+  try {
+    // Read all folders in conversations directory
+    const entries = await fs.readdir(env.OUTPUT_PATH, { withFileTypes: true });
+    const conversationDirs = entries.filter(e => e.isDirectory());
+
+    for (const dir of conversationDirs) {
+      const conversationId = dir.name;
+      const conversationJsonPath = path.join(
+        env.OUTPUT_PATH,
+        conversationId,
+        'conversation.json'
+      );
+
+      try {
+        // Read and parse conversation.json
+        const content = await fs.readFile(conversationJsonPath, 'utf-8');
+        const conversation = JSON.parse(content) as PersistedConversation;
+
+        // Security filter: Only return conversations for this browser
+        if (conversation.browserId === browserId) {
+          results.push(conversation);
+        }
+      } catch (error) {
+        // Skip corrupted or missing conversation files
+        log('ERROR', 'conversation:loadForBrowser:skip', {
+          conversationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+        continue;
+      }
+    }
+
+    log('INFO', 'conversation:loadForBrowser', {
+      browserId,
+      count: results.length,
+    });
+
+    return results;
+  } catch (error) {
+    log('ERROR', 'conversation:loadForBrowser', {
+      browserId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    throw new Error('Failed to load conversations from disk');
+  }
+}
+
+/**
+ * List files in conversation folder (agent outputs).
+ * Story 10.3: Conversation List API
+ *
+ * @param conversationId - Conversation ID
+ * @returns Array of FileMetadata for files in the conversation folder
+ */
+export async function listConversationFiles(
+  conversationId: string
+): Promise<Array<{ name: string; path: string; size: number; mimeType: string }>> {
+  const folderPath = path.join(env.OUTPUT_PATH, conversationId);
+  const files: Array<{ name: string; path: string; size: number; mimeType: string }> = [];
+
+  try {
+    const entries = await fs.readdir(folderPath, { withFileTypes: true });
+
+    for (const entry of entries) {
+      if (entry.isFile() && entry.name !== 'conversation.json') {
+        const filePath = path.join(folderPath, entry.name);
+        const stats = await fs.stat(filePath);
+
+        files.push({
+          name: entry.name,
+          path: path.relative(process.cwd(), filePath), // Relative to project root
+          size: stats.size,
+          mimeType: getMimeType(entry.name),
+        });
+      }
+    }
+
+    return files;
+  } catch (error) {
+    log('ERROR', 'conversation:listFiles', {
+      conversationId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return []; // Return empty array if folder doesn't exist or error occurs
+  }
+}
+
+/**
+ * Helper: Get MIME type from file extension.
+ * Story 10.3: Conversation List API
+ *
+ * @param filename - Filename with extension
+ * @returns MIME type string
+ */
+function getMimeType(filename: string): string {
+  const ext = path.extname(filename).toLowerCase();
+  const mimeTypes: Record<string, string> = {
+    '.md': 'text/markdown',
+    '.txt': 'text/plain',
+    '.json': 'application/json',
+    '.yaml': 'application/yaml',
+    '.yml': 'application/yaml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.pdf': 'application/pdf',
+  };
+  return mimeTypes[ext] || 'application/octet-stream';
+}
+
+/**
  * Deletes a conversation from disk and cache.
+ * AC-10.3-5: Browser ID verification before deletion
+ * Story 10.3: Extended with browser ID ownership check
  *
  * @param conversationId - Conversation ID to delete
+ * @param browserId - Browser ID for ownership verification (optional for backward compatibility)
+ * @returns True if deleted successfully, false if not found or browser ID mismatch
  */
-export async function deleteConversation(conversationId: string): Promise<void> {
+export async function deleteConversation(
+  conversationId: string,
+  browserId?: string
+): Promise<boolean> {
   try {
+    // If browserId provided, verify ownership
+    if (browserId) {
+      // Check metadata cache first
+      const metadata = conversationMetadata.get(conversationId);
+      if (metadata && metadata.browserId !== browserId) {
+        log('ERROR', 'conversation:delete:forbidden', {
+          conversationId,
+          browserId,
+          ownerBrowserId: metadata.browserId,
+        });
+        return false;
+      }
+
+      // If not in cache, try loading from disk
+      if (!metadata) {
+        const conversation = await loadConversationFromDisk(conversationId);
+        if (!conversation) {
+          log('ERROR', 'conversation:delete:notFound', { conversationId });
+          return false;
+        }
+        if (conversation.browserId !== browserId) {
+          log('ERROR', 'conversation:delete:forbidden', {
+            conversationId,
+            browserId,
+            ownerBrowserId: conversation.browserId,
+          });
+          return false;
+        }
+      }
+    }
+
     // Clear debounce timer if pending
     const timer = debouncedWriteTimers.get(conversationId);
     if (timer) {
@@ -517,7 +678,8 @@ export async function deleteConversation(conversationId: string): Promise<void> 
     const conversationDir = path.join(env.OUTPUT_PATH, conversationId);
     await fs.rm(conversationDir, { recursive: true, force: true });
 
-    log('INFO', 'conversation:delete', { conversationId });
+    log('INFO', 'conversation:delete', { conversationId, browserId });
+    return true;
   } catch (error) {
     log('ERROR', 'conversation:delete', {
       conversationId,

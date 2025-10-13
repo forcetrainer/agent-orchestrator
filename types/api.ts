@@ -102,3 +102,86 @@ export interface FileContentResponse {
   truncated?: boolean;    // True if file was truncated
   error?: string;
 }
+
+/**
+ * Lightweight conversation metadata for list view
+ * Story 10.3: Conversation List API
+ * Excludes full message content for performance
+ */
+export interface ConversationMetadata {
+  id: string;
+  agentId: string;
+  agentName: string;               // Display name for UI
+  agentTitle: string;              // Full title (e.g., "System Architect")
+  agentIcon?: string;              // Optional emoji/icon
+  lastMessage: string;             // Truncated preview
+  messageCount: number;
+  createdAt: string;               // ISO 8601 format
+  updatedAt: string;               // ISO 8601 format
+}
+
+/**
+ * Response for GET /api/conversations
+ * Story 10.3: Conversation List API
+ * Includes both flat list and grouped structure for frontend convenience
+ */
+export interface ConversationListResponse {
+  conversations: ConversationMetadata[];
+  groupedByAgent: Record<string, ConversationMetadata[]>;
+}
+
+/**
+ * File metadata for conversation folder files
+ * Story 10.3: Conversation List API
+ */
+export interface FileMetadata {
+  name: string;                    // Filename (e.g., "output-001.md")
+  path: string;                    // Relative path from project root
+  size: number;                    // File size in bytes
+  mimeType: string;                // MIME type (e.g., "text/markdown")
+}
+
+/**
+ * Response for GET /api/conversations/:id/messages
+ * Story 10.3: Conversation List API
+ * Includes full conversation with messages and files
+ */
+export interface ConversationDetailResponse {
+  // Identity
+  id: string;
+  browserId: string | null;
+
+  // Agent context
+  agentId: string;
+  agentTitle: string;
+  agentBundle: string;
+
+  // Messages (serialized with ISO date strings)
+  messages: Array<{
+    id: string;
+    role: 'user' | 'assistant' | 'system' | 'error' | 'tool';
+    content: string;
+    timestamp: string;
+    functionCalls?: Array<{
+      name: string;
+      arguments: Record<string, any>;
+      result?: any;
+      error?: string;
+    }>;
+    toolCallId?: string;
+  }>;
+
+  // Metadata
+  userSummary: string;
+  messageCount: number;
+  displayName: string;
+  displayTimestamp: string;
+  folderPath: string;
+  createdAt: string;
+  updatedAt: string;
+  status: 'running' | 'completed' | 'failed' | 'cancelled';
+  user: string;
+
+  // Files in conversation folder
+  files: FileMetadata[];
+}
